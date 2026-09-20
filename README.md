@@ -1,12 +1,10 @@
-# LifeOS — Your Personal Life Manager
+# LifeOS - Personal Life Manager
 
 **LifeOS** is an all in one personal management application that connects scheduling, personal finance, academic progress, fitness activities, and an AI assistant in one system. The main idea is simple: enter information once, and LifeOS automatically updates everything related to it.
 
 ## Goals
 
 The goal of **LifeOS** is to replace multiple disconnected personal tracking tools with one connected system. Schedule acts as the central source of daily information, while Money, Academic, Fitness, Dashboard, and the AI Personal Assistant use that information to automatically organize, calculate, and summarize the user's daily life.
-
----
 
 ## Modules
 
