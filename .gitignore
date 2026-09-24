@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# env
+.env*
+!.env.example
+
+# agent working notes, local only
+CLAUDE.md
