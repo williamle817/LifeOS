@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { LifeEvent } from "@lifeos/contracts";
-import { dayKey } from "@/lib/recurrence";
+import { dayKey } from "@/modules/schedule/lib/recurrence";
 import {
   calls,
   failOn,
@@ -16,12 +16,12 @@ vi.mock("@/lib/supabase", async () => {
   return { supabase: client };
 });
 
-type Store = typeof import("@/lib/event-store");
+type Store = typeof import("@/modules/schedule/lib/event-store");
 
 async function store(events: FakeRow[] = []): Promise<Store> {
   resetDb(events);
   vi.resetModules();
-  const loaded: Store = await import("@/lib/event-store");
+  const loaded: Store = await import("@/modules/schedule/lib/event-store");
   await loaded.ensureLoaded();
   return loaded;
 }
@@ -93,7 +93,7 @@ describe("loading", () => {
   it("loads only once even when several callers ask", async () => {
     resetDb([row()]);
     vi.resetModules();
-    const s: Store = await import("@/lib/event-store");
+    const s: Store = await import("@/modules/schedule/lib/event-store");
     await Promise.all([s.ensureLoaded(), s.ensureLoaded(), s.ensureLoaded()]);
     expect(calls().filter((c) => c === "select users")).toHaveLength(1);
   });

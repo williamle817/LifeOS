@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LifeEvent, Recurrence } from "@lifeos/contracts";
-import { dayKey, expand, occurrenceId, shiftDay } from "@/lib/recurrence";
+import { dayKey, expand, occurrenceId, shiftDay } from "@/modules/schedule/lib/recurrence";
 
 function local(day: string, hour = 9, minute = 0): string {
   const [y, m, d] = day.split("-").map(Number);

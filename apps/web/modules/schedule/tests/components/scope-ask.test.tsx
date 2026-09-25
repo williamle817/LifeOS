@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ScopeAsk } from "@/components/scope-ask";
+import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
 
 function show() {
   const onPick = vi.fn();

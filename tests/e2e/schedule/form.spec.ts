@@ -6,7 +6,7 @@ import {
   expect,
   monday,
   test,
-} from "./fixtures";
+} from "../support/fixtures";
 
 function today(): string {
   return dayOf(new Date());

@@ -11,7 +11,7 @@ import {
   type LifeEvent,
   type RecurFreq,
 } from "@lifeos/contracts";
-import { ScopeAsk } from "@/components/scope-ask";
+import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
 
 const TYPE_LABELS: Record<EventType, string> = {
   general: "General",

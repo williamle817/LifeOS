@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ScheduleView } from "@/components/schedule-view";
+import { ScheduleView } from "@/modules/schedule/components/schedule-view";
 
 export const metadata: Metadata = {
   title: "Schedule",

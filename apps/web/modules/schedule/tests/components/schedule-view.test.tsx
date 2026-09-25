@@ -10,7 +10,7 @@ const undone = vi.fn();
 let rows: LifeEvent[] = [];
 let error: string | null = null;
 
-vi.mock("@/lib/event-store", () => ({
+vi.mock("@/modules/schedule/lib/event-store", () => ({
   subscribe: () => () => {},
   getSnapshot: () => rows,
   getServerSnapshot: () => rows,
@@ -27,7 +27,7 @@ vi.mock("@/lib/event-store", () => ({
   },
 }));
 
-const { ScheduleView } = await import("@/components/schedule-view");
+const { ScheduleView } = await import("@/modules/schedule/components/schedule-view");
 
 function today(hour: number): string {
   const now = new Date();

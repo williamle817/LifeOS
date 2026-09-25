@@ -124,10 +124,11 @@ Row Level Security goes on all three tables with the same policy shape as
 
 ## The maths
 
-All of it belongs in `apps/web/lib/grade.ts` as pure functions taking plain data
-and returning plain data. Locked architecture decision 3 says tests travel with
+All of it belongs in `modules/academic/lib/grade.ts` as pure functions taking
+plain data and returning plain data. Locked architecture decision 3 says tests travel with
 the logic, so this file gets unit tests the day it is written. That means
-installing Vitest, which the repo does not have yet.
+Vitest, which the repo now has: see `CLAUDE.md` section 8e for the layout a new
+module follows.
 
 ### A category's percentage
 
@@ -261,7 +262,8 @@ exists only to prepare another.
 
 * `packages/contracts`: `Course`, `Category`, `GradeScale`, default scale
 * Supabase: `courses` and `categories` tables, RLS, cascade delete
-* `lib/course-store.ts`, the same external store shape as `event-store.ts`
+* `modules/academic/lib/course-store.ts`, the same external store shape as
+  `event-store.ts`
 * Academic page: course list, create and edit form with category rows (name,
   weight, drop lowest), a running weight total, a letter scale editor
 * Delete course behind a confirm
@@ -271,9 +273,7 @@ Usable outcome: every class is written down with how it is graded.
 ### Stage 2, the grade is live
 
 * `grade_items` table and CRUD, grouped by category
-* Vitest installed and wired, plus a `typecheck` script, which `CLAUDE.md`
-  section 9 already wants for Phase 14 anyway
-* `lib/grade.ts` with drop lowest, category percentage, current grade, current
+* `modules/academic/lib/grade.ts` with drop lowest, category percentage, current grade, current
   pct, letter lookup, all unit tested
 * Course card showing the two numbers, the letter, and a category breakdown
 

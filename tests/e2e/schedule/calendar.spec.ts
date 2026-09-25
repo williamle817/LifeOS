@@ -1,4 +1,4 @@
-import { at, eventRow, expect, monday, test } from "./fixtures";
+import { at, eventRow, expect, monday, test } from "../support/fixtures";
 
 test("shows the week view with the seeded event", async ({
   calendar,

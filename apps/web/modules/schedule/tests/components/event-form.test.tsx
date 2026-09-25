@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { EditScope, LifeEvent } from "@lifeos/contracts";
-import { EventForm } from "@/components/event-form";
+import { EventForm } from "@/modules/schedule/components/event-form";
 
 function local(day: string, hour = 9, minute = 0): string {
   const [y, m, d] = day.split("-").map(Number);

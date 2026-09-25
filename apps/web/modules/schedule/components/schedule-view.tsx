@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
-import { expand } from "@/lib/recurrence";
+import { expand } from "@/modules/schedule/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
 import type { EventDropArg, EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -20,10 +20,10 @@ import {
   saveOccurrence,
   undo,
   subscribe,
-} from "@/lib/event-store";
-import { EventForm } from "@/components/event-form";
-import { EventDetails } from "@/components/event-details";
-import { ScopeAsk } from "@/components/scope-ask";
+} from "@/modules/schedule/lib/event-store";
+import { EventForm } from "@/modules/schedule/components/event-form";
+import { EventDetails } from "@/modules/schedule/components/event-details";
+import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
 
 const FORM_W = 272;
 const DETAIL_W = 320;

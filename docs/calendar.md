@@ -2,8 +2,7 @@
 
 Schedule is the heart of LifeOS. Money, Academic and Fitness will all derive
 their numbers from `events`, so the shape of that one table decides the rest of
-the project. Read this before changing anything under `apps/web/components` or
-`apps/web/lib`.
+the project. Read this before changing anything under `apps/web/modules/schedule`.
 
 Written 2026-09-25, end of the Supabase work.
 
@@ -18,6 +17,7 @@ other three along.
   UI            schedule-view.tsx     FullCalendar, drag, popover
                 event-form.tsx        the smart form
                 event-details.tsx     the read only card
+                scope-ask.tsx         this event, following, or all
                       |
   RECURRENCE    recurrence.ts         one rule  ->  many occurrences
                       |
@@ -27,6 +27,11 @@ other three along.
                       |
   DATABASE      Supabase Postgres     users + events
 ```
+
+Everything above the contract lives in `apps/web/modules/schedule`, components
+in `components/`, the other two in `lib/`, and the tests that cover them in
+`tests/`. Nothing outside that folder imports from inside it except the route at
+`app/schedule/page.tsx`.
 
 Two things this buys:
 
@@ -172,8 +177,8 @@ Custom is not a fifth frequency. It is `weekly` plus `byDay`.
 
 ### Expansion, and the trap inside it
 
-`recurrence.ts` exports `expand(rows, from, to)`. It walks each series head and
-emits occurrences inside the window, consulting a map of overrides and
+`recurrence.ts` exports `expand(rows, from, to)`. It emits occurrences inside
+the window plus one day of slack on each side, consulting a map of overrides and
 cancellations keyed by `seriesId::date`.
 
 The first version stepped from the series start one occurrence at a time behind
@@ -314,6 +319,24 @@ because Academic does not exist until Phase 7. That phase swaps it for a
 
 ---
 
+## Tests
+
+```
+pnpm test        158 unit tests
+pnpm e2e         30 end to end tests in a real browser
+```
+
+Unit tests are in `apps/web/modules/schedule/tests`, mirroring `lib/` and
+`components/`. End to end specs are in `tests/e2e/schedule`. Neither touches the
+real Supabase project: the unit suite swaps in an in memory client, and the end
+to end suite seeds a session into `localStorage` and intercepts every REST call.
+`CLAUDE.md` section 8e has the details, including why the test server builds into
+`.next-e2e`.
+
+Anything below in Traps has a test named after it. Break one on purpose and the
+suite should go red; if it does not, the test is decorative and should be fixed.
+
+---
 ## Traps
 
 **All five FullCalendar packages must share one major version.** Installing
