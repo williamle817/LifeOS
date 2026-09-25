@@ -76,12 +76,14 @@ export type DiningEvent = EventBase & {
 export type ClassEvent = EventBase & {
   type: "class";
   course: string;
+  courseId?: string;
 };
 
 export type ExamEvent = EventBase & {
   type: "exam";
   course: string;
-  score?: number;
+  courseId?: string;
+  categoryId?: string;
   maxScore: number;
 };
 

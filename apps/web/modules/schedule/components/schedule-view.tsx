@@ -24,6 +24,21 @@ import {
 import { EventForm } from "@/modules/schedule/components/event-form";
 import { EventDetails } from "@/modules/schedule/components/event-details";
 import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
+import {
+  ensureLoaded as ensureAcademic,
+  getServerSnapshot as academicServer,
+  getSnapshot as academicSnapshot,
+  linkExamItem,
+  subscribe as academicSubscribe,
+  unlinkExamItem,
+} from "@/modules/academic/lib/course-store";
+import {
+  getServerSnapshot as selectionServer,
+  getSnapshot as selectionSnapshot,
+  resolve,
+  subscribe as selectionSubscribe,
+} from "@/modules/academic/lib/selection";
+import { dayKey } from "@/modules/schedule/lib/recurrence";
 
 const FORM_W = 272;
 const DETAIL_W = 320;
@@ -75,9 +90,40 @@ export function ScheduleView() {
 
   const events = range ? expand(rows, range.from, range.to) : [];
 
+  const academic = useSyncExternalStore(
+    academicSubscribe,
+    academicSnapshot,
+    academicServer,
+  );
+  const picked = useSyncExternalStore(
+    selectionSubscribe,
+    selectionSnapshot,
+    selectionServer,
+  );
+
+  const { semesterId } = resolve(academic.semesters, academic.courses, picked);
+  const courses = academic.courses.filter((c) => c.semesterId === semesterId);
+
   useEffect(() => {
     void ensureLoaded();
+    void ensureAcademic();
   }, []);
+
+  function syncExam(event: LifeEvent): void {
+    if (event.type !== "exam") return;
+    if (!event.courseId || !event.categoryId) {
+      void unlinkExamItem(event.id);
+      return;
+    }
+    void linkExamItem({
+      eventId: event.id,
+      courseId: event.courseId,
+      categoryId: event.categoryId,
+      title: event.title,
+      maxScore: event.maxScore,
+      dueOn: dayKey(event.start),
+    });
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -347,6 +393,7 @@ export function ScheduleView() {
                     setPopover({ ...popover, mode: "edit", ask: "delete" });
                   else {
                     void removeOccurrence(target, "one");
+                    void unlinkExamItem(target.id);
                     setPopover(null);
                   }
                 }}
@@ -359,14 +406,18 @@ export function ScheduleView() {
               userId={currentUserId() ?? ""}
               onSave={(event, scope) => {
                 void saveOccurrence(event, scope);
+                syncExam(event);
                 setPopover(null);
               }}
               onDelete={(event, scope) => {
                 void removeOccurrence(event, scope);
+                void unlinkExamItem(event.id);
                 setPopover(null);
               }}
               onCancel={() => setPopover(null)}
               initialAsk={popover.ask}
+              courses={courses}
+              categories={academic.categories}
             />
             )}
           </div>
