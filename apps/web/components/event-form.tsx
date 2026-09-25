@@ -1,0 +1,424 @@
+"use client";
+
+import { useState } from "react";
+import {
+  EVENT_COLORS,
+  EVENT_TYPES,
+  type EventColor,
+  type EventType,
+  type LifeEvent,
+} from "@lifeos/contracts";
+
+const TYPE_LABELS: Record<EventType, string> = {
+  general: "General",
+  work: "Work",
+  gym: "Gym",
+  dining: "Dining",
+  class: "Class",
+  exam: "Exam",
+};
+
+type Draft = {
+  type: EventType;
+  title: string;
+  color: EventColor;
+  allDay: boolean;
+  start: string;
+  end: string;
+  notes: string;
+  tips: string;
+  workout: string;
+  calories: string;
+  place: string;
+  amount: string;
+  course: string;
+  score: string;
+  maxScore: string;
+};
+
+const EMPTY: Draft = {
+  type: "general",
+  title: "",
+  color: "blue",
+  allDay: false,
+  start: "",
+  end: "",
+  notes: "",
+  tips: "",
+  workout: "",
+  calories: "",
+  place: "",
+  amount: "",
+  course: "",
+  score: "",
+  maxScore: "",
+};
+
+function toInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function toIso(input: string): string {
+  return new Date(input).toISOString();
+}
+
+function toDate(value: string): string {
+  return value.slice(0, 10);
+}
+
+function shiftDay(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function toDraft(event: LifeEvent): Draft {
+  const allDay = event.allDay ?? false;
+  const base: Draft = {
+    ...EMPTY,
+    type: event.type,
+    title: event.title,
+    color: event.color ?? "blue",
+    allDay,
+    start: allDay ? toDate(event.start) : toInput(event.start),
+    end: allDay ? shiftDay(toDate(event.end), -1) : toInput(event.end),
+    notes: event.notes ?? "",
+  };
+
+  switch (event.type) {
+    case "general":
+      return base;
+    case "work":
+      return { ...base, tips: event.tips?.toString() ?? "" };
+    case "gym":
+      return {
+        ...base,
+        workout: event.workout,
+        calories: event.calories?.toString() ?? "",
+      };
+    case "dining":
+      return { ...base, place: event.place, amount: event.amount.toString() };
+    case "class":
+      return { ...base, course: event.course };
+    case "exam":
+      return {
+        ...base,
+        course: event.course,
+        score: event.score?.toString() ?? "",
+        maxScore: event.maxScore.toString(),
+      };
+  }
+}
+
+function toEvent(draft: Draft, id: string): LifeEvent {
+  const base = {
+    id,
+    title: draft.title,
+    start: draft.allDay ? draft.start : toIso(draft.start),
+    end: draft.allDay ? shiftDay(draft.end, 1) : toIso(draft.end),
+    ...(draft.allDay ? { allDay: true } : {}),
+    ...(draft.color === "blue" ? {} : { color: draft.color }),
+    ...(draft.notes ? { notes: draft.notes } : {}),
+  };
+
+  switch (draft.type) {
+    case "general":
+      return { ...base, type: "general" };
+    case "work":
+      return {
+        ...base,
+        type: "work",
+        ...(draft.tips ? { tips: Number(draft.tips) } : {}),
+      };
+    case "gym":
+      return {
+        ...base,
+        type: "gym",
+        workout: draft.workout,
+        ...(draft.calories ? { calories: Number(draft.calories) } : {}),
+      };
+    case "dining":
+      return {
+        ...base,
+        type: "dining",
+        place: draft.place,
+        amount: Number(draft.amount),
+      };
+    case "class":
+      return { ...base, type: "class", course: draft.course };
+    case "exam":
+      return {
+        ...base,
+        type: "exam",
+        course: draft.course,
+        maxScore: Number(draft.maxScore),
+        ...(draft.score ? { score: Number(draft.score) } : {}),
+      };
+  }
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+  step,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  step?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs text-ink-muted">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        step={step}
+        className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+      />
+    </label>
+  );
+}
+
+export function EventForm({
+  editing,
+  initialRange,
+  onSave,
+  onDelete,
+  onCancel,
+}: {
+  editing: LifeEvent | null;
+  initialRange?: { start: string; end: string; allDay: boolean };
+  onSave: (event: LifeEvent) => void;
+  onDelete: (id: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<Draft>(() => {
+    if (editing) return toDraft(editing);
+    if (!initialRange) return EMPTY;
+    return {
+      ...EMPTY,
+      allDay: initialRange.allDay,
+      start: initialRange.allDay
+        ? toDate(initialRange.start)
+        : toInput(initialRange.start),
+      end: initialRange.allDay
+        ? shiftDay(toDate(initialRange.end), -1)
+        : toInput(initialRange.end),
+    };
+  });
+
+  const set = (patch: Partial<Draft>) =>
+    setDraft((prev) => ({ ...prev, ...patch }));
+
+  function typeFields() {
+    switch (draft.type) {
+      case "general":
+        return null;
+      case "work":
+        return (
+          <Field
+            label="Cash tips"
+            type="number"
+            step="0.01"
+            value={draft.tips}
+            onChange={(v) => set({ tips: v })}
+          />
+        );
+      case "gym":
+        return (
+          <>
+            <Field
+              label="Workout"
+              required
+              value={draft.workout}
+              onChange={(v) => set({ workout: v })}
+            />
+            <Field
+              label="Calories"
+              type="number"
+              value={draft.calories}
+              onChange={(v) => set({ calories: v })}
+            />
+          </>
+        );
+      case "dining":
+        return (
+          <>
+            <Field
+              label="Place"
+              required
+              value={draft.place}
+              onChange={(v) => set({ place: v })}
+            />
+            <Field
+              label="Amount"
+              type="number"
+              step="0.01"
+              required
+              value={draft.amount}
+              onChange={(v) => set({ amount: v })}
+            />
+          </>
+        );
+      case "class":
+        return (
+          <Field
+            label="Course"
+            required
+            value={draft.course}
+            onChange={(v) => set({ course: v })}
+          />
+        );
+      case "exam":
+        return (
+          <>
+            <Field
+              label="Course"
+              required
+              value={draft.course}
+              onChange={(v) => set({ course: v })}
+            />
+            <Field
+              label="Score"
+              type="number"
+              step="0.01"
+              value={draft.score}
+              onChange={(v) => set({ score: v })}
+            />
+            <Field
+              label="Max score"
+              type="number"
+              step="0.01"
+              required
+              value={draft.maxScore}
+              onChange={(v) => set({ maxScore: v })}
+            />
+          </>
+        );
+    }
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(toEvent(draft, editing?.id ?? crypto.randomUUID()));
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onCancel();
+      }}
+      className="p-3"
+    >
+      <h2 className="text-sm font-medium">
+        {editing ? "Edit event" : "New event"}
+      </h2>
+
+      <div className="mt-3 grid gap-2">
+        <label className="block">
+          <span className="text-xs text-ink-muted">Type</span>
+          <select
+            value={draft.type}
+            onChange={(e) => set({ type: e.target.value as EventType })}
+            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+          >
+            {EVENT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {TYPE_LABELS[type]}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <Field
+          label="Title"
+          required
+          value={draft.title}
+          onChange={(v) => set({ title: v })}
+        />
+        <Field
+          label="Start"
+          type={draft.allDay ? "date" : "datetime-local"}
+          required
+          value={draft.start}
+          onChange={(v) => set({ start: v })}
+        />
+        <Field
+          label="End"
+          type={draft.allDay ? "date" : "datetime-local"}
+          required
+          value={draft.end}
+          onChange={(v) => set({ end: v })}
+        />
+
+        <div className="block">
+          <span className="text-xs text-ink-muted">Color</span>
+          <div className="mt-1 flex gap-2">
+            {EVENT_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => set({ color })}
+                aria-label={color}
+                aria-pressed={draft.color === color}
+                style={{
+                  backgroundColor: `var(--event-${color})`,
+                  borderColor:
+                    draft.color === color
+                      ? `var(--event-${color}-ink)`
+                      : `var(--event-${color}-line)`,
+                }}
+                className={`size-6 rounded-full transition-all ${
+                  draft.color === color ? "border-2" : "border"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {typeFields()}
+
+        <Field
+          label="Notes"
+          value={draft.notes}
+          onChange={(v) => set({ notes: v })}
+        />
+      </div>
+
+      <div className="mt-4 flex items-center gap-2">
+        <button
+          type="submit"
+          className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+        >
+          Cancel
+        </button>
+        {editing ? (
+          <button
+            type="button"
+            onClick={() => onDelete(editing.id)}
+            className="ml-auto rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+          >
+            Delete
+          </button>
+        ) : null}
+      </div>
+    </form>
+  );
+}

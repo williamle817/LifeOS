@@ -9,10 +9,17 @@ export const EVENT_TYPES = [
 
 export type EventType = (typeof EVENT_TYPES)[number];
 
-/** ISO 8601, for example "2026-09-24T18:00:00.000Z". */
-export type IsoDateTime = string;
+export const EVENT_COLORS = [
+  "blue",
+  "red",
+  "yellow",
+  "green",
+  "pink",
+  "slate",
+] as const;
 
-/** Amount in dollars as a decimal, for example 12.5. */
+export type EventColor = (typeof EVENT_COLORS)[number];
+export type IsoDateTime = string;
 export type Money = number;
 
 type EventBase = {
@@ -20,6 +27,8 @@ type EventBase = {
   title: string;
   start: IsoDateTime;
   end: IsoDateTime;
+  allDay?: boolean;
+  color?: EventColor;
   notes?: string;
 };
 

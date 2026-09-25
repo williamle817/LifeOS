@@ -13,5 +13,8 @@ desktop.ini
 .env*
 !.env.example
 
+# frozen reference build, kept local
+mvp/
+
 # agent working notes, local only
 CLAUDE.md
