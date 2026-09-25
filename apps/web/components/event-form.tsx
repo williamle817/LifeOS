@@ -29,6 +29,7 @@ type Draft = {
   freq: RecurFreq | "none";
   interval: string;
   until: string;
+  byDay: number[];
   allDay: boolean;
   start: string;
   end: string;
@@ -50,6 +51,7 @@ const EMPTY: Draft = {
   freq: "none",
   interval: "1",
   until: "",
+  byDay: [],
   allDay: false,
   start: "",
   end: "",
@@ -95,6 +97,7 @@ function toDraft(event: LifeEvent): Draft {
     freq: event.recurrence?.freq ?? "none",
     interval: String(event.recurrence?.interval ?? 1),
     until: event.recurrence?.until ?? "",
+    byDay: event.recurrence?.byDay ?? [],
     allDay,
     start: allDay ? toDate(event.start) : toInput(event.start),
     end: allDay ? shiftDay(toDate(event.end), -1) : toInput(event.end),
@@ -144,6 +147,7 @@ function toEvent(
           recurrence: {
             freq: draft.freq as RecurFreq,
             interval: Math.max(1, Number(draft.interval) || 1),
+            ...(draft.byDay.length ? { byDay: draft.byDay } : {}),
             ...(draft.until ? { until: draft.until } : {}),
           },
         }
@@ -194,6 +198,19 @@ function toEvent(
   }
 }
 
+const DAY_LETTERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function summary(draft: Draft): string {
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const picked = order
+    .filter((d) => draft.byDay.includes(d))
+    .map((d) => DAY_LETTERS[d]);
+  const every =
+    Number(draft.interval) > 1 ? `every ${draft.interval} weeks` : "weekly";
+  const ends = draft.until ? `until ${draft.until}` : "forever";
+  return `${picked.join(", ")} · ${every} · ${ends}`;
+}
+
 function Field({
   label,
   value,
@@ -202,6 +219,7 @@ function Field({
   required = false,
   step,
   min,
+  multiline = false,
 }: {
   label: string;
   value: string;
@@ -210,19 +228,31 @@ function Field({
   required?: boolean;
   step?: string;
   min?: string;
+  multiline?: boolean;
 }) {
+  const shared =
+    "mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent";
   return (
     <label className="block">
       <span className="text-xs text-ink-muted">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        step={step}
-        min={min}
-        className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
-      />
+      {multiline ? (
+        <textarea
+          rows={2}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${shared} resize-y`}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          step={step}
+          min={min}
+          className={shared}
+        />
+      )}
     </label>
   );
 }
@@ -262,6 +292,7 @@ export function EventForm({
   const [asking, setAsking] = useState<"save" | "delete" | null>(
     initialAsk ?? null,
   );
+  const [custom, setCustom] = useState(false);
   const inSeries = Boolean(editing?.seriesId && editing.occurrenceDate);
 
   const set = (patch: Partial<Draft>) =>
@@ -368,6 +399,99 @@ export function EventForm({
           </>
         );
     }
+  }
+
+  if (custom) {
+    const labels = [
+      ["M", 1],
+      ["T", 2],
+      ["W", 3],
+      ["T", 4],
+      ["F", 5],
+      ["S", 6],
+      ["S", 0],
+    ] as const;
+
+    return (
+      <div className="p-3">
+        <h2 className="text-sm font-medium">Custom repeat</h2>
+
+        <p className="mt-3 text-xs text-ink-muted">Repeat on</p>
+        <div className="mt-1.5 flex gap-1">
+          {labels.map(([text, day], i) => {
+            const on = draft.byDay.includes(day);
+            return (
+              <button
+                key={i}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  set({
+                    byDay: on
+                      ? draft.byDay.filter((d) => d !== day)
+                      : [...draft.byDay, day],
+                  })
+                }
+                className={`size-7 rounded-full border text-[11px] transition-colors ${
+                  on
+                    ? "border-accent bg-accent-soft font-medium text-accent"
+                    : "border-line text-ink-muted hover:bg-surface-muted"
+                }`}
+              >
+                {text}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="mt-4 text-xs text-ink-muted">Ends</p>
+        <label className="mt-1.5 flex items-center gap-2 text-[13px]">
+          <input
+            type="radio"
+            checked={!draft.until}
+            onChange={() => set({ until: "" })}
+          />
+          Never
+        </label>
+        <label className="mt-1.5 flex items-center gap-2 text-[13px]">
+          <input
+            type="radio"
+            checked={Boolean(draft.until)}
+            onChange={() =>
+              set({ until: draft.until || draft.start.slice(0, 10) })
+            }
+          />
+          On
+          <input
+            type="date"
+            value={draft.until}
+            min={draft.start.slice(0, 10)}
+            onChange={(e) => set({ until: e.target.value })}
+            className="flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-[13px] outline-none focus:border-accent"
+          />
+        </label>
+
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              set({ freq: draft.byDay.length ? "weekly" : "none" });
+              setCustom(false);
+            }}
+            className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
+          >
+            Done
+          </button>
+          <button
+            type="button"
+            onClick={() => setCustom(false)}
+            className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (asking) {
@@ -488,22 +612,30 @@ export function EventForm({
         <label className="block">
           <span className="text-xs text-ink-muted">Repeat</span>
           <select
-            value={draft.freq}
-            onChange={(e) =>
-              set({ freq: e.target.value as RecurFreq | "none" })
-            }
+            value={draft.byDay.length ? "custom" : draft.freq}
+            onChange={(e) => {
+              if (e.target.value === "custom-open") {
+                setCustom(true);
+                return;
+              }
+              set({ freq: e.target.value as RecurFreq | "none", byDay: [] });
+            }}
             className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
           >
             <option value="none">Does not repeat</option>
             {RECUR_FREQS.map((f) => (
               <option key={f} value={f}>
-                {f === "daily" ? "Daily" : f === "weekly" ? "Weekly" : "Monthly"}
+                {f[0].toUpperCase() + f.slice(1)}
               </option>
             ))}
+            {draft.byDay.length ? (
+              <option value="custom">{summary(draft)}</option>
+            ) : null}
+            <option value="custom-open">Custom...</option>
           </select>
         </label>
 
-        {draft.freq === "none" ? null : (
+        {draft.freq === "none" || draft.byDay.length ? null : (
           <>
             <Field
               label="Every"
@@ -527,6 +659,7 @@ export function EventForm({
 
         <Field
           label="Notes"
+          multiline
           value={draft.notes}
           onChange={(v) => set({ notes: v })}
         />

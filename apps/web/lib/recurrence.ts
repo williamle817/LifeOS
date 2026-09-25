@@ -22,17 +22,20 @@ function step(d: Date, rule: Recurrence, times = 1): Date {
   if (rule.freq === "daily") next.setDate(next.getDate() + rule.interval * times);
   else if (rule.freq === "weekly")
     next.setDate(next.getDate() + 7 * rule.interval * times);
+  else if (rule.freq === "yearly")
+    next.setFullYear(next.getFullYear() + rule.interval * times);
   else next.setMonth(next.getMonth() + rule.interval * times);
   return next;
 }
 
 function seek(first: Date, rule: Recurrence, from: Date): Date {
   if (from <= first) return first;
-  if (rule.freq === "monthly") {
+  if (rule.freq === "monthly" || rule.freq === "yearly") {
     const months =
       (from.getFullYear() - first.getFullYear()) * 12 +
       (from.getMonth() - first.getMonth());
-    return step(first, rule, Math.floor(months / rule.interval));
+    const per = rule.freq === "yearly" ? 12 * rule.interval : rule.interval;
+    return step(first, rule, Math.floor(months / per));
   }
   const span = rule.freq === "weekly" ? 7 * rule.interval : rule.interval;
   const days = Math.floor((from.getTime() - first.getTime()) / DAY);
@@ -47,6 +50,37 @@ function moveTo(value: string, from: string, to: string): string {
 
 export function occurrenceId(seriesId: string, date: string): string {
   return `${seriesId}::${date}`;
+}
+
+function mondayOf(d: Date): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() - ((out.getDay() + 6) % 7));
+  return out;
+}
+
+function weekDates(rule: Recurrence, first: Date, from: Date, to: Date): Date[] {
+  const days = [...(rule.byDay ?? [])].sort((a, b) => a - b);
+  if (!days.length) return [];
+  const anchor = mondayOf(first);
+  const target = mondayOf(from);
+  const weeks = Math.floor(
+    (target.getTime() - anchor.getTime()) / (7 * DAY) / rule.interval,
+  );
+  const week = new Date(anchor);
+  week.setDate(week.getDate() + Math.max(0, weeks) * 7 * rule.interval);
+
+  const out: Date[] = [];
+  let guard = 0;
+  while (week <= to && guard < 400) {
+    guard += 1;
+    for (const d of days) {
+      const hit = new Date(week);
+      hit.setDate(hit.getDate() + ((d + 6) % 7));
+      if (hit >= first && hit >= from && hit <= to) out.push(hit);
+    }
+    week.setDate(week.getDate() + 7 * rule.interval);
+  }
+  return out.sort((a, b) => a.getTime() - b.getTime());
 }
 
 export function expand(
@@ -71,16 +105,23 @@ export function expand(
     const seriesId = master.seriesId ?? master.id;
     const firstDay = dayKey(master.start);
     const first = new Date(`${firstDay}T00:00:00`);
-    let cursor = seek(first, rule, new Date(from.getTime() - DAY));
     const limit = new Date(to.getTime() + DAY);
+    const lower = new Date(from.getTime() - DAY);
+    const picked =
+      rule.freq === "weekly" && rule.byDay?.length
+        ? weekDates(rule, first, lower, limit)
+        : null;
+
+    let cursor = picked ? picked[0] : seek(first, rule, lower);
+    let index = 0;
     let guard = 0;
 
-    while (cursor <= limit && guard < 800) {
+    while (cursor && cursor <= limit && guard < 800) {
       guard += 1;
       const date = toLocalDay(cursor);
       if (rule.until && date > rule.until) break;
 
-      if (cursor.getTime() >= from.getTime() - DAY) {
+      {
         const patch = patches.get(`${seriesId}::${date}`);
         if (!patch) {
           out.push({
@@ -88,16 +129,17 @@ export function expand(
             id: occurrenceId(seriesId, date),
             seriesId,
             occurrenceDate: date,
-            recurrence: undefined,
+            recurrence: rule,
             start: moveTo(master.start, firstDay, date),
             end: moveTo(master.end, firstDay, date),
           } as LifeEvent);
         } else if (!patch.cancelled) {
-          out.push({ ...patch, recurrence: undefined } as LifeEvent);
+          out.push({ ...patch, recurrence: rule } as LifeEvent);
         }
       }
 
-      cursor = step(cursor, rule);
+      index += 1;
+      cursor = picked ? picked[index] : step(cursor, rule);
     }
   }
 

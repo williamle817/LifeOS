@@ -20,13 +20,14 @@ export const EVENT_COLORS = [
 
 export type EventColor = (typeof EVENT_COLORS)[number];
 
-export const RECUR_FREQS = ["daily", "weekly", "monthly"] as const;
+export const RECUR_FREQS = ["daily", "weekly", "monthly", "yearly"] as const;
 
 export type RecurFreq = (typeof RECUR_FREQS)[number];
 
 export type Recurrence = {
   freq: RecurFreq;
   interval: number;
+  byDay?: number[];
   until?: string;
 };
 
