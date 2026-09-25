@@ -13,6 +13,7 @@ const NONE: LifeEvent[] = [];
 let cache: LifeEvent[] = NONE;
 let userId: string | null = null;
 let lastError: string | null = null;
+let undoTo: LifeEvent[] | null = null;
 const listeners = new Set<() => void>();
 
 type Row = {
@@ -113,6 +114,39 @@ export function lastWriteError(): string | null {
   return lastError;
 }
 
+export function canUndo(): boolean {
+  return undoTo !== null;
+}
+
+export async function undo(): Promise<void> {
+  if (!undoTo) return;
+  const target = undoTo;
+  undoTo = null;
+  const before = new Map(cache.map((e) => [e.id, e]));
+  const after = new Map(target.map((e) => [e.id, e]));
+
+  const gone = [...before.keys()].filter((id) => !after.has(id));
+  const back = target.filter((e) => !before.has(e.id));
+  const fixed = target.filter(
+    (e) =>
+      before.has(e.id) &&
+      JSON.stringify(before.get(e.id)) !== JSON.stringify(e),
+  );
+
+  cache = target;
+  emit();
+
+  if (gone.length) {
+    await guard(supabase.from("events").delete().in("id", gone));
+  }
+  if (back.length) {
+    await guard(supabase.from("events").insert(back.map(toRow)));
+  }
+  for (const e of fixed) {
+    await guard(supabase.from("events").update(toRow(e)).eq("id", e.id));
+  }
+}
+
 let loading: Promise<void> | null = null;
 
 export async function ensureLoaded(): Promise<void> {
@@ -183,6 +217,7 @@ export async function saveOccurrence(
   scope: EditScope,
 ): Promise<void> {
   await ensureLoaded();
+  undoTo = cache;
   const seriesId = event.seriesId;
   if (!seriesId || !event.occurrenceDate) {
     await (cache.some((e) => e.id === event.id) ? updateEvent : addEvent)(event);
@@ -264,6 +299,7 @@ export async function removeOccurrence(
   scope: EditScope,
 ): Promise<void> {
   await ensureLoaded();
+  undoTo = cache;
   const seriesId = event.seriesId;
   if (!seriesId || !event.occurrenceDate) {
     await deleteEvent(event.id);

@@ -12,12 +12,13 @@ import {
   currentUserId,
   getServerSnapshot,
   getSnapshot,
+  canUndo,
   ensureLoaded,
   lastWriteError,
   removeOccurrence,
   saveOccurrence,
+  undo,
   subscribe,
-  updateEvent,
 } from "@/lib/event-store";
 import { EventForm } from "@/components/event-form";
 import { EventDetails } from "@/components/event-details";
@@ -75,6 +76,19 @@ export function ScheduleView() {
     void ensureLoaded();
   }, []);
 
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "z" || !(e.ctrlKey || e.metaKey) || e.shiftKey) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (!canUndo()) return;
+      e.preventDefault();
+      void undo();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const settled = useRef(false);
 
   function onDates(arg: { start: Date; end: Date }) {
@@ -98,13 +112,14 @@ export function ScheduleView() {
       info.revert();
       return;
     }
-    const moved = {
-      ...found,
-      start: info.event.start.toISOString(),
-      end: info.event.end.toISOString(),
-    } as LifeEvent;
-    if (found.seriesId) void saveOccurrence(moved, "one");
-    else void updateEvent(moved);
+    void saveOccurrence(
+      {
+        ...found,
+        start: info.event.start.toISOString(),
+        end: info.event.end.toISOString(),
+      } as LifeEvent,
+      "one",
+    );
   }
 
   const blocks: EventInput[] = events.map((event) => ({
