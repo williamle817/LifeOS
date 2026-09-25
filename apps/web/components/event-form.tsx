@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   EVENT_COLORS,
   EVENT_TYPES,
-  EDIT_SCOPES,
   RECUR_FREQS,
   type EditScope,
   type EventColor,
@@ -12,6 +11,7 @@ import {
   type LifeEvent,
   type RecurFreq,
 } from "@lifeos/contracts";
+import { ScopeAsk } from "@/components/scope-ask";
 
 const TYPE_LABELS: Record<EventType, string> = {
   general: "General",
@@ -496,34 +496,11 @@ export function EventForm({
 
   if (asking) {
     return (
-      <div className="p-3">
-        <h2 className="text-sm font-medium">
-          {asking === "delete" ? "Delete repeating event" : "Save changes to"}
-        </h2>
-        <div className="mt-3 grid gap-2">
-          {EDIT_SCOPES.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => apply(s)}
-              className="rounded-lg border border-line px-3 py-2 text-left text-[13px] transition-colors hover:bg-surface-muted"
-            >
-              {s === "one"
-                ? "This event"
-                : s === "following"
-                  ? "This and following events"
-                  : "All events"}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => setAsking(null)}
-          className="mt-3 rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
-        >
-          Cancel
-        </button>
-      </div>
+      <ScopeAsk
+        title={asking === "delete" ? "Delete repeating event" : "Save changes to"}
+        onPick={apply}
+        onCancel={() => setAsking(null)}
+      />
     );
   }
 
