@@ -141,3 +141,7 @@ body {
 .fc .fc-timegrid-slot {
   scroll-margin-top: calc(var(--bar-h) + var(--toolbar-h) + 3rem);
 }
+
+.fc .fc-timeGridWeek-view .fc-timegrid-col-events {
+  margin-right: 12%;
+}

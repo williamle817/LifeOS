@@ -172,6 +172,7 @@ export function ScheduleView() {
             month: "Month",
           }}
           nowIndicator
+          snapDuration="00:15:00"
           editable
           selectable
           selectMirror
