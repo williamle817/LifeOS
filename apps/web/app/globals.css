@@ -12,6 +12,30 @@
   --ink-faint: #5e6e86;
   --accent: #1462c0;
   --accent-soft: #dcebfc;
+  --event-blue: #dcebfc;
+  --event-blue-line: #8cbdf0;
+  --event-blue-ink: #0d3f7d;
+  --event-blue-ink-muted: #2b598d;
+  --event-red: #fcdcdc;
+  --event-red-line: #f0a0a0;
+  --event-red-ink: #7d1f1f;
+  --event-red-ink-muted: #9c3535;
+  --event-yellow: #fbf0c8;
+  --event-yellow-line: #e8cf7a;
+  --event-yellow-ink: #6b4e0a;
+  --event-yellow-ink-muted: #866321;
+  --event-green: #d8f0dd;
+  --event-green-line: #8fd3a5;
+  --event-green-ink: #14532d;
+  --event-green-ink-muted: #2d6a43;
+  --event-pink: #fbdcef;
+  --event-pink-line: #f0a3d0;
+  --event-pink-ink: #7a1f56;
+  --event-pink-ink-muted: #96366e;
+  --event-slate: #e2e5ea;
+  --event-slate-line: #b4bcc7;
+  --event-slate-ink: #2b3440;
+  --event-slate-ink-muted: #47525f;
 }
 
 @theme inline {
@@ -24,10 +48,85 @@
   --color-ink-faint: var(--ink-faint);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-app);
 }
 
 body {
   background: var(--canvas);
   color: var(--ink);
+}
+
+.fc {
+  --fc-border-color: var(--line);
+  --fc-page-bg-color: var(--surface);
+  --fc-neutral-bg-color: var(--surface-muted);
+  --fc-today-bg-color: transparent;
+  --fc-event-bg-color: var(--event-blue);
+  --fc-event-border-color: var(--event-blue-line);
+  --fc-event-text-color: var(--event-blue-ink);
+  --fc-button-bg-color: var(--accent);
+  --fc-button-border-color: var(--accent);
+  --fc-button-hover-bg-color: var(--accent);
+  --fc-button-hover-border-color: var(--accent);
+  --fc-button-active-bg-color: var(--accent);
+  --fc-button-active-border-color: var(--accent);
+  --fc-now-indicator-color: var(--accent);
+  font-size: 0.875rem;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.fc .fc-button {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.fc .fc-col-header-cell-cushion {
+  padding: 2px 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-axis-cushion {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+
+.fc .fc-daygrid-day-number {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.fc .fc-scrollgrid-section-header .fc-scroller {
+  scrollbar-color: transparent transparent;
+}
+
+.fc .fc-timegrid .fc-scroller:has(.fc-daygrid-body) {
+  max-height: 1.875rem;
+}
+
+.fc .fc-timegrid-axis-frame-liquid {
+  position: sticky;
+  top: 0;
+  height: 1.875rem;
+  max-height: 1.875rem;
+}
+
+.fc .fc-scrollgrid-section-header > * {
+  border-bottom: 3px solid var(--surface-muted);
+}
+
+.fc .fc-scrollgrid-section-sticky > * {
+  top: 3.8125rem !important;
+  background: var(--surface);
+}
+
+.fc .fc-timegrid-slot {
+  scroll-margin-top: 7rem;
 }

@@ -1,0 +1,5 @@
+{
+  "name": "lifeos",
+  "private": true,
+  "packageManager": "pnpm@12.6.0"
+}
