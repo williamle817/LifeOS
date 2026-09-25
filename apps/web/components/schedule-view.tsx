@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
 import FullCalendar from "@fullcalendar/react";
 import type { EventChangeArg, EventInput } from "@fullcalendar/core";
@@ -9,9 +9,11 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import {
   addEvent,
+  currentUserId,
   deleteEvent,
   getServerSnapshot,
   getSnapshot,
+  loadEvents,
   subscribe,
   updateEvent,
 } from "@/lib/event-store";
@@ -60,6 +62,10 @@ export function ScheduleView() {
   const events = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [popover, setPopover] = useState<Popover | null>(null);
 
+  useEffect(() => {
+    void loadEvents();
+  }, []);
+
   const settled = useRef(false);
 
   function scrollToMorning() {
@@ -78,7 +84,7 @@ export function ScheduleView() {
       info.revert();
       return;
     }
-    updateEvent({
+    void updateEvent({
       ...found,
       start: info.event.start.toISOString(),
       end: info.event.end.toISOString(),
@@ -263,13 +269,14 @@ export function ScheduleView() {
             <EventForm
               editing={popover.editing}
               initialRange={popover.range}
+              userId={currentUserId() ?? ""}
               onSave={(event) => {
-                if (popover.editing) updateEvent(event);
-                else addEvent(event);
+                if (popover.editing) void updateEvent(event);
+                else void addEvent(event);
                 setPopover(null);
               }}
               onDelete={(id) => {
-                deleteEvent(id);
+                void deleteEvent(id);
                 setPopover(null);
               }}
               onCancel={() => setPopover(null)}

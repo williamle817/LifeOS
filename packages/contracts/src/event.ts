@@ -24,6 +24,7 @@ export type Money = number;
 
 type EventBase = {
   id: string;
+  userId: string;
   title: string;
   start: IsoDateTime;
   end: IsoDateTime;
