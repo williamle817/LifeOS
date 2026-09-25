@@ -121,7 +121,7 @@ export function expand(
       const date = toLocalDay(cursor);
       if (rule.until && date > rule.until) break;
 
-      {
+      if (cursor >= lower) {
         const patch = patches.get(`${seriesId}::${date}`);
         if (!patch) {
           out.push({

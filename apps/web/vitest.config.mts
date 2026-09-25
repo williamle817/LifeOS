@@ -23,7 +23,7 @@ export default defineConfig({
         test: {
           name: "lib",
           environment: "node",
-          include: ["lib/**/*.test.ts"],
+          include: ["tests/lib/**/*.test.ts"],
         },
       },
       {
@@ -31,8 +31,8 @@ export default defineConfig({
         test: {
           name: "ui",
           environment: "jsdom",
-          include: ["components/**/*.test.tsx"],
-          setupFiles: ["./test/setup.ts"],
+          include: ["tests/components/**/*.test.tsx"],
+          setupFiles: ["./tests/helpers/setup.ts"],
         },
       },
     ],
