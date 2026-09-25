@@ -1,8 +1,7 @@
 export type FakeRow = Record<string, unknown>;
 
 type State = {
-  users: FakeRow[];
-  events: FakeRow[];
+  tables: Record<string, FakeRow[]>;
   failOn: Set<string>;
   calls: string[];
 };
@@ -11,8 +10,14 @@ const KEY = Symbol.for("lifeos.fake.supabase");
 
 function state(): State {
   const holder = globalThis as unknown as Record<symbol, State | undefined>;
-  holder[KEY] ??= { users: [], events: [], failOn: new Set(), calls: [] };
+  holder[KEY] ??= { tables: {}, failOn: new Set(), calls: [] };
   return holder[KEY];
+}
+
+function table(name: string): FakeRow[] {
+  const db = state();
+  db.tables[name] ??= [];
+  return db.tables[name];
 }
 
 export function resetDb(
@@ -20,18 +25,32 @@ export function resetDb(
   users: FakeRow[] = [{ id: "u1" }],
 ): void {
   const db = state();
-  db.users = users.map((r) => ({ ...r }));
-  db.events = events.map((r) => ({ ...r }));
+  db.tables = {
+    users: users.map((r) => ({ ...r })),
+    events: events.map((r) => ({ ...r })),
+  };
   db.failOn = new Set();
   db.calls = [];
 }
 
+export function seed(name: string, rows: FakeRow[]): void {
+  state().tables[name] = rows.map((r) => ({ ...r }));
+}
+
+export function stored(name: string): FakeRow[] {
+  return table(name);
+}
+
+export function storedIn(name: string, id: string): FakeRow | undefined {
+  return table(name).find((r) => r.id === id);
+}
+
 export function storedEvents(): FakeRow[] {
-  return state().events;
+  return table("events");
 }
 
 export function storedEvent(id: string): FakeRow | undefined {
-  return state().events.find((r) => r.id === id);
+  return storedIn("events", id);
 }
 
 export function calls(): string[] {
@@ -78,7 +97,7 @@ type Query = {
   ): Promise<T>;
 };
 
-function query(table: "users" | "events"): Query {
+function query(name: string): Query {
   const db = state();
   let op = "select";
   let payload: FakeRow[] = [];
@@ -86,13 +105,13 @@ function query(table: "users" | "events"): Query {
   const filters: Array<(r: FakeRow) => boolean> = [];
 
   function run(): Result {
-    const label = `${op} ${table}`;
+    const label = `${op} ${name}`;
     db.calls.push(label);
     if (db.failOn.has(label) || db.failOn.has(op)) {
       return { data: null, error: { message: `${label} refused` } };
     }
 
-    const all = db[table];
+    const all = table(name);
     const hit = all.filter((r) => filters.every((f) => f(r)));
 
     if (op === "select") {
@@ -106,8 +125,7 @@ function query(table: "users" | "events"): Query {
       for (const r of hit) Object.assign(r, payload[0]);
       return { data: hit, error: null };
     }
-    const keep = all.filter((r) => !hit.includes(r));
-    db[table] = keep;
+    db.tables[name] = all.filter((r) => !hit.includes(r));
     return { data: hit, error: null };
   }
 
@@ -154,7 +172,7 @@ function query(table: "users" | "events"): Query {
 }
 
 export const client = {
-  from(table: "users" | "events") {
-    return query(table);
+  from(name: string) {
+    return query(name);
   },
 };

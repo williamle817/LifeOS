@@ -10,6 +10,11 @@ const undone = vi.fn();
 let rows: LifeEvent[] = [];
 let error: string | null = null;
 
+vi.mock("@/lib/supabase", async () => {
+  const { client } = await import("@/tests/helpers/fake-supabase");
+  return { supabase: client };
+});
+
 vi.mock("@/modules/schedule/lib/event-store", () => ({
   subscribe: () => () => {},
   getSnapshot: () => rows,
