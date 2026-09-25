@@ -25,3 +25,26 @@ export function NavIcon({ name }: { name: IconName }) {
     </svg>
   );
 }
+
+const ACTIONS = {
+  edit: "M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z",
+  trash: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
+  close: "M6 6l12 12M18 6L6 18",
+};
+
+export function ActionIcon({ name }: { name: keyof typeof ACTIONS }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="size-4 shrink-0"
+    >
+      <path d={ACTIONS[name]} />
+    </svg>
+  );
+}

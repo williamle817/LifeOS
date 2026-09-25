@@ -19,8 +19,10 @@ import {
   updateEvent,
 } from "@/lib/event-store";
 import { EventForm } from "@/components/event-form";
+import { EventDetails } from "@/components/event-details";
 
-const WIDTH = 272;
+const FORM_W = 272;
+const DETAIL_W = 320;
 const MAX_HEIGHT = 340;
 const GAP = 8;
 
@@ -39,13 +41,15 @@ type Popover = {
   left: number;
   editing: LifeEvent | null;
   range?: Range;
+  mode: "details" | "edit";
+  ask?: "delete";
 };
 
-function place(anchor: DOMRect): { top: number; left: number } {
+function place(anchor: DOMRect, width: number): { top: number; left: number } {
   const left =
-    anchor.right + GAP + WIDTH <= window.innerWidth
+    anchor.right + GAP + width <= window.innerWidth
       ? anchor.right + GAP
-      : Math.max(GAP, anchor.left - GAP - WIDTH);
+      : Math.max(GAP, anchor.left - GAP - width);
   const top = Math.max(
     GAP,
     Math.min(anchor.top, window.innerHeight - MAX_HEIGHT - GAP),
@@ -240,15 +244,17 @@ export function ScheduleView() {
             const found = events.find((event) => event.id === info.event.id);
             if (!found) return;
             setPopover({
-              ...place(info.el.getBoundingClientRect()),
+              ...place(info.el.getBoundingClientRect(), DETAIL_W),
               editing: found,
+              mode: "details",
             });
           }}
           select={(info) => {
             info.view.calendar.unselect();
             setPopover({
-              ...place(pointRect(info.jsEvent)),
+              ...place(pointRect(info.jsEvent), FORM_W),
               editing: null,
+              mode: "edit",
               range: {
                 start: info.startStr,
                 end: info.endStr,
@@ -274,9 +280,26 @@ export function ScheduleView() {
               top: popover.top,
               left: popover.left,
               maxHeight: MAX_HEIGHT,
+              width: popover.mode === "details" ? DETAIL_W : FORM_W,
             }}
-            className="fixed z-30 w-[272px] overflow-y-auto rounded-xl border border-line bg-surface shadow-lg"
+            className="fixed z-30 overflow-y-auto rounded-xl border border-line bg-surface shadow-lg"
           >
+            {popover.mode === "details" && popover.editing ? (
+              <EventDetails
+                event={popover.editing}
+                onEdit={() => setPopover({ ...popover, mode: "edit" })}
+                onDelete={() => {
+                  const target = popover.editing!;
+                  if (target.seriesId && target.occurrenceDate)
+                    setPopover({ ...popover, mode: "edit", ask: "delete" });
+                  else {
+                    void removeOccurrence(target, "one");
+                    setPopover(null);
+                  }
+                }}
+                onClose={() => setPopover(null)}
+              />
+            ) : (
             <EventForm
               editing={popover.editing}
               initialRange={popover.range}
@@ -290,7 +313,9 @@ export function ScheduleView() {
                 setPopover(null);
               }}
               onCancel={() => setPopover(null)}
+              initialAsk={popover.ask}
             />
+            )}
           </div>
         </>
       ) : null}

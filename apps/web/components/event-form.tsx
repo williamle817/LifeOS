@@ -234,6 +234,7 @@ export function EventForm({
   onSave,
   onDelete,
   onCancel,
+  initialAsk,
 }: {
   editing: LifeEvent | null;
   initialRange?: { start: string; end: string; allDay: boolean };
@@ -241,6 +242,7 @@ export function EventForm({
   onSave: (event: LifeEvent, scope: EditScope) => void;
   onDelete: (event: LifeEvent, scope: EditScope) => void;
   onCancel: () => void;
+  initialAsk?: "delete";
 }) {
   const [draft, setDraft] = useState<Draft>(() => {
     if (editing) return toDraft(editing);
@@ -257,7 +259,9 @@ export function EventForm({
     };
   });
 
-  const [asking, setAsking] = useState<"save" | "delete" | null>(null);
+  const [asking, setAsking] = useState<"save" | "delete" | null>(
+    initialAsk ?? null,
+  );
   const inSeries = Boolean(editing?.seriesId && editing.occurrenceDate);
 
   const set = (patch: Partial<Draft>) =>
