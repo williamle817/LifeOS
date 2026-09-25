@@ -1,5 +1,6 @@
 # next.js
 /.next/
+/.next-e2e/
 
 # typescript
 *.tsbuildinfo

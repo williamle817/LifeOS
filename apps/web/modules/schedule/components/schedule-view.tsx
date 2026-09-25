@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
-import { expand } from "@/lib/recurrence";
+import { expand } from "@/modules/schedule/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
-import type { EventChangeArg, EventInput } from "@fullcalendar/core";
+import type { EventDropArg, EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import {
   currentUserId,
   getServerSnapshot,
@@ -19,9 +20,10 @@ import {
   saveOccurrence,
   undo,
   subscribe,
-} from "@/lib/event-store";
-import { EventForm } from "@/components/event-form";
-import { EventDetails } from "@/components/event-details";
+} from "@/modules/schedule/lib/event-store";
+import { EventForm } from "@/modules/schedule/components/event-form";
+import { EventDetails } from "@/modules/schedule/components/event-details";
+import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
 
 const FORM_W = 272;
 const DETAIL_W = 320;
@@ -43,8 +45,9 @@ type Popover = {
   left: number;
   editing: LifeEvent | null;
   range?: Range;
-  mode: "details" | "edit";
+  mode: "details" | "edit" | "scope";
   ask?: "delete";
+  revert?: () => void;
 };
 
 function place(anchor: DOMRect, width: number): { top: number; left: number } {
@@ -106,30 +109,48 @@ export function ScheduleView() {
     });
   }
 
-  function applyDrag(info: EventChangeArg) {
+  function applyDrag(info: EventDropArg | EventResizeDoneArg) {
     const found = events.find((event) => event.id === info.event.id);
     if (!found || !info.event.start || !info.event.end) {
       info.revert();
       return;
     }
-    void saveOccurrence(
-      {
-        ...found,
-        start: info.event.start.toISOString(),
-        end: info.event.end.toISOString(),
-      } as LifeEvent,
-      "one",
-    );
+    const moved = {
+      ...found,
+      start: info.event.start.toISOString(),
+      end: info.event.end.toISOString(),
+    } as LifeEvent;
+
+    if (found.seriesId && found.occurrenceDate) {
+      setPopover({
+        ...place(info.el.getBoundingClientRect(), FORM_W),
+        editing: moved,
+        mode: "scope",
+        revert: info.revert,
+      });
+      return;
+    }
+    void saveOccurrence(moved, "one");
   }
 
-  const blocks: EventInput[] = events.map((event) => ({
-    id: event.id,
-    title: event.title,
-    start: event.start,
-    end: event.end,
-    allDay: event.allDay ?? false,
-    ...paint(event.color ?? "blue"),
-  }));
+  function close() {
+    popover?.revert?.();
+    setPopover(null);
+  }
+
+  const preview = popover?.mode === "scope" ? popover.editing : null;
+
+  const blocks: EventInput[] = events.map((event) => {
+    const shown = preview && preview.id === event.id ? preview : event;
+    return {
+      id: shown.id,
+      title: shown.title,
+      start: shown.start,
+      end: shown.end,
+      allDay: shown.allDay ?? false,
+      ...paint(shown.color ?? "blue"),
+    };
+  });
 
   if (popover?.range) {
     blocks.push({
@@ -172,6 +193,7 @@ export function ScheduleView() {
             month: "Month",
           }}
           nowIndicator
+          snapDuration="00:15:00"
           editable
           selectable
           selectMirror
@@ -293,7 +315,7 @@ export function ScheduleView() {
         <>
           <div
             className="fixed inset-0 z-20"
-            onClick={() => setPopover(null)}
+            onClick={close}
           />
           <div
             role="dialog"
@@ -306,7 +328,16 @@ export function ScheduleView() {
             }}
             className="fixed z-30 overflow-y-auto rounded-xl border border-line bg-surface shadow-lg"
           >
-            {popover.mode === "details" && popover.editing ? (
+            {popover.mode === "scope" && popover.editing ? (
+              <ScopeAsk
+                title="Change repeating event"
+                onPick={(scope) => {
+                  void saveOccurrence(popover.editing!, scope);
+                  setPopover(null);
+                }}
+                onCancel={close}
+              />
+            ) : popover.mode === "details" && popover.editing ? (
               <EventDetails
                 event={popover.editing}
                 onEdit={() => setPopover({ ...popover, mode: "edit" })}

@@ -86,7 +86,7 @@ export function EventDetails({
         {event.notes ? (
           <>
             <dt className="text-ink-faint">Notes</dt>
-            <dd className="break-words">{event.notes}</dd>
+            <dd className="break-words whitespace-pre-line">{event.notes}</dd>
           </>
         ) : null}
       </dl>

@@ -1,5 +1,12 @@
 {
   "name": "lifeos",
   "private": true,
-  "packageManager": "pnpm@12.6.0"
+  "packageManager": "pnpm@12.6.0",
+  "scripts": {
+    "test": "pnpm --filter @lifeos/web test",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
 }

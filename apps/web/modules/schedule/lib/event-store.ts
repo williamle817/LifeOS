@@ -5,7 +5,7 @@ import type {
   LifeEvent,
   Recurrence,
 } from "@lifeos/contracts";
-import { dayKey, shiftDay } from "@/lib/recurrence";
+import { dayKey, shiftDay } from "@/modules/schedule/lib/recurrence";
 import { supabase } from "@/lib/supabase";
 
 const NONE: LifeEvent[] = [];

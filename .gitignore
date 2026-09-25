@@ -13,6 +13,10 @@ desktop.ini
 .env*
 !.env.example
 
+# playwright
+test-results/
+playwright-report/
+
 # frozen reference build, kept local
 mvp/
 
