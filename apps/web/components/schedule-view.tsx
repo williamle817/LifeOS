@@ -2,24 +2,29 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
+import { expand } from "@/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
 import type { EventChangeArg, EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import {
-  addEvent,
   currentUserId,
-  deleteEvent,
   getServerSnapshot,
   getSnapshot,
-  loadEvents,
+  canUndo,
+  ensureLoaded,
+  lastWriteError,
+  removeOccurrence,
+  saveOccurrence,
+  undo,
   subscribe,
-  updateEvent,
 } from "@/lib/event-store";
 import { EventForm } from "@/components/event-form";
+import { EventDetails } from "@/components/event-details";
 
-const WIDTH = 272;
+const FORM_W = 272;
+const DETAIL_W = 320;
 const MAX_HEIGHT = 340;
 const GAP = 8;
 
@@ -38,13 +43,15 @@ type Popover = {
   left: number;
   editing: LifeEvent | null;
   range?: Range;
+  mode: "details" | "edit";
+  ask?: "delete";
 };
 
-function place(anchor: DOMRect): { top: number; left: number } {
+function place(anchor: DOMRect, width: number): { top: number; left: number } {
   const left =
-    anchor.right + GAP + WIDTH <= window.innerWidth
+    anchor.right + GAP + width <= window.innerWidth
       ? anchor.right + GAP
-      : Math.max(GAP, anchor.left - GAP - WIDTH);
+      : Math.max(GAP, anchor.left - GAP - width);
   const top = Math.max(
     GAP,
     Math.min(anchor.top, window.innerHeight - MAX_HEIGHT - GAP),
@@ -59,14 +66,35 @@ function pointRect(event: MouseEvent | null): DOMRect {
 }
 
 export function ScheduleView() {
-  const events = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const rows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [popover, setPopover] = useState<Popover | null>(null);
+  const [range, setRange] = useState<{ from: Date; to: Date } | null>(null);
+
+  const events = range ? expand(rows, range.from, range.to) : [];
 
   useEffect(() => {
-    void loadEvents();
+    void ensureLoaded();
+  }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "z" || !(e.ctrlKey || e.metaKey) || e.shiftKey) return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (!canUndo()) return;
+      e.preventDefault();
+      void undo();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const settled = useRef(false);
+
+  function onDates(arg: { start: Date; end: Date }) {
+    setRange({ from: arg.start, to: arg.end });
+    scrollToMorning();
+  }
 
   function scrollToMorning() {
     if (settled.current) return;
@@ -84,11 +112,14 @@ export function ScheduleView() {
       info.revert();
       return;
     }
-    void updateEvent({
-      ...found,
-      start: info.event.start.toISOString(),
-      end: info.event.end.toISOString(),
-    });
+    void saveOccurrence(
+      {
+        ...found,
+        start: info.event.start.toISOString(),
+        end: info.event.end.toISOString(),
+      } as LifeEvent,
+      "one",
+    );
   }
 
   const blocks: EventInput[] = events.map((event) => ({
@@ -113,6 +144,12 @@ export function ScheduleView() {
 
   return (
     <>
+      {lastWriteError() ? (
+        <p className="mb-3 rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-ink-muted">
+          Could not save: {lastWriteError()}
+        </p>
+      ) : null}
+
       <div className="rounded-xl border border-line bg-surface p-3">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -124,7 +161,7 @@ export function ScheduleView() {
           }}
           height="auto"
           stickyHeaderDates
-          datesSet={scrollToMorning}
+          datesSet={onDates}
           firstDay={1}
           allDayText="All day"
           eventDisplay="block"
@@ -229,15 +266,17 @@ export function ScheduleView() {
             const found = events.find((event) => event.id === info.event.id);
             if (!found) return;
             setPopover({
-              ...place(info.el.getBoundingClientRect()),
+              ...place(info.el.getBoundingClientRect(), DETAIL_W),
               editing: found,
+              mode: "details",
             });
           }}
           select={(info) => {
             info.view.calendar.unselect();
             setPopover({
-              ...place(pointRect(info.jsEvent)),
+              ...place(pointRect(info.jsEvent), FORM_W),
               editing: null,
+              mode: "edit",
               range: {
                 start: info.startStr,
                 end: info.endStr,
@@ -263,24 +302,42 @@ export function ScheduleView() {
               top: popover.top,
               left: popover.left,
               maxHeight: MAX_HEIGHT,
+              width: popover.mode === "details" ? DETAIL_W : FORM_W,
             }}
-            className="fixed z-30 w-[272px] overflow-y-auto rounded-xl border border-line bg-surface shadow-lg"
+            className="fixed z-30 overflow-y-auto rounded-xl border border-line bg-surface shadow-lg"
           >
+            {popover.mode === "details" && popover.editing ? (
+              <EventDetails
+                event={popover.editing}
+                onEdit={() => setPopover({ ...popover, mode: "edit" })}
+                onDelete={() => {
+                  const target = popover.editing!;
+                  if (target.seriesId && target.occurrenceDate)
+                    setPopover({ ...popover, mode: "edit", ask: "delete" });
+                  else {
+                    void removeOccurrence(target, "one");
+                    setPopover(null);
+                  }
+                }}
+                onClose={() => setPopover(null)}
+              />
+            ) : (
             <EventForm
               editing={popover.editing}
               initialRange={popover.range}
               userId={currentUserId() ?? ""}
-              onSave={(event) => {
-                if (popover.editing) void updateEvent(event);
-                else void addEvent(event);
+              onSave={(event, scope) => {
+                void saveOccurrence(event, scope);
                 setPopover(null);
               }}
-              onDelete={(id) => {
-                void deleteEvent(id);
+              onDelete={(event, scope) => {
+                void removeOccurrence(event, scope);
                 setPopover(null);
               }}
               onCancel={() => setPopover(null)}
+              initialAsk={popover.ask}
             />
+            )}
           </div>
         </>
       ) : null}

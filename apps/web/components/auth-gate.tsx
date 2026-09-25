@@ -35,12 +35,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (error) setNote(error.message);
   }
 
-  async function signUp() {
-    setNote("");
-    const { error } = await supabase.auth.signUp({ email, password });
-    setNote(error ? error.message : "Check your email to confirm the account.");
-  }
-
   return (
     <div className="flex flex-1 items-center justify-center">
       <form
@@ -73,21 +67,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
         {note ? <p className="mt-3 text-xs text-ink-muted">{note}</p> : null}
 
-        <div className="mt-4 flex items-center gap-2">
-          <button
-            type="submit"
-            className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={signUp}
-            className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
-          >
-            Create account
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="mt-4 w-full rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
+        >
+          Sign in
+        </button>
       </form>
     </div>
   );

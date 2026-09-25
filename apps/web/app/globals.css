@@ -11,6 +11,8 @@
   --ink-muted: #4a5a72;
   --ink-faint: #5e6e86;
   --accent: #1462c0;
+  --bar-h: 3.8125rem;
+  --toolbar-h: 2.75rem;
   --accent-soft: #dcebfc;
   --event-blue: #dcebfc;
   --event-blue-line: #8cbdf0;
@@ -74,6 +76,15 @@ body {
   font-size: 0.875rem;
 }
 
+.fc .fc-header-toolbar.fc-toolbar {
+  position: sticky;
+  top: var(--bar-h);
+  z-index: 4;
+  height: var(--toolbar-h);
+  margin: 0;
+  background: var(--surface);
+}
+
 .fc .fc-toolbar-title {
   font-size: 1rem;
   font-weight: 500;
@@ -123,10 +134,10 @@ body {
 }
 
 .fc .fc-scrollgrid-section-sticky > * {
-  top: 3.8125rem !important;
+  top: calc(var(--bar-h) + var(--toolbar-h)) !important;
   background: var(--surface);
 }
 
 .fc .fc-timegrid-slot {
-  scroll-margin-top: 7rem;
+  scroll-margin-top: calc(var(--bar-h) + var(--toolbar-h) + 3rem);
 }

@@ -4,9 +4,13 @@ import { useState } from "react";
 import {
   EVENT_COLORS,
   EVENT_TYPES,
+  EDIT_SCOPES,
+  RECUR_FREQS,
+  type EditScope,
   type EventColor,
   type EventType,
   type LifeEvent,
+  type RecurFreq,
 } from "@lifeos/contracts";
 
 const TYPE_LABELS: Record<EventType, string> = {
@@ -22,6 +26,10 @@ type Draft = {
   type: EventType;
   title: string;
   color: EventColor;
+  freq: RecurFreq | "none";
+  interval: string;
+  until: string;
+  byDay: number[];
   allDay: boolean;
   start: string;
   end: string;
@@ -40,6 +48,10 @@ const EMPTY: Draft = {
   type: "general",
   title: "",
   color: "blue",
+  freq: "none",
+  interval: "1",
+  until: "",
+  byDay: [],
   allDay: false,
   start: "",
   end: "",
@@ -82,6 +94,10 @@ function toDraft(event: LifeEvent): Draft {
     type: event.type,
     title: event.title,
     color: event.color ?? "blue",
+    freq: event.recurrence?.freq ?? "none",
+    interval: String(event.recurrence?.interval ?? 1),
+    until: event.recurrence?.until ?? "",
+    byDay: event.recurrence?.byDay ?? [],
     allDay,
     start: allDay ? toDate(event.start) : toInput(event.start),
     end: allDay ? shiftDay(toDate(event.end), -1) : toInput(event.end),
@@ -113,10 +129,31 @@ function toDraft(event: LifeEvent): Draft {
   }
 }
 
-function toEvent(draft: Draft, id: string, userId: string): LifeEvent {
+function toEvent(
+  draft: Draft,
+  id: string,
+  userId: string,
+  seriesId?: string,
+  occurrenceDate?: string,
+): LifeEvent {
+  const repeats = draft.freq !== "none";
   const base = {
     id,
     userId,
+    ...(occurrenceDate ? { occurrenceDate } : {}),
+    ...(repeats
+      ? {
+          seriesId: seriesId ?? id,
+          recurrence: {
+            freq: draft.freq as RecurFreq,
+            interval: Math.max(1, Number(draft.interval) || 1),
+            ...(draft.byDay.length ? { byDay: draft.byDay } : {}),
+            ...(draft.until ? { until: draft.until } : {}),
+          },
+        }
+      : seriesId
+        ? { seriesId }
+        : {}),
     title: draft.title,
     start: draft.allDay ? draft.start : toIso(draft.start),
     end: draft.allDay ? shiftDay(draft.end, 1) : toIso(draft.end),
@@ -161,6 +198,19 @@ function toEvent(draft: Draft, id: string, userId: string): LifeEvent {
   }
 }
 
+const DAY_LETTERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function summary(draft: Draft): string {
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const picked = order
+    .filter((d) => draft.byDay.includes(d))
+    .map((d) => DAY_LETTERS[d]);
+  const every =
+    Number(draft.interval) > 1 ? `every ${draft.interval} weeks` : "weekly";
+  const ends = draft.until ? `until ${draft.until}` : "forever";
+  return `${picked.join(", ")} · ${every} · ${ends}`;
+}
+
 function Field({
   label,
   value,
@@ -168,6 +218,8 @@ function Field({
   type = "text",
   required = false,
   step,
+  min,
+  multiline = false,
 }: {
   label: string;
   value: string;
@@ -175,18 +227,32 @@ function Field({
   type?: string;
   required?: boolean;
   step?: string;
+  min?: string;
+  multiline?: boolean;
 }) {
+  const shared =
+    "mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent";
   return (
     <label className="block">
       <span className="text-xs text-ink-muted">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        step={step}
-        className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
-      />
+      {multiline ? (
+        <textarea
+          rows={2}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={`${shared} resize-y`}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          step={step}
+          min={min}
+          className={shared}
+        />
+      )}
     </label>
   );
 }
@@ -198,13 +264,15 @@ export function EventForm({
   onSave,
   onDelete,
   onCancel,
+  initialAsk,
 }: {
   editing: LifeEvent | null;
   initialRange?: { start: string; end: string; allDay: boolean };
   userId: string;
-  onSave: (event: LifeEvent) => void;
-  onDelete: (id: string) => void;
+  onSave: (event: LifeEvent, scope: EditScope) => void;
+  onDelete: (event: LifeEvent, scope: EditScope) => void;
   onCancel: () => void;
+  initialAsk?: "delete";
 }) {
   const [draft, setDraft] = useState<Draft>(() => {
     if (editing) return toDraft(editing);
@@ -221,8 +289,29 @@ export function EventForm({
     };
   });
 
+  const [asking, setAsking] = useState<"save" | "delete" | null>(
+    initialAsk ?? null,
+  );
+  const [custom, setCustom] = useState(false);
+  const inSeries = Boolean(editing?.seriesId && editing.occurrenceDate);
+
   const set = (patch: Partial<Draft>) =>
     setDraft((prev) => ({ ...prev, ...patch }));
+
+  function built(): LifeEvent {
+    return toEvent(
+      draft,
+      editing?.id ?? crypto.randomUUID(),
+      userId,
+      editing?.seriesId,
+      editing?.occurrenceDate,
+    );
+  }
+
+  function apply(scope: EditScope) {
+    if (asking === "delete" && editing) onDelete(editing, scope);
+    else onSave(built(), scope);
+  }
 
   function typeFields() {
     switch (draft.type) {
@@ -312,11 +401,141 @@ export function EventForm({
     }
   }
 
+  if (custom) {
+    const labels = [
+      ["M", 1],
+      ["T", 2],
+      ["W", 3],
+      ["T", 4],
+      ["F", 5],
+      ["S", 6],
+      ["S", 0],
+    ] as const;
+
+    return (
+      <div className="p-3">
+        <h2 className="text-sm font-medium">Custom repeat</h2>
+
+        <p className="mt-3 text-xs text-ink-muted">Repeat on</p>
+        <div className="mt-1.5 flex gap-1">
+          {labels.map(([text, day], i) => {
+            const on = draft.byDay.includes(day);
+            return (
+              <button
+                key={i}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  set({
+                    byDay: on
+                      ? draft.byDay.filter((d) => d !== day)
+                      : [...draft.byDay, day],
+                  })
+                }
+                className={`size-7 rounded-full border text-[11px] transition-colors ${
+                  on
+                    ? "border-accent bg-accent-soft font-medium text-accent"
+                    : "border-line text-ink-muted hover:bg-surface-muted"
+                }`}
+              >
+                {text}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="mt-4 text-xs text-ink-muted">Ends</p>
+        <label className="mt-1.5 flex items-center gap-2 text-[13px]">
+          <input
+            type="radio"
+            checked={!draft.until}
+            onChange={() => set({ until: "" })}
+          />
+          Never
+        </label>
+        <label className="mt-1.5 flex items-center gap-2 text-[13px]">
+          <input
+            type="radio"
+            checked={Boolean(draft.until)}
+            onChange={() =>
+              set({ until: draft.until || draft.start.slice(0, 10) })
+            }
+          />
+          On
+          <input
+            type="date"
+            value={draft.until}
+            min={draft.start.slice(0, 10)}
+            onChange={(e) => set({ until: e.target.value })}
+            className="flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-[13px] outline-none focus:border-accent"
+          />
+        </label>
+
+        <div className="mt-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              set({ freq: draft.byDay.length ? "weekly" : "none" });
+              setCustom(false);
+            }}
+            className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
+          >
+            Done
+          </button>
+          <button
+            type="button"
+            onClick={() => setCustom(false)}
+            className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (asking) {
+    return (
+      <div className="p-3">
+        <h2 className="text-sm font-medium">
+          {asking === "delete" ? "Delete repeating event" : "Save changes to"}
+        </h2>
+        <div className="mt-3 grid gap-2">
+          {EDIT_SCOPES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => apply(s)}
+              className="rounded-lg border border-line px-3 py-2 text-left text-[13px] transition-colors hover:bg-surface-muted"
+            >
+              {s === "one"
+                ? "This event"
+                : s === "following"
+                  ? "This and following events"
+                  : "All events"}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setAsking(null)}
+          className="mt-3 rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSave(toEvent(draft, editing?.id ?? crypto.randomUUID(), userId));
+        if (inSeries) {
+          setAsking("save");
+          return;
+        }
+        onSave(built(), "one");
       }}
       onKeyDown={(e) => {
         if (e.key === "Escape") onCancel();
@@ -360,6 +579,7 @@ export function EventForm({
           label="End"
           type={draft.allDay ? "date" : "datetime-local"}
           required
+          min={draft.start}
           value={draft.end}
           onChange={(v) => set({ end: v })}
         />
@@ -389,10 +609,57 @@ export function EventForm({
           </div>
         </div>
 
+        <label className="block">
+          <span className="text-xs text-ink-muted">Repeat</span>
+          <select
+            value={draft.byDay.length ? "custom" : draft.freq}
+            onChange={(e) => {
+              if (e.target.value === "custom-open") {
+                setCustom(true);
+                return;
+              }
+              set({ freq: e.target.value as RecurFreq | "none", byDay: [] });
+            }}
+            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+          >
+            <option value="none">Does not repeat</option>
+            {RECUR_FREQS.map((f) => (
+              <option key={f} value={f}>
+                {f[0].toUpperCase() + f.slice(1)}
+              </option>
+            ))}
+            {draft.byDay.length ? (
+              <option value="custom">{summary(draft)}</option>
+            ) : null}
+            <option value="custom-open">Custom...</option>
+          </select>
+        </label>
+
+        {draft.freq === "none" || draft.byDay.length ? null : (
+          <>
+            <Field
+              label="Every"
+              type="number"
+              min="1"
+              required
+              value={draft.interval}
+              onChange={(v) => set({ interval: v })}
+            />
+            <Field
+              label="Until (blank = forever)"
+              type="date"
+              min={draft.start.slice(0, 10)}
+              value={draft.until}
+              onChange={(v) => set({ until: v })}
+            />
+          </>
+        )}
+
         {typeFields()}
 
         <Field
           label="Notes"
+          multiline
           value={draft.notes}
           onChange={(v) => set({ notes: v })}
         />
@@ -415,7 +682,9 @@ export function EventForm({
         {editing ? (
           <button
             type="button"
-            onClick={() => onDelete(editing.id)}
+            onClick={() =>
+              inSeries ? setAsking("delete") : onDelete(editing, "one")
+            }
             className="ml-auto rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
           >
             Delete
