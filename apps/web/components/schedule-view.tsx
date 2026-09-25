@@ -12,7 +12,8 @@ import {
   currentUserId,
   getServerSnapshot,
   getSnapshot,
-  loadEvents,
+  ensureLoaded,
+  lastWriteError,
   removeOccurrence,
   saveOccurrence,
   subscribe,
@@ -71,7 +72,7 @@ export function ScheduleView() {
   const events = range ? expand(rows, range.from, range.to) : [];
 
   useEffect(() => {
-    void loadEvents();
+    void ensureLoaded();
   }, []);
 
   const settled = useRef(false);
@@ -128,6 +129,12 @@ export function ScheduleView() {
 
   return (
     <>
+      {lastWriteError() ? (
+        <p className="mb-3 rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-ink-muted">
+          Could not save: {lastWriteError()}
+        </p>
+      ) : null}
+
       <div className="rounded-xl border border-line bg-surface p-3">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}

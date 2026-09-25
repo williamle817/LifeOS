@@ -12,6 +12,7 @@ const NONE: LifeEvent[] = [];
 
 let cache: LifeEvent[] = NONE;
 let userId: string | null = null;
+let lastError: string | null = null;
 const listeners = new Set<() => void>();
 
 type Row = {
@@ -73,7 +74,7 @@ function toRow(event: LifeEvent): Row {
   } = event as LifeEvent & Record<string, unknown>;
   return {
     id,
-    user_id: owner,
+    user_id: owner || (userId ?? ""),
     type,
     title,
     start_at: start,
@@ -108,6 +109,20 @@ export function currentUserId(): string | null {
   return userId;
 }
 
+export function lastWriteError(): string | null {
+  return lastError;
+}
+
+let loading: Promise<void> | null = null;
+
+export async function ensureLoaded(): Promise<void> {
+  if (userId) return;
+  loading ??= loadEvents().finally(() => {
+    loading = null;
+  });
+  await loading;
+}
+
 export async function loadEvents(): Promise<void> {
   const { data: me } = await supabase.from("users").select("id").single();
   if (!me) return;
@@ -118,22 +133,45 @@ export async function loadEvents(): Promise<void> {
   emit();
 }
 
+async function guard(
+  run: PromiseLike<{ error: { message: string } | null }>,
+): Promise<void> {
+  const { error } = await run;
+  if (!error) return;
+  lastError = error.message;
+  await loadEvents();
+  emit();
+}
+
 export async function addEvent(event: LifeEvent): Promise<void> {
+  lastError = null;
   cache = [...cache, event];
   emit();
-  await supabase.from("events").insert(toRow(event));
+  await guard(supabase.from("events").insert(toRow(event)));
 }
 
 export async function updateEvent(event: LifeEvent): Promise<void> {
   cache = cache.map((e) => (e.id === event.id ? event : e));
   emit();
-  await supabase.from("events").update(toRow(event)).eq("id", event.id);
+  await guard(supabase.from("events").update(toRow(event)).eq("id", event.id));
 }
 
 export async function deleteEvent(id: string): Promise<void> {
   cache = cache.filter((e) => e.id !== id);
   emit();
-  await supabase.from("events").delete().eq("id", id);
+  await guard(supabase.from("events").delete().eq("id", id));
+}
+
+function withTime(dateFrom: string, timeFrom: string): string {
+  const base = new Date(dateFrom);
+  const time = new Date(timeFrom);
+  base.setHours(
+    time.getHours(),
+    time.getMinutes(),
+    time.getSeconds(),
+    time.getMilliseconds(),
+  );
+  return base.toISOString();
 }
 
 function master(seriesId: string): LifeEvent | undefined {
@@ -144,6 +182,7 @@ export async function saveOccurrence(
   event: LifeEvent,
   scope: EditScope,
 ): Promise<void> {
+  await ensureLoaded();
   const seriesId = event.seriesId;
   if (!seriesId || !event.occurrenceDate) {
     await (cache.some((e) => e.id === event.id) ? updateEvent : addEvent)(event);
@@ -171,12 +210,21 @@ export async function saveOccurrence(
 
   if (scope === "all") {
     if (!head) return;
+    const span = new Date(event.end).getTime() - new Date(event.start).getTime();
+    const start = event.allDay
+      ? head.start
+      : withTime(head.start, event.start);
+    const end = event.allDay
+      ? head.end
+      : new Date(new Date(start).getTime() + span).toISOString();
     await updateEvent({
       ...event,
       id: head.id,
       seriesId,
       occurrenceDate: undefined,
-      recurrence: head.recurrence,
+      recurrence: event.recurrence ?? head.recurrence,
+      start,
+      end,
     } as LifeEvent);
     return;
   }
@@ -215,6 +263,7 @@ export async function removeOccurrence(
   event: LifeEvent,
   scope: EditScope,
 ): Promise<void> {
+  await ensureLoaded();
   const seriesId = event.seriesId;
   if (!seriesId || !event.occurrenceDate) {
     await deleteEvent(event.id);
