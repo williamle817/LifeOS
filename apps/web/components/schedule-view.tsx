@@ -2,18 +2,19 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
+import { expand } from "@/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
 import type { EventChangeArg, EventInput } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import {
-  addEvent,
   currentUserId,
-  deleteEvent,
   getServerSnapshot,
   getSnapshot,
   loadEvents,
+  removeOccurrence,
+  saveOccurrence,
   subscribe,
   updateEvent,
 } from "@/lib/event-store";
@@ -59,14 +60,22 @@ function pointRect(event: MouseEvent | null): DOMRect {
 }
 
 export function ScheduleView() {
-  const events = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const rows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [popover, setPopover] = useState<Popover | null>(null);
+  const [range, setRange] = useState<{ from: Date; to: Date } | null>(null);
+
+  const events = range ? expand(rows, range.from, range.to) : [];
 
   useEffect(() => {
     void loadEvents();
   }, []);
 
   const settled = useRef(false);
+
+  function onDates(arg: { start: Date; end: Date }) {
+    setRange({ from: arg.start, to: arg.end });
+    scrollToMorning();
+  }
 
   function scrollToMorning() {
     if (settled.current) return;
@@ -84,11 +93,13 @@ export function ScheduleView() {
       info.revert();
       return;
     }
-    void updateEvent({
+    const moved = {
       ...found,
       start: info.event.start.toISOString(),
       end: info.event.end.toISOString(),
-    });
+    } as LifeEvent;
+    if (found.seriesId) void saveOccurrence(moved, "one");
+    else void updateEvent(moved);
   }
 
   const blocks: EventInput[] = events.map((event) => ({
@@ -124,7 +135,7 @@ export function ScheduleView() {
           }}
           height="auto"
           stickyHeaderDates
-          datesSet={scrollToMorning}
+          datesSet={onDates}
           firstDay={1}
           allDayText="All day"
           eventDisplay="block"
@@ -270,13 +281,12 @@ export function ScheduleView() {
               editing={popover.editing}
               initialRange={popover.range}
               userId={currentUserId() ?? ""}
-              onSave={(event) => {
-                if (popover.editing) void updateEvent(event);
-                else void addEvent(event);
+              onSave={(event, scope) => {
+                void saveOccurrence(event, scope);
                 setPopover(null);
               }}
-              onDelete={(id) => {
-                void deleteEvent(id);
+              onDelete={(event, scope) => {
+                void removeOccurrence(event, scope);
                 setPopover(null);
               }}
               onCancel={() => setPopover(null)}

@@ -19,6 +19,20 @@ export const EVENT_COLORS = [
 ] as const;
 
 export type EventColor = (typeof EVENT_COLORS)[number];
+
+export const RECUR_FREQS = ["daily", "weekly", "monthly"] as const;
+
+export type RecurFreq = (typeof RECUR_FREQS)[number];
+
+export type Recurrence = {
+  freq: RecurFreq;
+  interval: number;
+  until?: string;
+};
+
+export const EDIT_SCOPES = ["one", "following", "all"] as const;
+
+export type EditScope = (typeof EDIT_SCOPES)[number];
 export type IsoDateTime = string;
 export type Money = number;
 
@@ -31,6 +45,10 @@ type EventBase = {
   allDay?: boolean;
   color?: EventColor;
   notes?: string;
+  seriesId?: string;
+  recurrence?: Recurrence;
+  occurrenceDate?: string;
+  cancelled?: boolean;
 };
 
 export type GeneralEvent = EventBase & {
