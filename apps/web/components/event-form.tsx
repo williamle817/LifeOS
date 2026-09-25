@@ -113,9 +113,10 @@ function toDraft(event: LifeEvent): Draft {
   }
 }
 
-function toEvent(draft: Draft, id: string): LifeEvent {
+function toEvent(draft: Draft, id: string, userId: string): LifeEvent {
   const base = {
     id,
+    userId,
     title: draft.title,
     start: draft.allDay ? draft.start : toIso(draft.start),
     end: draft.allDay ? shiftDay(draft.end, 1) : toIso(draft.end),
@@ -193,12 +194,14 @@ function Field({
 export function EventForm({
   editing,
   initialRange,
+  userId,
   onSave,
   onDelete,
   onCancel,
 }: {
   editing: LifeEvent | null;
   initialRange?: { start: string; end: string; allDay: boolean };
+  userId: string;
   onSave: (event: LifeEvent) => void;
   onDelete: (id: string) => void;
   onCancel: () => void;
@@ -313,7 +316,7 @@ export function EventForm({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSave(toEvent(draft, editing?.id ?? crypto.randomUUID()));
+        onSave(toEvent(draft, editing?.id ?? crypto.randomUUID(), userId));
       }}
       onKeyDown={(e) => {
         if (e.key === "Escape") onCancel();

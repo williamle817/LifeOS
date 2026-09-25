@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/topbar";
+import { AuthGate } from "@/components/auth-gate";
 
 const sans = Nunito({
   variable: "--font-app",
@@ -23,7 +24,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full font-sans">
         <div className="flex min-h-dvh flex-col">
           <TopBar />
-          <main className="flex-1 px-5 py-6 md:px-10 md:py-8">{children}</main>
+          <main className="flex flex-1 flex-col px-5 py-6 md:px-10 md:py-8">
+            <AuthGate>{children}</AuthGate>
+          </main>
         </div>
       </body>
     </html>

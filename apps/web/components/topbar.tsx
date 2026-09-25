@@ -1,4 +1,5 @@
 import { Nav } from "@/components/nav";
+import { SignOut } from "@/components/sign-out";
 
 export function TopBar() {
   return (
@@ -8,6 +9,7 @@ export function TopBar() {
         <span className="font-semibold tracking-tight">LifeOS</span>
       </div>
       <Nav />
+      <SignOut />
     </header>
   );
 }
