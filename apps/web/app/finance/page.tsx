@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 
 export const metadata: Metadata = {
-  title: "Money",
+  title: "Finance",
 };
 
-export default function MoneyPage() {
+export default function FinancePage() {
   return (
     <EmptyState
       title="No income or spending recorded"

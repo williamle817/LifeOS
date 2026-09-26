@@ -1,8 +1,29 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import {
+  test as base,
+  expect,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
 
 export type Row = Record<string, unknown>;
 
-export type Db = { events: Row[] };
+export type Db = {
+  events: Row[];
+  semesters: Row[];
+  courses: Row[];
+  categories: Row[];
+  grade_items: Row[];
+};
+
+export function emptyDb(): Db {
+  return {
+    events: [],
+    semesters: [],
+    courses: [],
+    categories: [],
+    grade_items: [],
+  };
+}
 
 export const STORAGE_KEY = "sb-localhost-auth-token";
 
@@ -104,7 +125,7 @@ function matches(row: Row, url: URL): boolean {
   return true;
 }
 
-async function installRoutes(page: Page, db: Db): Promise<void> {
+async function installRoutes(page: BrowserContext, db: Db): Promise<void> {
   await page.route("**/auth/v1/**", (route) =>
     route.fulfill({ status: 200, json: session() }),
   );
@@ -122,33 +143,34 @@ async function installRoutes(page: Page, db: Db): Promise<void> {
       return route.fulfill({ status: 200, json: wantsOne ? me : [me] });
     }
 
-    if (table !== "events") {
+    if (!table || !(table in db)) {
       return route.fulfill({ status: 200, json: [] });
     }
 
+    const name = table as keyof Db;
     const method = request.method();
 
     if (method === "GET") {
-      return route.fulfill({ status: 200, json: db.events });
+      return route.fulfill({ status: 200, json: db[name] });
     }
 
     if (method === "POST") {
       const body = request.postDataJSON();
       const rows = Array.isArray(body) ? body : [body];
-      for (const row of rows) db.events.push({ ...row });
+      for (const row of rows) db[name].push({ ...row });
       return route.fulfill({ status: 201, json: rows });
     }
 
     if (method === "PATCH") {
       const patch = request.postDataJSON() as Row;
-      const hit = db.events.filter((row) => matches(row, url));
+      const hit = db[name].filter((row) => matches(row, url));
       for (const row of hit) Object.assign(row, patch);
       return route.fulfill({ status: 200, json: hit });
     }
 
     if (method === "DELETE") {
-      const hit = db.events.filter((row) => matches(row, url));
-      db.events = db.events.filter((row) => !hit.includes(row));
+      const hit = db[name].filter((row) => matches(row, url));
+      db[name] = db[name].filter((row) => !hit.includes(row));
       return route.fulfill({ status: 200, json: hit });
     }
 
@@ -156,12 +178,68 @@ async function installRoutes(page: Page, db: Db): Promise<void> {
   });
 }
 
-export type Calendar = {
+export type App = {
   db: Db;
   open: (path?: string) => Promise<void>;
-  titles: () => Promise<string[]>;
-  blocks: () => ReturnType<Page["locator"]>;
 };
+
+export function semesterRow(over: Row = {}): Row {
+  return {
+    id: "sem-1",
+    user_id: "u1",
+    name: "Fall 2026",
+    starts_on: "2020-08-20",
+    ...over,
+  };
+}
+
+export function courseRow(over: Row = {}): Row {
+  return {
+    id: "c1",
+    user_id: "u1",
+    semester_id: "sem-1",
+    title: "Data Structures",
+    code: "CS 201",
+    color: null,
+    scale: [
+      { letter: "A", min: 90 },
+      { letter: "B", min: 80 },
+      { letter: "C", min: 70 },
+      { letter: "D", min: 60 },
+      { letter: "F", min: 0 },
+    ],
+    ...over,
+  };
+}
+
+export function categoryRow(over: Row = {}): Row {
+  return {
+    id: "exams",
+    user_id: "u1",
+    course_id: "c1",
+    name: "Exams",
+    weight: 100,
+    drop_lowest: 0,
+    extra_credit: false,
+    position: 0,
+    ...over,
+  };
+}
+
+export function gradeItemRow(over: Row = {}): Row {
+  return {
+    id: "i1",
+    user_id: "u1",
+    course_id: "c1",
+    category_id: "exams",
+    title: "Midterm",
+    score: null,
+    max_score: 100,
+    due_on: null,
+    event_id: null,
+    ...over,
+  };
+}
 
 export async function laneBox(page: Page, time: string) {
   const lane = page.locator(`.fc-timegrid-slot-lane[data-time="${time}"]`).first();
@@ -229,28 +307,33 @@ export async function dragBlock(
   await page.mouse.up();
 }
 
-export const test = base.extend<{ calendar: Calendar }>({
-  calendar: async ({ page }, use) => {
-    const db: Db = { events: [] };
+export const test = base.extend<{ calendar: App; app: App }>({
+  app: async ({ page, context }, use) => {
+    const db = emptyDb();
     const stored = JSON.stringify(session());
 
-    await page.addInitScript(
+    await context.addInitScript(
       ([key, value]) => {
         window.localStorage.setItem(key as string, value as string);
       },
       [STORAGE_KEY, stored],
     );
-    await installRoutes(page, db);
+    await installRoutes(context, db);
 
     await use({
       db,
       open: async (path = "/schedule") => {
         await page.goto(path);
+      },
+    });
+  },
+  calendar: async ({ app, page }, use) => {
+    await use({
+      db: app.db,
+      open: async (path = "/schedule") => {
+        await app.open(path);
         await page.waitForSelector(".fc-view-harness");
       },
-      titles: async () =>
-        page.locator(".fc-event-title, .fc-event .font-medium").allTextContents(),
-      blocks: () => page.locator(".fc-event"),
     });
   },
 });

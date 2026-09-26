@@ -5,6 +5,8 @@ import {
   EVENT_COLORS,
   EVENT_TYPES,
   RECUR_FREQS,
+  type Category,
+  type Course,
   type EditScope,
   type EventColor,
   type EventType,
@@ -40,7 +42,8 @@ type Draft = {
   place: string;
   amount: string;
   course: string;
-  score: string;
+  courseId: string;
+  categoryId: string;
   maxScore: string;
 };
 
@@ -62,8 +65,9 @@ const EMPTY: Draft = {
   place: "",
   amount: "",
   course: "",
-  score: "",
-  maxScore: "",
+  courseId: "",
+  categoryId: "",
+  maxScore: "100",
 };
 
 function toInput(iso: string): string {
@@ -118,12 +122,17 @@ function toDraft(event: LifeEvent): Draft {
     case "dining":
       return { ...base, place: event.place, amount: event.amount.toString() };
     case "class":
-      return { ...base, course: event.course };
+      return {
+        ...base,
+        course: event.course,
+        courseId: event.courseId ?? "",
+      };
     case "exam":
       return {
         ...base,
         course: event.course,
-        score: event.score?.toString() ?? "",
+        courseId: event.courseId ?? "",
+        categoryId: event.categoryId ?? "",
         maxScore: event.maxScore.toString(),
       };
   }
@@ -186,14 +195,20 @@ function toEvent(
         amount: Number(draft.amount),
       };
     case "class":
-      return { ...base, type: "class", course: draft.course };
+      return {
+        ...base,
+        type: "class",
+        course: draft.course,
+        ...(draft.courseId ? { courseId: draft.courseId } : {}),
+      };
     case "exam":
       return {
         ...base,
         type: "exam",
         course: draft.course,
-        maxScore: Number(draft.maxScore),
-        ...(draft.score ? { score: Number(draft.score) } : {}),
+        maxScore: Number(draft.maxScore) || 100,
+        ...(draft.courseId ? { courseId: draft.courseId } : {}),
+        ...(draft.categoryId ? { categoryId: draft.categoryId } : {}),
       };
   }
 }
@@ -265,6 +280,8 @@ export function EventForm({
   onDelete,
   onCancel,
   initialAsk,
+  courses = [],
+  categories = [],
 }: {
   editing: LifeEvent | null;
   initialRange?: { start: string; end: string; allDay: boolean };
@@ -273,6 +290,8 @@ export function EventForm({
   onDelete: (event: LifeEvent, scope: EditScope) => void;
   onCancel: () => void;
   initialAsk?: "delete";
+  courses?: Course[];
+  categories?: Category[];
 }) {
   const [draft, setDraft] = useState<Draft>(() => {
     if (editing) return toDraft(editing);
@@ -311,6 +330,58 @@ export function EventForm({
   function apply(scope: EditScope) {
     if (asking === "delete" && editing) onDelete(editing, scope);
     else onSave(built(), scope);
+  }
+
+  const mine = categories.filter(
+    (category) => category.courseId === draft.courseId,
+  );
+
+  function coursePicker() {
+    if (!courses.length) {
+      return (
+        <Field
+          label="Course"
+          required
+          value={draft.course}
+          onChange={(v) => set({ course: v })}
+        />
+      );
+    }
+    return (
+      <>
+        <label className="block">
+          <span className="text-xs text-ink-muted">Course</span>
+          <select
+            aria-label="Course"
+            value={draft.courseId || "custom"}
+            onChange={(e) => {
+              const picked = courses.find((c) => c.id === e.target.value);
+              set({
+                courseId: picked ? picked.id : "",
+                categoryId: "",
+                course: picked ? picked.code || picked.title : draft.course,
+              });
+            }}
+            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+          >
+            {courses.map((one) => (
+              <option key={one.id} value={one.id}>
+                {one.code || one.title}
+              </option>
+            ))}
+            <option value="custom">Type it in</option>
+          </select>
+        </label>
+        {draft.courseId ? null : (
+          <Field
+            label="Course name"
+            required
+            value={draft.course}
+            onChange={(v) => set({ course: v })}
+          />
+        )}
+      </>
+    );
   }
 
   function typeFields() {
@@ -364,30 +435,29 @@ export function EventForm({
           </>
         );
       case "class":
-        return (
-          <Field
-            label="Course"
-            required
-            value={draft.course}
-            onChange={(v) => set({ course: v })}
-          />
-        );
+        return coursePicker();
       case "exam":
         return (
           <>
-            <Field
-              label="Course"
-              required
-              value={draft.course}
-              onChange={(v) => set({ course: v })}
-            />
-            <Field
-              label="Score"
-              type="number"
-              step="0.01"
-              value={draft.score}
-              onChange={(v) => set({ score: v })}
-            />
+            {coursePicker()}
+            {draft.courseId && mine.length ? (
+              <label className="block">
+                <span className="text-xs text-ink-muted">Counts toward</span>
+                <select
+                  aria-label="Counts toward"
+                  value={draft.categoryId}
+                  onChange={(e) => set({ categoryId: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+                >
+                  <option value="">Nothing yet</option>
+                  {mine.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <Field
               label="Max score"
               type="number"
@@ -586,6 +656,7 @@ export function EventForm({
           </div>
         </div>
 
+        {draft.type === "exam" ? null : (
         <label className="block">
           <span className="text-xs text-ink-muted">Repeat</span>
           <select
@@ -611,8 +682,9 @@ export function EventForm({
             <option value="custom-open">Custom...</option>
           </select>
         </label>
+        )}
 
-        {draft.freq === "none" || draft.byDay.length ? null : (
+        {draft.type === "exam" || draft.freq === "none" || draft.byDay.length ? null : (
           <>
             <Field
               label="Every"
