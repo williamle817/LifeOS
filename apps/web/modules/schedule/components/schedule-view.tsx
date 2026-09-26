@@ -24,19 +24,6 @@ import {
 import { EventForm } from "@/modules/schedule/components/event-form";
 import { EventDetails } from "@/modules/schedule/components/event-details";
 import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
-import {
-  ensureLoaded as ensureAcademic,
-  getServerSnapshot as academicServer,
-  getSnapshot as academicSnapshot,
-  subscribe as academicSubscribe,
-} from "@/modules/academic/lib/course-store";
-import { examRemoved, examSaved, reconcile } from "@/lib/exam-link";
-import {
-  getServerSnapshot as selectionServer,
-  getSnapshot as selectionSnapshot,
-  resolve,
-  subscribe as selectionSubscribe,
-} from "@/modules/academic/lib/selection";
 
 const FORM_W = 272;
 const DETAIL_W = 320;
@@ -88,28 +75,9 @@ export function ScheduleView() {
 
   const events = range ? expand(rows, range.from, range.to) : [];
 
-  const academic = useSyncExternalStore(
-    academicSubscribe,
-    academicSnapshot,
-    academicServer,
-  );
-  const picked = useSyncExternalStore(
-    selectionSubscribe,
-    selectionSnapshot,
-    selectionServer,
-  );
-
-  const { semesterId } = resolve(academic.semesters, academic.courses, picked);
-  const courses = academic.courses.filter((c) => c.semesterId === semesterId);
-
   useEffect(() => {
     void ensureLoaded();
-    void ensureAcademic();
   }, []);
-
-  function syncExam(event: LifeEvent): void {
-    void examSaved(event);
-  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -118,7 +86,7 @@ export function ScheduleView() {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (!canUndo()) return;
       e.preventDefault();
-      void undo().then(reconcile);
+      void undo();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -163,7 +131,6 @@ export function ScheduleView() {
       return;
     }
     void saveOccurrence(moved, "one");
-    syncExam(moved);
   }
 
   function close() {
@@ -380,7 +347,6 @@ export function ScheduleView() {
                     setPopover({ ...popover, mode: "edit", ask: "delete" });
                   else {
                     void removeOccurrence(target, "one");
-                    void examRemoved(target.id);
                     setPopover(null);
                   }
                 }}
@@ -393,18 +359,14 @@ export function ScheduleView() {
               userId={currentUserId() ?? ""}
               onSave={(event, scope) => {
                 void saveOccurrence(event, scope);
-                syncExam(event);
                 setPopover(null);
               }}
               onDelete={(event, scope) => {
                 void removeOccurrence(event, scope);
-                void examRemoved(event.id);
                 setPopover(null);
               }}
               onCancel={() => setPopover(null)}
               initialAsk={popover.ask}
-              courses={courses}
-              categories={academic.categories}
             />
             )}
           </div>

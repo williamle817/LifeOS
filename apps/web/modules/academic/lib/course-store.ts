@@ -408,33 +408,3 @@ export async function setScore(
   if (!found) return;
   await saveItem({ ...found, score });
 }
-
-export async function linkExamItem(input: {
-  eventId: string;
-  courseId: string;
-  categoryId: string;
-  title: string;
-  maxScore: number;
-  dueOn: string;
-}): Promise<void> {
-  await ensureLoaded();
-  const found = cache.items.find((i) => i.eventId === input.eventId);
-  await saveItem({
-    id: found?.id ?? crypto.randomUUID(),
-    userId: owner(found?.userId),
-    courseId: input.courseId,
-    categoryId: input.categoryId,
-    title: input.title,
-    score: found?.score ?? null,
-    maxScore: input.maxScore,
-    dueOn: input.dueOn,
-    eventId: input.eventId,
-  });
-}
-
-export async function unlinkExamItem(eventId: string): Promise<void> {
-  await ensureLoaded();
-  const found = cache.items.find((i) => i.eventId === eventId);
-  if (!found) return;
-  await deleteItem(found.id);
-}

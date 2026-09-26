@@ -11,8 +11,11 @@ import {
   getServerSnapshot,
   getSnapshot,
   lastWriteError,
+  deleteItem,
   saveCategory,
   saveCourse,
+  saveItem,
+  setScore,
   subscribe,
 } from "@/modules/academic/lib/course-store";
 import {
@@ -23,7 +26,6 @@ import {
   subscribe as selectionSubscribe,
 } from "@/modules/academic/lib/selection";
 import { gradeCourse, show } from "@/modules/academic/lib/grade";
-import { itemRemoved, itemSaved, reconcile } from "@/lib/exam-link";
 import { predict } from "@/modules/academic/lib/predict";
 import { SemesterBar } from "@/modules/academic/components/semester-bar";
 import { CourseStrip } from "@/modules/academic/components/course-strip";
@@ -76,7 +78,7 @@ export function AcademicView() {
     : [];
 
   function handleSave(saved: Course, categories: Category[]) {
-    void saveCourse(saved, categories).then(reconcile);
+    void saveCourse(saved, categories);
     select({ courseId: saved.id });
     setEditing(null);
   }
@@ -102,7 +104,7 @@ export function AcademicView() {
           select({ semesterId: id, courseId: null });
         }}
         onDelete={(id) => {
-          void deleteSemester(id).then(reconcile);
+          void deleteSemester(id);
           select({ semesterId: null, courseId: null });
         }}
       />
@@ -130,7 +132,7 @@ export function AcademicView() {
           onDelete={
             editing === "edit" && course
               ? () => {
-                  void deleteCourse(course.id).then(reconcile);
+                  void deleteCourse(course.id);
                   select({ courseId: null });
                   setEditing(null);
                 }
@@ -234,12 +236,9 @@ export function AcademicView() {
               grade={grade}
               userId={userId}
               courseId={course.id}
-              onScore={(id, score) => {
-                const found = data.items.find((one) => one.id === id);
-                if (found) void itemSaved({ ...found, score });
-              }}
-              onSave={(item: GradeItem) => void itemSaved(item)}
-              onRemove={(id) => void itemRemoved(id)}
+              onScore={(id, score) => void setScore(id, score)}
+              onSave={(item: GradeItem) => void saveItem(item)}
+              onRemove={(id) => void deleteItem(id)}
               onSaveCategory={(category) => void saveCategory(category)}
             />
 

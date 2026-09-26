@@ -337,6 +337,16 @@ export function EventForm({
   );
 
   function coursePicker() {
+    if (!courses.length) {
+      return (
+        <Field
+          label="Course"
+          required
+          value={draft.course}
+          onChange={(v) => set({ course: v })}
+        />
+      );
+    }
     return (
       <>
         <label className="block">

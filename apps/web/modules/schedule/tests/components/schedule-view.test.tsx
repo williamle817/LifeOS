@@ -10,11 +10,6 @@ const undone = vi.fn();
 let rows: LifeEvent[] = [];
 let error: string | null = null;
 
-vi.mock("@/lib/supabase", async () => {
-  const { client } = await import("@/tests/helpers/fake-supabase");
-  return { supabase: client };
-});
-
 vi.mock("@/modules/schedule/lib/event-store", () => ({
   subscribe: () => () => {},
   getSnapshot: () => rows,
@@ -22,12 +17,8 @@ vi.mock("@/modules/schedule/lib/event-store", () => ({
   currentUserId: () => "u1",
   lastWriteError: () => error,
   canUndo: () => true,
-  undo: async () => {
-    undone();
-  },
+  undo: undone,
   ensureLoaded: async () => {},
-  updateEvent: async () => {},
-  deleteEvent: async () => {},
   saveOccurrence: async (event: LifeEvent, scope: EditScope) => {
     saved.push({ event, scope });
   },
