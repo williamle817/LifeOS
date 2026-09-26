@@ -162,3 +162,104 @@ test("says an A is likely for a student holding high marks", async ({
   const chance = Number(label?.replace(/[^0-9.]/g, ""));
   expect(chance).toBeGreaterThan(90);
 });
+
+test("draws bars you can actually see", async ({ app, page }) => {
+  app.db.semesters.push(semesterRow());
+  app.db.courses.push(courseRow());
+  app.db.categories.push(categoryRow());
+  app.db.grade_items.push(
+    gradeItemRow({ id: "m1", title: "One", score: 95 }),
+    gradeItemRow({ id: "m2", title: "Two" }),
+  );
+  await app.open("/academic");
+
+  const chart = page.getByRole("list", { name: "Chance of each grade" });
+  await expect(chart).toBeVisible();
+
+  const tallest = await chart
+    .locator("div[style*='height']")
+    .first()
+    .boundingBox();
+  expect(tallest!.height).toBeGreaterThan(40);
+});
+
+test("does not call an A student an F", async ({ app, page }) => {
+  app.db.semesters.push(semesterRow());
+  app.db.courses.push(courseRow());
+  app.db.categories.push(
+    categoryRow({ id: "exams", name: "Exams", weight: 40 }),
+    categoryRow({ id: "hw", name: "Homework", weight: 30, position: 1 }),
+    categoryRow({ id: "quiz", name: "Quizzes", weight: 30, position: 2 }),
+  );
+  app.db.grade_items.push(
+    gradeItemRow({ id: "m1", category_id: "exams", title: "Exam 1", score: 95 }),
+  );
+  await app.open("/academic");
+
+  await expect(page.getByText("most likely A")).toBeVisible();
+  const f = await page
+    .getByRole("listitem", { name: /^F / })
+    .getAttribute("aria-label");
+  expect(Number(f?.replace(/[^0-9.]/g, ""))).toBeLessThan(5);
+});
+
+test("fixes an item typed in wrong", async ({ app, page }) => {
+  app.db.semesters.push(semesterRow());
+  app.db.courses.push(courseRow());
+  app.db.categories.push(categoryRow());
+  app.db.grade_items.push(
+    gradeItemRow({ id: "m1", title: "Midtrem", max_score: 40 }),
+  );
+  await app.open("/academic");
+
+  await page.getByRole("button", { name: "Edit Midtrem" }).click();
+  await page.getByLabel("Item name").fill("Midterm");
+  await page.getByLabel("Out of").fill("50");
+  await page.getByLabel("Due date").fill("2026-11-05");
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText("Midterm")).toBeVisible();
+  await expect(page.getByText("/ 50")).toBeVisible();
+  await expect.poll(() => app.db.grade_items[0].title).toBe("Midterm");
+  expect(app.db.grade_items[0].due_on).toBe("2026-11-05");
+});
+
+test("lists the work in the order it is due", async ({ app, page }) => {
+  app.db.semesters.push(semesterRow());
+  app.db.courses.push(courseRow());
+  app.db.categories.push(categoryRow());
+  app.db.grade_items.push(
+    gradeItemRow({ id: "a", title: "Third", due_on: "2026-12-01" }),
+    gradeItemRow({ id: "b", title: "First", due_on: "2026-10-01" }),
+    gradeItemRow({ id: "c", title: "Second", due_on: "2026-11-01" }),
+    gradeItemRow({ id: "d", title: "No date" }),
+  );
+  await app.open("/academic");
+
+  await expect(page.getByText("No date")).toBeVisible();
+  const rows = await page
+    .locator("section[aria-label='Exams'] li")
+    .allTextContents();
+  expect(rows.map((row) => row.trim().slice(0, 6))).toEqual([
+    "FirstO",
+    "Second",
+    "ThirdD",
+    "No dat",
+  ]);
+});
+
+test("puts the chart beside the work, not under it", async ({ app, page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  app.db.semesters.push(semesterRow());
+  app.db.courses.push(courseRow());
+  app.db.categories.push(categoryRow());
+  app.db.grade_items.push(gradeItemRow({ id: "m1", title: "One", score: 95 }));
+  await app.open("/academic");
+
+  const table = await page.getByRole("region", { name: "Exams" }).boundingBox();
+  const chart = await page
+    .getByRole("list", { name: "Chance of each grade" })
+    .boundingBox();
+
+  expect(chart!.x).toBeGreaterThan(table!.x + table!.width - 10);
+});

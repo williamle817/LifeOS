@@ -22,8 +22,12 @@ vi.mock("@/modules/schedule/lib/event-store", () => ({
   currentUserId: () => "u1",
   lastWriteError: () => error,
   canUndo: () => true,
-  undo: undone,
+  undo: async () => {
+    undone();
+  },
   ensureLoaded: async () => {},
+  updateEvent: async () => {},
+  deleteEvent: async () => {},
   saveOccurrence: async (event: LifeEvent, scope: EditScope) => {
     saved.push({ event, scope });
   },

@@ -41,15 +41,46 @@ describe("the chance chart", () => {
     expect((bars[0] as HTMLElement).style.height).toBe("100%");
   });
 
-  it("still shows a sliver for an impossible grade", () => {
+  it("shows an empty track for an impossible grade", () => {
     const { container } = render(<ChanceChart chances={CHANCES} />);
     const bars = [...container.querySelectorAll("div[style*='height']")];
-    expect((bars[4] as HTMLElement).style.height).toBe("2%");
+    expect((bars[4] as HTMLElement).style.height).toBe("0%");
+  });
+
+  it("fills the bar with a colour you can tell apart from its track", () => {
+    const { container } = render(<ChanceChart chances={CHANCES} />);
+    const bar = container.querySelector("div[style*='height']") as HTMLElement;
+    expect(bar.style.backgroundColor).toContain("-line");
+  });
+
+  it("gives every bar a track to sit in, so a zero still reads as a zero", () => {
+    const { container } = render(<ChanceChart chances={CHANCES} />);
+    expect(container.querySelectorAll(".bg-surface-muted")).toHaveLength(5);
+  });
+
+  it("calls out the grade most likely to happen", () => {
+    render(<ChanceChart chances={CHANCES} />);
+    expect(screen.getByText("most likely A")).toBeDefined();
+  });
+
+  it("gives the bars a container with a real height, so percentages resolve", () => {
+    const { container } = render(<ChanceChart chances={CHANCES} />);
+    const row = container.querySelector("[role='list']") as HTMLElement;
+    expect(row.className).toContain("h-44");
+    const column = row.firstElementChild as HTMLElement;
+    expect(column.className).toContain("h-full");
   });
 
   it("says out loud what it is assuming", () => {
     render(<ChanceChart chances={CHANCES} />);
     expect(screen.getByText(/cannot know that the final is harder/)).toBeDefined();
+  });
+
+  it("names each letter under its bar", () => {
+    render(<ChanceChart chances={CHANCES} />);
+    expect(
+      screen.getByRole("listitem", { name: "F 0 percent" }),
+    ).toBeDefined();
   });
 
   it("copes with every grade being equally likely", () => {

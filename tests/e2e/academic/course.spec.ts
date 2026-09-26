@@ -73,7 +73,7 @@ test("edits a course and its categories", async ({ app, page }) => {
   app.db.categories.push(categoryRow());
   await app.open("/academic");
 
-  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByLabel("Course name").fill("Algorithms");
   await page.getByLabel("Category 1 drop lowest").fill("2");
   await page.getByRole("button", { name: "Save" }).click();
@@ -89,7 +89,7 @@ test("deletes a course", async ({ app, page }) => {
   app.db.categories.push(categoryRow());
   await app.open("/academic");
 
-  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByRole("button", { name: "Delete course" }).click();
 
   await expect(page.getByText(/No courses in this semester yet/)).toBeVisible();

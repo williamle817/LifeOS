@@ -23,7 +23,7 @@ export default defineConfig({
         test: {
           name: "lib",
           environment: "node",
-          include: ["modules/*/tests/lib/**/*.test.ts"],
+          include: ["modules/*/tests/lib/**/*.test.ts", "tests/lib/**/*.test.ts"],
         },
       },
       {

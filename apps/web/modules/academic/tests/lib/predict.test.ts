@@ -101,6 +101,33 @@ describe("predict, the shape of the answer", () => {
   });
 });
 
+describe("predict, categories with nothing in them yet", () => {
+  it("does not treat an empty bucket as a pile of zeros", () => {
+    const cats = [
+      category({ id: "exams", weight: 40 }),
+      category({ id: "hw", weight: 30 }),
+      category({ id: "quiz", weight: 30 }),
+    ];
+    const out = run(cats, [item({ categoryId: "exams", score: 95 })]);
+    expect(chanceOf(out, "F")).toBeLessThan(5);
+    expect(chanceOf(out, "A")).toBeGreaterThan(50);
+  });
+
+  it("guesses an empty bucket from how the course has gone", () => {
+    const cats = [
+      category({ id: "exams", weight: 50 }),
+      category({ id: "hw", weight: 50 }),
+    ];
+    const out = run(cats, [item({ categoryId: "exams", score: 45 })]);
+    expect(chanceOf(out, "F")).toBeGreaterThan(80);
+  });
+
+  it("still refuses when every bucket is empty", () => {
+    const cats = [category({ id: "exams" }), category({ id: "hw" })];
+    expect(run(cats, [])).toBeNull();
+  });
+});
+
 describe("predict, does it say sensible things", () => {
   it("is almost certain of an A for a student holding a hundred", () => {
     const cats = [category({ id: "exams" })];

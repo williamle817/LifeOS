@@ -95,8 +95,19 @@ describe("the course strip", () => {
 
   it("shows the grade and its letter", () => {
     setup([course()], [category()], [item({ score: 84 })]);
-    expect(screen.getByText("84%")).toBeDefined();
+    const card = screen.getByRole("button", { name: /CS 201/ });
+    expect(card.textContent).toContain("84");
     expect(screen.getByText("B")).toBeDefined();
+  });
+
+  it("fills the progress bar by how much is banked", () => {
+    const { container } = render(<div />);
+    container.remove();
+    setup([course()], [category()], [item({ score: 90 }), item({ id: "i2" })]);
+    const bar = document.querySelector(
+      "span[style*='width']",
+    ) as HTMLElement;
+    expect(bar.style.width).toBe("45%");
   });
 
   it("shows dashes before anything is marked", () => {

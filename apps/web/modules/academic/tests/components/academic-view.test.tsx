@@ -23,6 +23,11 @@ const scored: Array<[string, number | null]> = [];
 const addedItems: GradeItem[] = [];
 const removedItems: string[] = [];
 
+vi.mock("@/lib/supabase", async () => {
+  const { client } = await import("@/tests/helpers/fake-supabase");
+  return { supabase: client };
+});
+
 vi.mock("@/modules/academic/lib/course-store", () => ({
   subscribe: () => () => {},
   getSnapshot: () => data,
@@ -51,6 +56,9 @@ vi.mock("@/modules/academic/lib/course-store", () => ({
   setScore: async (id: string, score: number | null) => {
     scored.push([id, score]);
   },
+  saveCategory: async () => {},
+  linkExamItem: async () => {},
+  unlinkExamItem: async () => {},
 }));
 
 const { AcademicView } = await import(
@@ -226,7 +234,8 @@ describe("the academic page, a course with grading set up", () => {
     const user = userEvent.setup();
     render(<AcademicView />);
     await user.type(screen.getByLabelText("Final score"), "9");
-    expect(scored).toEqual([["i2", 9]]);
+    expect(addedItems).toHaveLength(1);
+    expect(addedItems[0]).toMatchObject({ id: "i2", score: 9 });
   });
 
   it("adds an item", async () => {
