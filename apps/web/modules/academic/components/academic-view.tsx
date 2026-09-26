@@ -6,15 +6,13 @@ import {
   addSemester,
   currentUserId,
   deleteCourse,
-  deleteItem,
   deleteSemester,
   ensureLoaded,
   getServerSnapshot,
   getSnapshot,
   lastWriteError,
+  saveCategory,
   saveCourse,
-  saveItem,
-  setScore,
   subscribe,
 } from "@/modules/academic/lib/course-store";
 import {
@@ -24,7 +22,8 @@ import {
   select,
   subscribe as selectionSubscribe,
 } from "@/modules/academic/lib/selection";
-import { gradeCourse } from "@/modules/academic/lib/grade";
+import { gradeCourse, show } from "@/modules/academic/lib/grade";
+import { itemRemoved, itemSaved, reconcile } from "@/lib/exam-link";
 import { predict } from "@/modules/academic/lib/predict";
 import { SemesterBar } from "@/modules/academic/components/semester-bar";
 import { CourseStrip } from "@/modules/academic/components/course-strip";
@@ -77,7 +76,7 @@ export function AcademicView() {
     : [];
 
   function handleSave(saved: Course, categories: Category[]) {
-    void saveCourse(saved, categories);
+    void saveCourse(saved, categories).then(reconcile);
     select({ courseId: saved.id });
     setEditing(null);
   }
@@ -103,7 +102,7 @@ export function AcademicView() {
           select({ semesterId: id, courseId: null });
         }}
         onDelete={(id) => {
-          void deleteSemester(id);
+          void deleteSemester(id).then(reconcile);
           select({ semesterId: null, courseId: null });
         }}
       />
@@ -131,7 +130,7 @@ export function AcademicView() {
           onDelete={
             editing === "edit" && course
               ? () => {
-                  void deleteCourse(course.id);
+                  void deleteCourse(course.id).then(reconcile);
                   select({ courseId: null });
                   setEditing(null);
                 }
@@ -157,8 +156,14 @@ export function AcademicView() {
 
       {!editing && course && grade ? (
         <div className="grid gap-5">
-          <div className="rounded-xl border border-line bg-surface p-4">
-            <div className="flex flex-wrap items-baseline gap-3">
+          <div className="rounded-2xl border border-line bg-surface p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                style={{
+                  backgroundColor: `var(--event-${course.color ?? "blue"})`,
+                }}
+                className="size-3 rounded-full"
+              />
               <h2 className="text-sm font-medium">
                 {course.code ? `${course.code}, ` : ""}
                 {course.title}
@@ -166,42 +171,56 @@ export function AcademicView() {
               <button
                 type="button"
                 onClick={() => setEditing("edit")}
-                className="rounded-lg px-2 py-1 text-[13px] text-ink-muted hover:bg-surface-muted hover:text-ink"
+                className="rounded-lg px-2 py-1 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
               >
                 Edit
               </button>
             </div>
 
-            <dl className="mt-3 grid gap-4 sm:grid-cols-3">
-              <div>
-                <dt className="text-xs text-ink-muted">Current grade</dt>
+            <dl className="mt-3 grid gap-2.5 sm:grid-cols-3">
+              <div
+                style={{
+                  backgroundColor: `var(--event-${course.color ?? "blue"})`,
+                  borderColor: `var(--event-${course.color ?? "blue"}-line)`,
+                  color: `var(--event-${course.color ?? "blue"}-ink)`,
+                }}
+                className="rounded-xl border p-3"
+              >
+                <dt className="text-xs">Current grade</dt>
                 <dd className="mt-0.5 flex items-baseline gap-2">
-                  <span className="text-2xl font-medium">
+                  <span className="text-2xl font-semibold">
                     {grade.currentGrade === null
                       ? "--"
-                      : `${grade.currentGrade}%`}
+                      : `${show(grade.currentGrade)}%`}
                   </span>
-                  <span className="text-base text-ink-muted">
+                  <span className="text-base font-medium">
                     {grade.letter ?? ""}
                   </span>
                 </dd>
-                <dd className="text-[11px] text-ink-faint">
+                <dd
+                  style={{
+                    color: `var(--event-${course.color ?? "blue"}-ink-muted)`,
+                  }}
+                  className="text-[11px]"
+                >
                   out of the work marked so far
                 </dd>
               </div>
-              <div>
+
+              <div className="rounded-xl border border-line bg-canvas p-3">
                 <dt className="text-xs text-ink-muted">Banked</dt>
-                <dd className="mt-0.5 text-2xl font-medium">
-                  {grade.banked}
+                <dd className="mt-0.5 text-2xl font-semibold">
+                  {show(grade.banked)}
                 </dd>
                 <dd className="text-[11px] text-ink-faint">
                   points of the whole course, out of 100
                 </dd>
               </div>
-              <div>
+
+              <div className="rounded-xl border border-line bg-canvas p-3">
                 <dt className="text-xs text-ink-muted">Still ahead</dt>
-                <dd className="mt-0.5 text-2xl font-medium">
-                  {grade.remaining}
+                <dd className="mt-0.5 text-2xl font-semibold">
+                  {show(grade.remaining)}
                 </dd>
                 <dd className="text-[11px] text-ink-faint">
                   points not marked yet
@@ -210,25 +229,31 @@ export function AcademicView() {
             </dl>
           </div>
 
-          {chances ? (
-            <div className="rounded-xl border border-line bg-surface p-4">
-              <ChanceChart chances={chances} />
-            </div>
-          ) : (
-            <p className="text-[13px] text-ink-muted">
-              Once one score is in, this is where the chance of each grade
-              appears.
-            </p>
-          )}
+          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+            <GradeTable
+              grade={grade}
+              userId={userId}
+              courseId={course.id}
+              onScore={(id, score) => {
+                const found = data.items.find((one) => one.id === id);
+                if (found) void itemSaved({ ...found, score });
+              }}
+              onSave={(item: GradeItem) => void itemSaved(item)}
+              onRemove={(id) => void itemRemoved(id)}
+              onSaveCategory={(category) => void saveCategory(category)}
+            />
 
-          <GradeTable
-            grade={grade}
-            userId={userId}
-            courseId={course.id}
-            onScore={(id, score) => void setScore(id, score)}
-            onAdd={(item: GradeItem) => void saveItem(item)}
-            onRemove={(id) => void deleteItem(id)}
-          />
+            <div className="rounded-2xl border border-line bg-surface p-4 lg:sticky lg:top-24">
+              {chances ? (
+                <ChanceChart chances={chances} />
+              ) : (
+                <p className="text-[13px] text-ink-muted">
+                  Once one score is in, this is where the chance of each grade
+                  appears.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

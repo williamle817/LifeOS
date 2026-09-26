@@ -32,6 +32,10 @@ export function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+export function show(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
 export function ratio(item: GradeItem): number {
   if (item.score === null || item.maxScore <= 0) return 0;
   return item.score / item.maxScore;

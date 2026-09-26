@@ -343,6 +343,23 @@ export async function saveCourse(
   }
 }
 
+export async function saveCategory(category: Category): Promise<void> {
+  await ensureLoaded();
+  lastError = null;
+  const saved = { ...category, userId: owner(category.userId) };
+  cache = {
+    ...cache,
+    categories: cache.categories.map((c) => (c.id === saved.id ? saved : c)),
+  };
+  emit();
+  await guard(
+    supabase
+      .from("categories")
+      .update(categoryRow(saved))
+      .eq("id", saved.id),
+  );
+}
+
 export async function deleteCourse(id: string): Promise<void> {
   await ensureLoaded();
   lastError = null;

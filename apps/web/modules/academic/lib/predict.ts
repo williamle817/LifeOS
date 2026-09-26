@@ -87,21 +87,31 @@ export function predict(
   const trials = options.trials ?? DEFAULT_TRIALS;
   const random = options.random ?? Math.random;
   const pending = ours.filter((item) => item.score === null);
+  const marked = ours.filter((item) => item.score !== null);
+
+  const bare = mine
+    .filter((category) => !ours.some((item) => item.categoryId === category.id))
+    .map((category) => ({
+      id: `bare-${category.id}`,
+      userId: course.userId,
+      courseId: course.id,
+      categoryId: category.id,
+      title: "",
+      score: null,
+      maxScore: 100,
+    }));
 
   const counts = new Map<Letter, number>(LETTERS.map((l) => [l, 0]));
 
   for (let run = 0; run < trials; run += 1) {
-    const filled = pending.map((item) => {
+    const filled = [...pending, ...bare].map((item) => {
       const shape = byCategory.get(item.categoryId) ?? courseShape;
       const drawn = normal(random, shape.mean, shape.spread);
       const clamped = Math.min(100, Math.max(0, drawn));
       return { ...item, score: (clamped / 100) * item.maxScore };
     });
 
-    const final = gradeCourse(course, mine, [
-      ...ours.filter((item) => item.score !== null),
-      ...filled,
-    ]);
+    const final = gradeCourse(course, mine, [...marked, ...filled]);
 
     const letter = letterFor(final.banked, course.scale);
     counts.set(letter, (counts.get(letter) ?? 0) + 1);

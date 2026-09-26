@@ -1,7 +1,7 @@
 "use client";
 
 import type { Course } from "@lifeos/contracts";
-import type { CourseGrade } from "@/modules/academic/lib/grade";
+import { show, type CourseGrade } from "@/modules/academic/lib/grade";
 
 export function CourseStrip({
   courses,
@@ -22,6 +22,7 @@ export function CourseStrip({
         const grade = grades.get(course.id);
         const active = course.id === selected;
         const color = course.color ?? "blue";
+        const banked = grade?.banked ?? 0;
 
         return (
           <button
@@ -29,35 +30,85 @@ export function CourseStrip({
             type="button"
             onClick={() => onSelect(course.id)}
             aria-pressed={active}
-            className={`min-w-44 rounded-xl border p-3 text-left transition-colors ${
+            style={
               active
-                ? "border-accent bg-accent-soft"
+                ? {
+                    backgroundColor: `var(--event-${color})`,
+                    borderColor: `var(--event-${color}-line)`,
+                    color: `var(--event-${color}-ink)`,
+                  }
+                : undefined
+            }
+            className={`relative min-w-52 overflow-hidden rounded-2xl border p-4 text-left transition-colors ${
+              active
+                ? "shadow-sm"
                 : "border-line bg-surface hover:bg-surface-muted"
             }`}
           >
-            <span className="flex items-center gap-2">
+            <span
+              style={{ backgroundColor: `var(--event-${color})` }}
+              className="absolute inset-x-0 top-0 h-1.5"
+            />
+
+            <span
+              className={`block text-xs font-medium ${
+                active ? "" : "text-ink-muted"
+              }`}
+              style={
+                active ? { color: `var(--event-${color}-ink-muted)` } : undefined
+              }
+            >
+              {course.code || course.title}
+            </span>
+
+            <span className="mt-1.5 flex items-baseline gap-2">
+              <span className="text-[1.75rem] leading-none font-semibold">
+                {grade?.currentGrade == null ? "--" : show(grade.currentGrade)}
+                <span className="text-base font-medium">
+                  {grade?.currentGrade == null ? "" : "%"}
+                </span>
+              </span>
+              {grade?.letter ? (
+                <span
+                  style={{
+                    backgroundColor: active
+                      ? "var(--surface)"
+                      : `var(--event-${color})`,
+                    color: `var(--event-${color}-ink)`,
+                  }}
+                  className="rounded-full px-2 py-0.5 text-[13px] font-medium"
+                >
+                  {grade.letter}
+                </span>
+              ) : null}
+            </span>
+
+            <span
+              className="mt-3 block h-1.5 w-full overflow-hidden rounded-full"
+              style={{
+                backgroundColor: active
+                  ? "var(--surface)"
+                  : "var(--surface-muted)",
+              }}
+            >
               <span
-                style={{ backgroundColor: `var(--event-${color})` }}
-                className="size-2.5 shrink-0 rounded-full"
+                className="block h-full rounded-full"
+                style={{
+                  width: `${Math.min(100, banked)}%`,
+                  backgroundColor: `var(--event-${color}-line)`,
+                }}
               />
-              <span className="text-xs text-ink-muted">
-                {course.code || course.title}
-              </span>
             </span>
 
-            <span className="mt-1 flex items-baseline gap-2">
-              <span className="text-lg font-medium">
-                {grade?.currentGrade === null || grade === undefined
-                  ? "--"
-                  : `${grade.currentGrade}%`}
-              </span>
-              <span className="text-sm text-ink-muted">
-                {grade?.letter ?? ""}
-              </span>
-            </span>
-
-            <span className="mt-0.5 block text-[11px] text-ink-faint">
-              {grade ? `${grade.banked} of 100 banked` : "no grading set up"}
+            <span
+              className={`mt-1.5 block text-[11px] ${
+                active ? "" : "text-ink-faint"
+              }`}
+              style={
+                active ? { color: `var(--event-${color}-ink-muted)` } : undefined
+              }
+            >
+              {grade ? `${show(banked)} of 100 banked` : "no grading set up"}
             </span>
           </button>
         );
@@ -66,7 +117,7 @@ export function CourseStrip({
       <button
         type="button"
         onClick={onNew}
-        className="min-w-32 rounded-xl border border-dashed border-line px-3 py-3 text-left text-[13px] text-ink-muted hover:bg-surface-muted"
+        className="min-w-36 rounded-2xl border border-dashed border-line px-4 py-4 text-left text-[13px] text-ink-muted transition-colors hover:border-accent hover:bg-surface-muted hover:text-ink"
       >
         New course
       </button>
