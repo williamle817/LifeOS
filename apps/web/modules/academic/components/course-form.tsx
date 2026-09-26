@@ -43,7 +43,7 @@ function starter(userId: string, courseId: string): Category[] {
 }
 
 const input =
-  "rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent";
+  "rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent";
 
 export function CourseForm({
   course,
@@ -117,7 +117,7 @@ export function CourseForm({
           })),
         );
       }}
-      className="rounded-xl border border-line bg-surface p-4"
+      className="rounded-3xl border border-line bg-surface p-5 shadow-sm"
     >
       <h2 className="text-sm font-medium">
         {course ? "Edit course" : "New course"}
@@ -256,7 +256,7 @@ export function CourseForm({
           onClick={() =>
             set({ categories: [...draft.categories, blank(userId, id)] })
           }
-          className="mt-2 rounded-lg border border-line px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+          className="mt-2 rounded-full border border-line px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
         >
           Add category
         </button>
@@ -294,14 +294,14 @@ export function CourseForm({
         <button
           type="submit"
           disabled={!balanced}
-          className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface disabled:opacity-50"
+          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110 disabled:opacity-50"
         >
           Save
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+          className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
         >
           Cancel
         </button>
@@ -309,7 +309,7 @@ export function CourseForm({
           <button
             type="button"
             onClick={onDelete}
-            className="ml-auto rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+            className="ml-auto rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
           >
             Delete course
           </button>

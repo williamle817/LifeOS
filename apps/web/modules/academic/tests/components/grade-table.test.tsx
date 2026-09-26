@@ -560,3 +560,48 @@ describe("the grade table, fixing a category heading", () => {
     expect(screen.getByText("Midterm")).toBeDefined();
   });
 });
+
+describe("the grade table, knowing what you are typing into", () => {
+  it("names the item being edited", async () => {
+    const user = userEvent.setup();
+    setup(
+      [category({ id: "exams" })],
+      [item({ id: "m1", categoryId: "exams", title: "Midterm" })],
+    );
+    await user.click(screen.getByRole("button", { name: "Edit Midterm" }));
+    expect(screen.getByText(/Editing/)).toBeDefined();
+    expect(screen.getAllByText("Midterm").length).toBeGreaterThan(0);
+  });
+
+  it("names the category a new item is going into", async () => {
+    const user = userEvent.setup();
+    setup([category({ id: "exams", name: "Exams" })], []);
+    await user.click(screen.getByRole("button", { name: "Add item to Exams" }));
+    expect(screen.getByText(/New item in/)).toBeDefined();
+  });
+
+  it("captions every box it asks you to fill", async () => {
+    const user = userEvent.setup();
+    setup([category({ id: "exams", name: "Exams" })], []);
+    await user.click(screen.getByRole("button", { name: "Add item to Exams" }));
+    expect(screen.getByText("Name")).toBeDefined();
+    expect(screen.getByText("Out of")).toBeDefined();
+    expect(screen.getByText("Due")).toBeDefined();
+  });
+
+  it("captions the category boxes too", async () => {
+    const user = userEvent.setup();
+    setup([category({ id: "exams", name: "Exams" })], []);
+    await user.click(screen.getByRole("button", { name: "Edit Exams" }));
+    expect(screen.getByText("Name")).toBeDefined();
+    expect(screen.getByText("Worth %")).toBeDefined();
+    expect(screen.getByText("Drop lowest")).toBeDefined();
+  });
+
+  it("keeps the add button reading as one action", () => {
+    setup([category({ id: "exams", name: "Exams" })], []);
+    expect(
+      screen.getByRole("button", { name: "Add item to Exams" }),
+    ).toBeDefined();
+  });
+});

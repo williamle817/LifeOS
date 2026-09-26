@@ -6,7 +6,7 @@ import { ActionIcon } from "@/components/icons";
 import type { CourseGrade } from "@/modules/academic/lib/grade";
 
 const input =
-  "rounded-lg border border-line bg-surface px-2 py-1 text-[13px] outline-none focus:border-accent";
+  "rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent";
 
 const LAST = "9999-12-31";
 
@@ -122,33 +122,51 @@ export function GradeTable({
     reset();
   }
 
+  function field(caption: string, control: React.ReactNode) {
+    return (
+      <label className="flex flex-col gap-1">
+        <span className="text-[11px] text-ink-faint">{caption}</span>
+        {control}
+      </label>
+    );
+  }
+
   function fields() {
     return (
       <>
-        <input
-          aria-label="Item name"
-          autoFocus
-          value={title}
-          placeholder="HW 3"
-          onChange={(e) => setTitle(e.target.value)}
-          className={`min-w-28 flex-1 ${input}`}
-        />
-        <input
-          aria-label="Out of"
-          type="number"
-          min="0"
-          step="0.01"
-          value={maxScore}
-          onChange={(e) => setMaxScore(e.target.value)}
-          className={`w-20 ${input}`}
-        />
-        <input
-          aria-label="Due date"
-          type="date"
-          value={dueOn}
-          onChange={(e) => setDueOn(e.target.value)}
-          className={input}
-        />
+        {field(
+          "Name",
+          <input
+            aria-label="Item name"
+            autoFocus
+            value={title}
+            placeholder="HW 3"
+            onChange={(e) => setTitle(e.target.value)}
+            className={`min-w-32 ${input}`}
+          />,
+        )}
+        {field(
+          "Out of",
+          <input
+            aria-label="Out of"
+            type="number"
+            min="0"
+            step="0.01"
+            value={maxScore}
+            onChange={(e) => setMaxScore(e.target.value)}
+            className={`w-20 ${input}`}
+          />,
+        )}
+        {field(
+          "Due",
+          <input
+            aria-label="Due date"
+            type="date"
+            value={dueOn}
+            onChange={(e) => setDueOn(e.target.value)}
+            className={input}
+          />,
+        )}
       </>
     );
   }
@@ -166,46 +184,55 @@ export function GradeTable({
           <section
             key={category.id}
             aria-label={category.name}
-            className="overflow-hidden rounded-2xl border border-line bg-surface"
+            className="overflow-hidden rounded-3xl border border-line bg-surface shadow-sm"
           >
             {heading === category.id ? (
-              <header className="flex flex-wrap items-center gap-2 bg-surface-muted px-4 py-2.5">
-                <input
-                  aria-label="Category name"
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className={`min-w-28 flex-1 ${input}`}
-                />
-                <input
-                  aria-label="Category weight"
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  className={`w-20 ${input}`}
-                />
-                <input
-                  aria-label="Category drop lowest"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={drop}
-                  onChange={(e) => setDrop(e.target.value)}
-                  className={`w-16 ${input}`}
-                />
+              <header className="flex flex-wrap items-end gap-2 bg-surface-muted px-4 py-3">
+                {field(
+                  "Name",
+                  <input
+                    aria-label="Category name"
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={`min-w-32 ${input}`}
+                  />,
+                )}
+                {field(
+                  "Worth %",
+                  <input
+                    aria-label="Category weight"
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    className={`w-20 ${input}`}
+                  />,
+                )}
+                {field(
+                  "Drop lowest",
+                  <input
+                    aria-label="Category drop lowest"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={drop}
+                    onChange={(e) => setDrop(e.target.value)}
+                    className={`w-20 ${input}`}
+                  />,
+                )}
                 <button
                   type="button"
                   onClick={() => submitHeading(category)}
-                  className="rounded-lg bg-accent px-3 py-1 text-[13px] font-medium text-surface"
+                  className="rounded-full bg-accent px-4 py-1 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
                 >
                   Save
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeading(null)}
-                  className="rounded-lg px-2 py-1 text-[13px] text-ink-muted hover:bg-surface"
+                  className="rounded-full px-3 py-1 text-[13px] text-ink-muted transition-colors hover:bg-surface"
                 >
                   Cancel
                 </button>
@@ -247,25 +274,27 @@ export function GradeTable({
             <ul className="divide-y divide-line">
               {rows.map((item) =>
                 editing === item.id ? (
-                  <li
-                    key={item.id}
-                    className="flex flex-wrap items-center gap-2 px-4 py-2"
-                  >
-                    {fields()}
-                    <button
-                      type="button"
-                      onClick={() => submitEdit(item)}
-                      className="rounded-lg bg-accent px-3 py-1 text-[13px] font-medium text-surface"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditing(null)}
-                      className="rounded-lg px-2 py-1 text-[13px] text-ink-muted hover:bg-surface-muted"
-                    >
-                      Cancel
-                    </button>
+                  <li key={item.id} className="bg-surface-muted px-4 py-3">
+                    <p className="text-[11px] text-ink-faint">
+                      Editing <span className="font-medium text-ink">{item.title}</span>
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-end gap-2">
+                      {fields()}
+                      <button
+                        type="button"
+                        onClick={() => submitEdit(item)}
+                        className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditing(null)}
+                        className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </li>
                 ) : (
                   <li
@@ -327,31 +356,40 @@ export function GradeTable({
               )}
             </ul>
 
-            <div className="border-t border-line px-4 py-2">
+            <div className="border-t border-line bg-surface-muted px-4 py-3">
               {adding === category.id ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  {fields()}
-                  <button
-                    type="button"
-                    onClick={() => submitNew(category.id)}
-                    className="rounded-lg bg-accent px-3 py-1 text-[13px] font-medium text-surface"
-                  >
-                    Add
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdding(null)}
-                    className="rounded-lg px-2 py-1 text-[13px] text-ink-muted hover:bg-surface-muted"
-                  >
-                    Done
-                  </button>
+                <div>
+                  <p className="text-[11px] text-ink-faint">
+                    New item in{" "}
+                    <span className="font-medium text-ink">{category.name}</span>
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-end gap-2">
+                    {fields()}
+                    <button
+                      type="button"
+                      onClick={() => submitNew(category.id)}
+                      className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdding(null)}
+                      className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => startAdd(category.id)}
-                  className="text-[13px] text-ink-muted hover:text-ink"
+                  className="flex items-center gap-1.5 rounded-full border border-dashed border-line bg-surface px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:border-accent hover:text-accent"
                 >
+                  <span aria-hidden="true" className="text-base leading-none">
+                    +
+                  </span>
                   Add item to {category.name}
                 </button>
               )}

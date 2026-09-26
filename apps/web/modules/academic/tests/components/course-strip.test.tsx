@@ -115,9 +115,9 @@ describe("the course strip", () => {
     expect(screen.getByText("--")).toBeDefined();
   });
 
-  it("says how much of the course is banked", () => {
+  it("says how much of the course is earned", () => {
     setup([course()], [category()], [item({ score: 90 }), item({ id: "i2" })]);
-    expect(screen.getByText("45 of 100 banked")).toBeDefined();
+    expect(screen.getByText("45 of 100 earned")).toBeDefined();
   });
 
   it("marks the course that is open", () => {

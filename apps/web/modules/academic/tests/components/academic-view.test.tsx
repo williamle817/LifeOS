@@ -205,9 +205,9 @@ describe("the academic page, a course with grading set up", () => {
     expect(screen.getAllByText("B").length).toBeGreaterThan(0);
   });
 
-  it("shows how much is banked and how much is left", () => {
+  it("shows how much is earned and how much is left", () => {
     render(<AcademicView />);
-    expect(screen.getByText("Banked")).toBeDefined();
+    expect(screen.getByText("Earned")).toBeDefined();
     expect(screen.getByText("42")).toBeDefined();
     expect(screen.getByText("Still ahead")).toBeDefined();
     expect(screen.getByText("50")).toBeDefined();

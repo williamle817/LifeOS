@@ -39,10 +39,10 @@ export function CourseStrip({
                   }
                 : undefined
             }
-            className={`relative min-w-52 overflow-hidden rounded-2xl border p-4 text-left transition-colors ${
+            className={`relative min-w-52 overflow-hidden rounded-3xl border p-4 text-left transition-all hover:-translate-y-0.5 ${
               active
-                ? "shadow-sm"
-                : "border-line bg-surface hover:bg-surface-muted"
+                ? "shadow-md"
+                : "border-line bg-surface shadow-sm hover:bg-surface-muted"
             }`}
           >
             <span
@@ -108,7 +108,7 @@ export function CourseStrip({
                 active ? { color: `var(--event-${color}-ink-muted)` } : undefined
               }
             >
-              {grade ? `${show(banked)} of 100 banked` : "no grading set up"}
+              {grade ? `${show(banked)} of 100 earned` : "no grading set up"}
             </span>
           </button>
         );
@@ -117,7 +117,7 @@ export function CourseStrip({
       <button
         type="button"
         onClick={onNew}
-        className="min-w-36 rounded-2xl border border-dashed border-line px-4 py-4 text-left text-[13px] text-ink-muted transition-colors hover:border-accent hover:bg-surface-muted hover:text-ink"
+        className="min-w-36 rounded-3xl border border-dashed border-line px-4 py-4 text-left text-[13px] text-ink-muted transition-colors hover:border-accent hover:bg-surface-muted hover:text-ink"
       >
         New course
       </button>

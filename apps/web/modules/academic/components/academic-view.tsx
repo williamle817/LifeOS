@@ -84,7 +84,7 @@ export function AcademicView() {
   return (
     <div className="grid gap-5">
       {lastWriteError() ? (
-        <p className="rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-ink-muted">
+        <p className="rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
           Could not save: {lastWriteError()}
         </p>
       ) : null}
@@ -156,7 +156,7 @@ export function AcademicView() {
 
       {!editing && course && grade ? (
         <div className="grid gap-5">
-          <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="rounded-3xl border border-line bg-gradient-to-br from-surface to-surface-muted p-5 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 style={{
@@ -171,7 +171,7 @@ export function AcademicView() {
               <button
                 type="button"
                 onClick={() => setEditing("edit")}
-                className="rounded-lg px-2 py-1 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+                className="rounded-full px-3 py-1 text-[13px] text-ink-muted transition-colors hover:bg-surface hover:text-ink"
               >
                 Edit
               </button>
@@ -208,7 +208,7 @@ export function AcademicView() {
               </div>
 
               <div className="rounded-xl border border-line bg-canvas p-3">
-                <dt className="text-xs text-ink-muted">Banked</dt>
+                <dt className="text-xs text-ink-muted">Earned</dt>
                 <dd className="mt-0.5 text-2xl font-semibold">
                   {show(grade.banked)}
                 </dd>
@@ -243,7 +243,7 @@ export function AcademicView() {
               onSaveCategory={(category) => void saveCategory(category)}
             />
 
-            <div className="rounded-2xl border border-line bg-surface p-4 lg:sticky lg:top-24">
+            <div className="rounded-3xl border border-line bg-surface p-5 shadow-sm lg:sticky lg:top-24">
               {chances ? (
                 <ChanceChart chances={chances} />
               ) : (

@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Semester } from "@lifeos/contracts";
 
 const input =
-  "rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent";
+  "rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent";
 
 export function SemesterBar({
   semesters,
@@ -60,14 +60,14 @@ export function SemesterBar({
         />
         <button
           type="submit"
-          className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
+          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
         >
           Add semester
         </button>
         <button
           type="button"
           onClick={() => setAdding(false)}
-          className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+          className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
         >
           Cancel
         </button>
@@ -97,7 +97,7 @@ export function SemesterBar({
       <button
         type="button"
         onClick={() => setAdding(true)}
-        className="rounded-lg border border-line px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+        className="rounded-full border border-line px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
       >
         New semester
       </button>
