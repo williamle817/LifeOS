@@ -12,16 +12,18 @@ function setup(semesters: Semester[], selected: string | null = null) {
   const onSelect = vi.fn();
   const onAdd = vi.fn();
   const onDelete = vi.fn();
+  const onSave = vi.fn();
   render(
     <SemesterBar
       semesters={semesters}
       selected={selected}
       onSelect={onSelect}
       onAdd={onAdd}
+      onSave={onSave}
       onDelete={onDelete}
     />,
   );
-  return { onSelect, onAdd, onDelete };
+  return { onSelect, onAdd, onSave, onDelete };
 }
 
 describe("the semester bar", () => {
@@ -130,18 +132,129 @@ describe("the semester bar", () => {
     expect(screen.getByRole("button", { name: "New semester" })).toBeDefined();
   });
 
-  it("deletes the one that is open", async () => {
+  it("asks before deleting the one that is open", async () => {
     const user = userEvent.setup();
     const { onDelete } = setup(
       [semester("fall", "Fall 2026", "2026-08-20")],
       "fall",
     );
     await user.click(screen.getByRole("button", { name: "Delete semester" }));
+    expect(screen.getByRole("dialog")).toBeDefined();
+    expect(screen.getByText("Delete Fall 2026?")).toBeDefined();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
+
+  it("goes ahead when the red button is pressed", async () => {
+    const user = userEvent.setup();
+    const { onDelete } = setup(
+      [semester("fall", "Fall 2026", "2026-08-20")],
+      "fall",
+    );
+    await user.click(screen.getByRole("button", { name: "Delete semester" }));
+    const dialog = screen.getByRole("dialog");
+    const go = [...dialog.querySelectorAll("button")].find(
+      (b) => b.textContent === "Delete semester",
+    )!;
+    await user.click(go);
     expect(onDelete).toHaveBeenCalledWith("fall");
+  });
+
+  it("backs out of deleting", async () => {
+    const user = userEvent.setup();
+    const { onDelete } = setup(
+      [semester("fall", "Fall 2026", "2026-08-20")],
+      "fall",
+    );
+    await user.click(screen.getByRole("button", { name: "Delete semester" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onDelete).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("warns that everything under it goes too", async () => {
+    const user = userEvent.setup();
+    setup([semester("fall", "Fall 2026", "2026-08-20")], "fall");
+    await user.click(screen.getByRole("button", { name: "Delete semester" }));
+    expect(screen.getByText(/cannot be undone/)).toBeDefined();
   });
 
   it("offers no delete when nothing is open", () => {
     setup([]);
     expect(screen.queryByRole("button", { name: "Delete semester" })).toBeNull();
+  });
+});
+
+describe("fixing a semester", () => {
+  it("opens the name and the date from its pencil", async () => {
+    const user = userEvent.setup();
+    setup([semester("fall", "Fal 2026", "2026-08-20")], "fall");
+    await user.click(screen.getByRole("button", { name: "Edit Fal 2026" }));
+    expect(
+      (screen.getByLabelText("Semester name") as HTMLInputElement).value,
+    ).toBe("Fal 2026");
+    expect((screen.getByLabelText("Starts on") as HTMLInputElement).value).toBe(
+      "2026-08-20",
+    );
+  });
+
+  it("fixes a name typed wrong", async () => {
+    const user = userEvent.setup();
+    const { onSave } = setup(
+      [semester("fall", "Fal 2026", "2026-08-20")],
+      "fall",
+    );
+    await user.click(screen.getByRole("button", { name: "Edit Fal 2026" }));
+    await user.clear(screen.getByLabelText("Semester name"));
+    await user.type(screen.getByLabelText("Semester name"), "Fall 2026");
+    await user.click(screen.getByRole("button", { name: "Save semester" }));
+    expect(onSave).toHaveBeenCalledWith({
+      id: "fall",
+      userId: "u1",
+      name: "Fall 2026",
+      startsOn: "2026-08-20",
+    });
+  });
+
+  it("fixes a start date picked wrong", async () => {
+    const user = userEvent.setup();
+    const { onSave } = setup(
+      [semester("fall", "Fall 2026", "2026-08-20")],
+      "fall",
+    );
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
+    await user.clear(screen.getByLabelText("Starts on"));
+    await user.type(screen.getByLabelText("Starts on"), "2026-09-01");
+    await user.click(screen.getByRole("button", { name: "Save semester" }));
+    expect(onSave.mock.calls[0][0].startsOn).toBe("2026-09-01");
+  });
+
+  it("adds nothing while editing", async () => {
+    const user = userEvent.setup();
+    const { onAdd } = setup(
+      [semester("fall", "Fall 2026", "2026-08-20")],
+      "fall",
+    );
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
+    await user.click(screen.getByRole("button", { name: "Save semester" }));
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it("backs out without changing anything", async () => {
+    const user = userEvent.setup();
+    const { onSave } = setup(
+      [semester("fall", "Fall 2026", "2026-08-20")],
+      "fall",
+    );
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
+    await user.clear(screen.getByLabelText("Semester name"));
+    await user.type(screen.getByLabelText("Semester name"), "Nope");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Semester")).toBeDefined();
+  });
+
+  it("offers no pencil before a semester exists", () => {
+    setup([]);
+    expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
   });
 });

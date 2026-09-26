@@ -244,7 +244,7 @@ export async function addSemester(semester: Semester): Promise<void> {
   await guard(supabase.from("semesters").insert(semesterRow(saved)));
 }
 
-export async function renameSemester(semester: Semester): Promise<void> {
+export async function saveSemester(semester: Semester): Promise<void> {
   await ensureLoaded();
   lastError = null;
   cache = {

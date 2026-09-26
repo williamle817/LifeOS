@@ -21,9 +21,12 @@ export type CategoryGrade = {
 export type CourseGrade = {
   categories: CategoryGrade[];
   banked: number;
+  bankedLetter: Letter;
   marked: number;
   required: number;
   remaining: number;
+  ceiling: number;
+  ceilingLetter: Letter;
   currentGrade: number | null;
   letter: Letter | null;
 };
@@ -108,14 +111,32 @@ export function gradeCourse(
     required += weight;
   }
 
+  const topped = items.map((item) =>
+    item.score === null ? { ...item, score: item.maxScore } : item,
+  );
+
+  let ceiling = 0;
+  for (const category of mine) {
+    const held = items.some((item) => item.categoryId === category.id);
+    if (!held) {
+      ceiling += category.weight;
+      continue;
+    }
+    const full = gradeCategory(category, topped);
+    ceiling += (category.weight * (full.pct ?? 0) * full.progress) / 100;
+  }
+
   const currentGrade = marked > 0 ? round2((banked / marked) * 100) : null;
 
   return {
     categories: graded,
     banked: round2(banked),
+    bankedLetter: letterFor(round2(banked), course.scale),
     marked: round2(marked),
     required: round2(required),
     remaining: round2(required - marked),
+    ceiling: round2(ceiling),
+    ceilingLetter: letterFor(round2(ceiling), course.scale),
     currentGrade,
     letter: currentGrade === null ? null : letterFor(currentGrade, course.scale),
   };

@@ -155,6 +155,44 @@ test("deletes a semester and everything under it", async ({ app, page }) => {
 
   await page.getByRole("button", { name: "Delete semester" }).click();
 
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText(/cannot be undone/)).toBeVisible();
+  expect(app.db.semesters).toHaveLength(1);
+
+  await dialog.getByRole("button", { name: "Delete semester" }).click();
+
   await expect(page.getByText(/Add a semester to start/)).toBeVisible();
-  expect(app.db.semesters).toHaveLength(0);
+  await expect.poll(() => app.db.semesters.length).toBe(0);
+});
+
+test("backs out of deleting a semester", async ({ app, page }) => {
+  app.db.semesters.push(semesterRow());
+  app.db.courses.push(courseRow());
+  app.db.categories.push(categoryRow());
+  await app.open("/academic");
+
+  await page.getByRole("button", { name: "Delete semester" }).click();
+  await page.getByRole("button", { name: "Cancel" }).click();
+
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(app.db.semesters).toHaveLength(1);
+  await expect(page.getByRole("button", { name: /CS 201/ })).toBeVisible();
+});
+
+test("fixes a semester name and start date", async ({ app, page }) => {
+  app.db.semesters.push(semesterRow({ name: "Fal 2026" }));
+  app.db.courses.push(courseRow());
+  app.db.categories.push(categoryRow());
+  await app.open("/academic");
+
+  await page.getByRole("button", { name: "Edit Fal 2026" }).click();
+  await page.getByLabel("Semester name").fill("Fall 2026");
+  await page.getByLabel("Starts on").fill("2020-09-01");
+  await page.getByRole("button", { name: "Save semester" }).click();
+
+  await expect(page.getByLabel("Semester")).toHaveValue("sem-1");
+  await expect.poll(() => app.db.semesters[0].name).toBe("Fall 2026");
+  expect(app.db.semesters[0].starts_on).toBe("2020-09-01");
+  await expect(page.getByRole("button", { name: /CS 201/ })).toBeVisible();
 });

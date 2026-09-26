@@ -236,9 +236,9 @@ describe("semesters", () => {
     expect(storedIn("semesters", "sem-1")?.user_id).toBe("u1");
   });
 
-  it("renames one", async () => {
+  it("saves a change to the name or the start date", async () => {
     const s = await store({ semesters: [semesterRow()] });
-    await s.renameSemester(semester({ name: "Autumn 2026" }));
+    await s.saveSemester(semester({ name: "Autumn 2026" }));
     expect(storedIn("semesters", "sem-1")?.name).toBe("Autumn 2026");
     expect(stored("semesters")).toHaveLength(1);
   });

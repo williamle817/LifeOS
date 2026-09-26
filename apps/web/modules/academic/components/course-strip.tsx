@@ -2,6 +2,7 @@
 
 import type { Course } from "@lifeos/contracts";
 import { show, type CourseGrade } from "@/modules/academic/lib/grade";
+import { LetterPill } from "@/modules/academic/components/letter-pill";
 
 export function CourseStrip({
   courses,
@@ -68,19 +69,7 @@ export function CourseStrip({
                   {grade?.currentGrade == null ? "" : "%"}
                 </span>
               </span>
-              {grade?.letter ? (
-                <span
-                  style={{
-                    backgroundColor: active
-                      ? "var(--surface)"
-                      : `var(--event-${color})`,
-                    color: `var(--event-${color}-ink)`,
-                  }}
-                  className="rounded-full px-2 py-0.5 text-[13px] font-medium"
-                >
-                  {grade.letter}
-                </span>
-              ) : null}
+              {grade?.letter ? <LetterPill letter={grade.letter} /> : null}
             </span>
 
             <span

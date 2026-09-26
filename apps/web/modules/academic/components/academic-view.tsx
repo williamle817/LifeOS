@@ -14,6 +14,7 @@ import {
   deleteItem,
   saveCategory,
   saveCourse,
+  saveSemester,
   saveItem,
   setScore,
   subscribe,
@@ -26,12 +27,12 @@ import {
   subscribe as selectionSubscribe,
 } from "@/modules/academic/lib/selection";
 import { gradeCourse, show } from "@/modules/academic/lib/grade";
-import { predict } from "@/modules/academic/lib/predict";
 import { SemesterBar } from "@/modules/academic/components/semester-bar";
 import { CourseStrip } from "@/modules/academic/components/course-strip";
 import { CourseForm } from "@/modules/academic/components/course-form";
 import { GradeTable } from "@/modules/academic/components/grade-table";
-import { ChanceChart } from "@/modules/academic/components/chance-chart";
+import { Upcoming } from "@/modules/academic/components/upcoming";
+import { LetterPill } from "@/modules/academic/components/letter-pill";
 
 export function AcademicView() {
   const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -64,11 +65,6 @@ export function AcademicView() {
   }, [courses, data.categories, data.items]);
 
   const grade = course ? grades.get(course.id) : undefined;
-
-  const chances = useMemo(
-    () => (course ? predict(course, data.categories, data.items) : null),
-    [course, data.categories, data.items],
-  );
 
   const userId = currentUserId() ?? "";
   const mine = course
@@ -103,6 +99,7 @@ export function AcademicView() {
           void addSemester({ id, userId, name, startsOn });
           select({ semesterId: id, courseId: null });
         }}
+        onSave={(semester) => void saveSemester(semester)}
         onDelete={(id) => {
           void deleteSemester(id);
           select({ semesterId: null, courseId: null });
@@ -195,37 +192,34 @@ export function AcademicView() {
                       ? "--"
                       : `${show(grade.currentGrade)}%`}
                   </span>
-                  <span className="text-base font-medium">
-                    {grade.letter ?? ""}
-                  </span>
-                </dd>
-                <dd
-                  style={{
-                    color: `var(--event-${course.color ?? "blue"}-ink-muted)`,
-                  }}
-                  className="text-[11px]"
-                >
-                  out of the work marked so far
+                  {grade.letter ? <LetterPill letter={grade.letter} /> : null}
                 </dd>
               </div>
 
               <div className="rounded-xl border border-line bg-canvas p-3">
                 <dt className="text-xs text-ink-muted">Earned</dt>
-                <dd className="mt-0.5 text-2xl font-semibold">
-                  {show(grade.banked)}
-                </dd>
-                <dd className="text-[11px] text-ink-faint">
-                  points of the whole course, out of 100
+                <dd className="mt-0.5 flex items-baseline gap-2">
+                  <span className="flex items-baseline gap-1">
+                    <span className="text-2xl font-semibold">
+                      {show(grade.banked)}
+                    </span>
+                    <span className="text-sm text-ink-faint">/ 100</span>
+                  </span>
+                  {grade.bankedLetter === "F" ? null : (
+                    <LetterPill letter={grade.bankedLetter} />
+                  )}
                 </dd>
               </div>
 
               <div className="rounded-xl border border-line bg-canvas p-3">
-                <dt className="text-xs text-ink-muted">Still ahead</dt>
-                <dd className="mt-0.5 text-2xl font-semibold">
-                  {show(grade.remaining)}
-                </dd>
-                <dd className="text-[11px] text-ink-faint">
-                  points not marked yet
+                <dt className="text-xs text-ink-muted">Maximum attainable</dt>
+                <dd className="mt-0.5 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold">
+                    {show(grade.ceiling)}%
+                  </span>
+                  {grade.ceilingLetter === "F" ? null : (
+                    <LetterPill letter={grade.ceilingLetter} />
+                  )}
                 </dd>
               </div>
             </dl>
@@ -243,14 +237,12 @@ export function AcademicView() {
             />
 
             <div className="rounded-3xl border border-line bg-surface p-5 shadow-sm lg:sticky lg:top-24">
-              {chances ? (
-                <ChanceChart chances={chances} />
-              ) : (
-                <p className="text-[13px] text-ink-muted">
-                  Once one score is in, this is where the chance of each grade
-                  appears.
-                </p>
-              )}
+              <Upcoming
+                items={data.items.filter(
+                  (item) => item.courseId === course.id,
+                )}
+                categories={mine}
+              />
             </div>
           </div>
         </div>

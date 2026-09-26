@@ -439,3 +439,84 @@ describe("weight totals", () => {
     expect(extraTotal([])).toBe(0);
   });
 });
+
+describe("the highest the course can still finish", () => {
+  it("is the current grade once everything is marked", () => {
+    const out = gradeCourse(course(), [category({ id: "x", weight: 100 })], [
+      item({ categoryId: "x", score: 84 }),
+    ]);
+    expect(out.ceiling).toBe(84);
+    expect(out.ceilingLetter).toBe("B");
+  });
+
+  it("assumes full marks on everything not yet marked", () => {
+    const out = gradeCourse(course(), [category({ id: "x", weight: 100 })], [
+      item({ categoryId: "x", score: 84 }),
+      item({ categoryId: "x" }),
+    ]);
+    expect(out.ceiling).toBe(92);
+  });
+
+  it("counts a category nobody has filled in yet", () => {
+    const cats = [
+      category({ id: "a", weight: 50 }),
+      category({ id: "b", weight: 50 }),
+    ];
+    const out = gradeCourse(course(), cats, [
+      item({ categoryId: "a", score: 100 }),
+    ]);
+    expect(out.ceiling).toBe(100);
+  });
+
+  it("counts extra credit still up for grabs, without undoing points already lost", () => {
+    const cats = [
+      category({ id: "x", weight: 100 }),
+      category({ id: "bonus", weight: 5, extraCredit: true }),
+    ];
+    const out = gradeCourse(course(), cats, [
+      item({ categoryId: "x", score: 90 }),
+      item({ categoryId: "bonus" }),
+    ]);
+    expect(out.ceiling).toBe(95);
+  });
+
+  it("does reach past a hundred when nothing has been lost", () => {
+    const cats = [
+      category({ id: "x", weight: 100 }),
+      category({ id: "bonus", weight: 5, extraCredit: true }),
+    ];
+    const out = gradeCourse(course(), cats, [
+      item({ categoryId: "x" }),
+      item({ categoryId: "bonus" }),
+    ]);
+    expect(out.ceiling).toBe(105);
+  });
+
+  it("is nothing when every mark so far is a zero and nothing is left", () => {
+    const out = gradeCourse(course(), [category({ id: "x", weight: 100 })], [
+      item({ categoryId: "x", score: 0 }),
+    ]);
+    expect(out.ceiling).toBe(0);
+    expect(out.ceilingLetter).toBe("F");
+  });
+});
+
+describe("the letter on what is already earned", () => {
+  it("is the letter of the points banked so far", () => {
+    const out = gradeCourse(course(), [category({ id: "x", weight: 100 })], [
+      item({ categoryId: "x", score: 84 }),
+      item({ categoryId: "x" }),
+    ]);
+    expect(out.banked).toBe(42);
+    expect(out.bankedLetter).toBe("F");
+  });
+
+  it("climbs as more of the course is banked", () => {
+    const out = gradeCourse(course(), [category({ id: "x", weight: 100 })], [
+      item({ categoryId: "x", score: 84 }),
+      item({ categoryId: "x", score: 84 }),
+    ]);
+    expect(out.banked).toBe(84);
+    expect(out.bankedLetter).toBe("B");
+  });
+});

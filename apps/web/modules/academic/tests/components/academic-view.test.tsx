@@ -173,10 +173,17 @@ describe("the academic page, a semester with no courses", () => {
     expect(savedCourses[0].categories).toHaveLength(3);
   });
 
-  it("deletes the semester", async () => {
+  it("deletes the semester once the question is answered", async () => {
     const user = userEvent.setup();
     render(<AcademicView />);
     await user.click(screen.getByRole("button", { name: "Delete semester" }));
+    expect(deletedSemesters).toEqual([]);
+
+    const dialog = screen.getByRole("dialog");
+    const go = [...dialog.querySelectorAll("button")].find(
+      (b) => b.textContent === "Delete semester",
+    )!;
+    await user.click(go);
     expect(deletedSemesters).toEqual(["sem-1"]);
   });
 });
@@ -198,23 +205,22 @@ describe("the academic page, a course with grading set up", () => {
     expect(screen.getAllByText("B").length).toBeGreaterThan(0);
   });
 
-  it("shows how much is earned and how much is left", () => {
+  it("shows what is earned and how high the course can still finish", () => {
     render(<AcademicView />);
     expect(screen.getByText("Earned")).toBeDefined();
     expect(screen.getByText("42")).toBeDefined();
-    expect(screen.getByText("Still ahead")).toBeDefined();
-    expect(screen.getByText("50")).toBeDefined();
+    expect(screen.getByText("Maximum attainable")).toBeDefined();
+    expect(screen.getByText("92%")).toBeDefined();
   });
 
-  it("explains what each number means", () => {
+  it("writes the two point totals out of a hundred", () => {
     render(<AcademicView />);
-    expect(screen.getByText(/out of the work marked so far/)).toBeDefined();
-    expect(screen.getByText(/points of the whole course/)).toBeDefined();
+    expect(screen.getAllByText("/ 100").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("draws the chance of each grade", () => {
+  it("lists what is coming up", () => {
     render(<AcademicView />);
-    expect(screen.getByRole("list", { name: "Chance of each grade" })).toBeDefined();
+    expect(screen.getByText("Coming up")).toBeDefined();
   });
 
   it("lists the items", () => {
@@ -349,15 +355,14 @@ describe("the academic page, when something goes wrong", () => {
     expect(screen.getByText(/permission denied/)).toBeDefined();
   });
 
-  it("waits for a score before drawing the chart", () => {
+  it("says so when nothing is waiting on a score", () => {
     data = {
       semesters: [semester()],
       courses: [course()],
       categories: [category()],
-      items: [item()],
+      items: [item({ score: 90 })],
     };
     render(<AcademicView />);
-    expect(screen.queryByRole("list", { name: "Chance of each grade" })).toBeNull();
-    expect(screen.getByText(/Once one score is in/)).toBeDefined();
+    expect(screen.getByText(/Nothing waiting on a score/)).toBeDefined();
   });
 });
