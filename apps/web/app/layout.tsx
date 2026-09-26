@@ -3,6 +3,7 @@ import { Nunito } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/topbar";
 import { AuthGate } from "@/components/auth-gate";
+import { StayFresh } from "@/components/stay-fresh";
 
 const sans = Nunito({
   variable: "--font-app",
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div className="flex min-h-dvh flex-col">
           <TopBar />
           <main className="flex flex-1 flex-col px-5 py-6 md:px-10 md:py-8">
-            <AuthGate>{children}</AuthGate>
+            <AuthGate>
+              <StayFresh />
+              {children}
+            </AuthGate>
           </main>
         </div>
       </body>

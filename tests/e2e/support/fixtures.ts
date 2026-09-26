@@ -1,4 +1,9 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import {
+  test as base,
+  expect,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
 
 export type Row = Record<string, unknown>;
 
@@ -120,7 +125,7 @@ function matches(row: Row, url: URL): boolean {
   return true;
 }
 
-async function installRoutes(page: Page, db: Db): Promise<void> {
+async function installRoutes(page: BrowserContext, db: Db): Promise<void> {
   await page.route("**/auth/v1/**", (route) =>
     route.fulfill({ status: 200, json: session() }),
   );
@@ -303,17 +308,17 @@ export async function dragBlock(
 }
 
 export const test = base.extend<{ calendar: App; app: App }>({
-  app: async ({ page }, use) => {
+  app: async ({ page, context }, use) => {
     const db = emptyDb();
     const stored = JSON.stringify(session());
 
-    await page.addInitScript(
+    await context.addInitScript(
       ([key, value]) => {
         window.localStorage.setItem(key as string, value as string);
       },
       [STORAGE_KEY, stored],
     );
-    await installRoutes(page, db);
+    await installRoutes(context, db);
 
     await use({
       db,
