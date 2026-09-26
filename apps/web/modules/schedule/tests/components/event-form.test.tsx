@@ -148,12 +148,81 @@ describe("the form, event types", () => {
     expect(screen.getByLabelText("Amount")).toBeDefined();
   });
 
-  it("asks for a course and a maximum score when it is an exam", async () => {
+  it("asks for a course when it is a class", async () => {
     const user = userEvent.setup();
     setup();
-    await user.selectOptions(screen.getByLabelText("Type"), "exam");
+    await user.selectOptions(screen.getByLabelText("Type"), "class");
     expect(screen.getByLabelText("Course")).toBeDefined();
-    expect(screen.getByLabelText("Max score")).toBeDefined();
+  });
+
+  it("no longer offers exam as a type", () => {
+    setup();
+    const picker = screen.getByLabelText("Type") as HTMLSelectElement;
+    expect([...picker.options].map((o) => o.value)).toEqual([
+      "general",
+      "work",
+      "gym",
+      "dining",
+      "class",
+    ]);
+  });
+
+  it("asks where the shift was, what it pays and what came in as tips", async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.selectOptions(screen.getByLabelText("Type"), "work");
+    expect(screen.getByLabelText("Workplace")).toBeDefined();
+    expect(screen.getByLabelText("Hourly wage")).toBeDefined();
+    expect(screen.getByLabelText("Cash tips")).toBeDefined();
+  });
+
+  it("saves the shift details, decimals and all", async () => {
+    const user = userEvent.setup();
+    const { saved } = setup();
+    await user.selectOptions(screen.getByLabelText("Type"), "work");
+    await user.type(screen.getByLabelText("Title"), "Evening shift");
+    await user.type(screen.getByLabelText("Workplace"), "Pho 24");
+    await user.type(screen.getByLabelText("Hourly wage"), "17.5");
+    await user.type(screen.getByLabelText("Cash tips"), "30");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(saved[0].event).toMatchObject({
+      type: "work",
+      place: "Pho 24",
+      wage: 17.5,
+      tips: 30,
+    });
+  });
+
+  it("leaves the shift fields off when they are not filled in", async () => {
+    const user = userEvent.setup();
+    const { saved } = setup();
+    await user.selectOptions(screen.getByLabelText("Type"), "work");
+    await user.type(screen.getByLabelText("Title"), "Evening shift");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect("wage" in saved[0].event).toBe(false);
+    expect("place" in saved[0].event).toBe(false);
+  });
+
+  it("reads the shift fields back when editing", () => {
+    setup({
+      editing: {
+        id: "e1",
+        userId: "u1",
+        type: "work",
+        title: "Shift",
+        start: local("2026-03-02", 9),
+        end: local("2026-03-02", 17),
+        place: "Pho 24",
+        wage: 17.5,
+        tips: 30,
+      } as LifeEvent,
+    });
+    expect((screen.getByLabelText("Workplace") as HTMLInputElement).value).toBe(
+      "Pho 24",
+    );
+    expect(
+      (screen.getByLabelText("Hourly wage") as HTMLInputElement).value,
+    ).toBe("17.5");
   });
 
   it("puts the extra fields on the saved event as numbers", async () => {

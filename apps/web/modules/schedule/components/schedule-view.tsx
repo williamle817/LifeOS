@@ -62,6 +62,14 @@ function place(anchor: DOMRect, width: number): { top: number; left: number } {
   return { top, left };
 }
 
+function clock(at: Date): string {
+  return at.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 function pointRect(event: MouseEvent | null): DOMRect {
   const x = event?.clientX ?? window.innerWidth / 2;
   const y = event?.clientY ?? window.innerHeight / 3;
@@ -166,12 +174,12 @@ export function ScheduleView() {
   return (
     <>
       {lastWriteError() ? (
-        <p className="mb-3 rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-ink-muted">
+        <p className="mb-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
           Could not save: {lastWriteError()}
         </p>
       ) : null}
 
-      <div className="rounded-xl border border-line bg-surface p-3">
+      <div className="rounded-3xl border border-line bg-surface p-4 shadow-sm">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
@@ -195,6 +203,7 @@ export function ScheduleView() {
           nowIndicator
           snapDuration="00:15:00"
           editable
+          slotEventOverlap={false}
           selectable
           selectMirror
           slotLabelFormat={{
@@ -268,6 +277,39 @@ export function ScheduleView() {
               );
             }
 
+            const span =
+              arg.event.start && arg.event.end
+                ? (arg.event.end.getTime() - arg.event.start.getTime()) / 60000
+                : 60;
+
+            if (span < 45) {
+              const tiny = span < 30;
+              return (
+                <div className="flex h-full items-center overflow-hidden px-1">
+                  <span className="truncate leading-none">
+                    <span
+                      style={ink}
+                      className={`font-medium ${
+                        tiny ? "text-[10px]" : "text-[12px]"
+                      }`}
+                    >
+                      {title}
+                    </span>
+                    {arg.event.start ? (
+                      <span
+                        style={inkMuted}
+                        className={`ml-1.5 ${
+                          tiny ? "text-[9px]" : "text-[10px]"
+                        }`}
+                      >
+                        {clock(arg.event.start)}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+              );
+            }
+
             return (
               <div className="overflow-hidden px-1 py-0.5 leading-tight">
                 <div
@@ -326,7 +368,7 @@ export function ScheduleView() {
               maxHeight: MAX_HEIGHT,
               width: popover.mode === "details" ? DETAIL_W : FORM_W,
             }}
-            className="fixed z-30 overflow-y-auto rounded-xl border border-line bg-surface shadow-lg"
+            className="fixed z-30 overflow-y-auto rounded-3xl border border-line bg-surface shadow-lg"
           >
             {popover.mode === "scope" && popover.editing ? (
               <ScopeAsk

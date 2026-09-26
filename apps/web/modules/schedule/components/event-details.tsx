@@ -55,7 +55,7 @@ export function EventDetails({
             type="button"
             onClick={onEdit}
             aria-label="Edit"
-            className="rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
           >
             <ActionIcon name="edit" />
           </button>
@@ -63,7 +63,7 @@ export function EventDetails({
             type="button"
             onClick={onDelete}
             aria-label="Delete"
-            className="rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
           >
             <ActionIcon name="trash" />
           </button>
@@ -71,7 +71,7 @@ export function EventDetails({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-lg p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
           >
             <ActionIcon name="close" />
           </button>

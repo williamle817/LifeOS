@@ -72,7 +72,7 @@ body {
   --fc-button-hover-border-color: var(--accent);
   --fc-button-active-bg-color: var(--accent);
   --fc-button-active-border-color: var(--accent);
-  --fc-now-indicator-color: var(--accent);
+  --fc-now-indicator-color: var(--event-red-ink);
   font-size: 0.875rem;
 }
 
@@ -94,6 +94,29 @@ body {
 .fc .fc-button {
   font-size: 0.8125rem;
   font-weight: 500;
+  border-radius: 0.75rem;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+
+.fc .fc-button-group > .fc-button:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.fc .fc-button-group > .fc-button:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.fc .fc-timegrid-event,
+.fc .fc-daygrid-event {
+  border-radius: 0.625rem;
+}
+
+.fc .fc-timegrid-event {
+  box-shadow: none;
 }
 
 .fc .fc-col-header-cell-cushion {
@@ -131,6 +154,20 @@ body {
 
 .fc .fc-scrollgrid-section-header > * {
   border-bottom: 3px solid var(--surface-muted);
+}
+
+.fc .fc-scrollgrid-section-header .fc-timegrid-axis,
+.fc .fc-scrollgrid-section-header .fc-timegrid-axis ~ td,
+.fc .fc-scrollgrid-section-header .fc-timegrid-axis ~ th {
+  border-top: 3px solid var(--surface-muted);
+}
+
+.fc .fc-timegrid-now-indicator-line {
+  border-top-width: 2px;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+  border-width: 5px 0 5px 6px;
 }
 
 .fc .fc-scrollgrid-section-sticky > * {

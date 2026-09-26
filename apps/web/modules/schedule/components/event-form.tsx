@@ -5,8 +5,6 @@ import {
   EVENT_COLORS,
   EVENT_TYPES,
   RECUR_FREQS,
-  type Category,
-  type Course,
   type EditScope,
   type EventColor,
   type EventType,
@@ -21,7 +19,6 @@ const TYPE_LABELS: Record<EventType, string> = {
   gym: "Gym",
   dining: "Dining",
   class: "Class",
-  exam: "Exam",
 };
 
 type Draft = {
@@ -36,15 +33,13 @@ type Draft = {
   start: string;
   end: string;
   notes: string;
+  place: string;
+  wage: string;
   tips: string;
   workout: string;
   calories: string;
-  place: string;
   amount: string;
   course: string;
-  courseId: string;
-  categoryId: string;
-  maxScore: string;
 };
 
 const EMPTY: Draft = {
@@ -59,15 +54,13 @@ const EMPTY: Draft = {
   start: "",
   end: "",
   notes: "",
+  place: "",
+  wage: "",
   tips: "",
   workout: "",
   calories: "",
-  place: "",
   amount: "",
   course: "",
-  courseId: "",
-  categoryId: "",
-  maxScore: "100",
 };
 
 function toInput(iso: string): string {
@@ -112,7 +105,12 @@ function toDraft(event: LifeEvent): Draft {
     case "general":
       return base;
     case "work":
-      return { ...base, tips: event.tips?.toString() ?? "" };
+      return {
+        ...base,
+        place: event.place ?? "",
+        wage: event.wage?.toString() ?? "",
+        tips: event.tips?.toString() ?? "",
+      };
     case "gym":
       return {
         ...base,
@@ -122,20 +120,10 @@ function toDraft(event: LifeEvent): Draft {
     case "dining":
       return { ...base, place: event.place, amount: event.amount.toString() };
     case "class":
-      return {
-        ...base,
-        course: event.course,
-        courseId: event.courseId ?? "",
-      };
-    case "exam":
-      return {
-        ...base,
-        course: event.course,
-        courseId: event.courseId ?? "",
-        categoryId: event.categoryId ?? "",
-        maxScore: event.maxScore.toString(),
-      };
+      return { ...base, course: event.course };
   }
+
+  return base;
 }
 
 function toEvent(
@@ -178,6 +166,8 @@ function toEvent(
       return {
         ...base,
         type: "work",
+        ...(draft.place ? { place: draft.place } : {}),
+        ...(draft.wage ? { wage: Number(draft.wage) } : {}),
         ...(draft.tips ? { tips: Number(draft.tips) } : {}),
       };
     case "gym":
@@ -195,21 +185,7 @@ function toEvent(
         amount: Number(draft.amount),
       };
     case "class":
-      return {
-        ...base,
-        type: "class",
-        course: draft.course,
-        ...(draft.courseId ? { courseId: draft.courseId } : {}),
-      };
-    case "exam":
-      return {
-        ...base,
-        type: "exam",
-        course: draft.course,
-        maxScore: Number(draft.maxScore) || 100,
-        ...(draft.courseId ? { courseId: draft.courseId } : {}),
-        ...(draft.categoryId ? { categoryId: draft.categoryId } : {}),
-      };
+      return { ...base, type: "class", course: draft.course };
   }
 }
 
@@ -246,7 +222,7 @@ function Field({
   multiline?: boolean;
 }) {
   const shared =
-    "mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent";
+    "mt-1 w-full rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent";
   return (
     <label className="block">
       <span className="text-xs text-ink-muted">{label}</span>
@@ -280,8 +256,6 @@ export function EventForm({
   onDelete,
   onCancel,
   initialAsk,
-  courses = [],
-  categories = [],
 }: {
   editing: LifeEvent | null;
   initialRange?: { start: string; end: string; allDay: boolean };
@@ -290,8 +264,6 @@ export function EventForm({
   onDelete: (event: LifeEvent, scope: EditScope) => void;
   onCancel: () => void;
   initialAsk?: "delete";
-  courses?: Course[];
-  categories?: Category[];
 }) {
   const [draft, setDraft] = useState<Draft>(() => {
     if (editing) return toDraft(editing);
@@ -332,71 +304,35 @@ export function EventForm({
     else onSave(built(), scope);
   }
 
-  const mine = categories.filter(
-    (category) => category.courseId === draft.courseId,
-  );
-
-  function coursePicker() {
-    if (!courses.length) {
-      return (
-        <Field
-          label="Course"
-          required
-          value={draft.course}
-          onChange={(v) => set({ course: v })}
-        />
-      );
-    }
-    return (
-      <>
-        <label className="block">
-          <span className="text-xs text-ink-muted">Course</span>
-          <select
-            aria-label="Course"
-            value={draft.courseId || "custom"}
-            onChange={(e) => {
-              const picked = courses.find((c) => c.id === e.target.value);
-              set({
-                courseId: picked ? picked.id : "",
-                categoryId: "",
-                course: picked ? picked.code || picked.title : draft.course,
-              });
-            }}
-            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
-          >
-            {courses.map((one) => (
-              <option key={one.id} value={one.id}>
-                {one.code || one.title}
-              </option>
-            ))}
-            <option value="custom">Type it in</option>
-          </select>
-        </label>
-        {draft.courseId ? null : (
-          <Field
-            label="Course name"
-            required
-            value={draft.course}
-            onChange={(v) => set({ course: v })}
-          />
-        )}
-      </>
-    );
-  }
-
   function typeFields() {
     switch (draft.type) {
       case "general":
         return null;
       case "work":
         return (
-          <Field
-            label="Cash tips"
-            type="number"
-            step="0.01"
-            value={draft.tips}
-            onChange={(v) => set({ tips: v })}
-          />
+          <>
+            <Field
+              label="Workplace"
+              value={draft.place}
+              onChange={(v) => set({ place: v })}
+            />
+            <Field
+              label="Hourly wage"
+              type="number"
+              step="0.01"
+              min="0"
+              value={draft.wage}
+              onChange={(v) => set({ wage: v })}
+            />
+            <Field
+              label="Cash tips"
+              type="number"
+              step="0.01"
+              min="0"
+              value={draft.tips}
+              onChange={(v) => set({ tips: v })}
+            />
+          </>
         );
       case "gym":
         return (
@@ -435,38 +371,13 @@ export function EventForm({
           </>
         );
       case "class":
-        return coursePicker();
-      case "exam":
         return (
-          <>
-            {coursePicker()}
-            {draft.courseId && mine.length ? (
-              <label className="block">
-                <span className="text-xs text-ink-muted">Counts toward</span>
-                <select
-                  aria-label="Counts toward"
-                  value={draft.categoryId}
-                  onChange={(e) => set({ categoryId: e.target.value })}
-                  className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
-                >
-                  <option value="">Nothing yet</option>
-                  {mine.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <Field
-              label="Max score"
-              type="number"
-              step="0.01"
-              required
-              value={draft.maxScore}
-              onChange={(v) => set({ maxScore: v })}
-            />
-          </>
+          <Field
+            label="Course"
+            required
+            value={draft.course}
+            onChange={(v) => set({ course: v })}
+          />
         );
     }
   }
@@ -537,7 +448,7 @@ export function EventForm({
             value={draft.until}
             min={draft.start.slice(0, 10)}
             onChange={(e) => set({ until: e.target.value })}
-            className="flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-[13px] outline-none focus:border-accent"
+            className="flex-1 rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent"
           />
         </label>
 
@@ -548,14 +459,14 @@ export function EventForm({
               set({ freq: draft.byDay.length ? "weekly" : "none" });
               setCustom(false);
             }}
-            className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
+            className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
           >
             Done
           </button>
           <button
             type="button"
             onClick={() => setCustom(false)}
-            className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+            className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
           >
             Cancel
           </button>
@@ -599,7 +510,7 @@ export function EventForm({
           <select
             value={draft.type}
             onChange={(e) => set({ type: e.target.value as EventType })}
-            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+            className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent"
           >
             {EVENT_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -656,7 +567,6 @@ export function EventForm({
           </div>
         </div>
 
-        {draft.type === "exam" ? null : (
         <label className="block">
           <span className="text-xs text-ink-muted">Repeat</span>
           <select
@@ -668,7 +578,7 @@ export function EventForm({
               }
               set({ freq: e.target.value as RecurFreq | "none", byDay: [] });
             }}
-            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+            className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent"
           >
             <option value="none">Does not repeat</option>
             {RECUR_FREQS.map((f) => (
@@ -682,9 +592,8 @@ export function EventForm({
             <option value="custom-open">Custom...</option>
           </select>
         </label>
-        )}
 
-        {draft.type === "exam" || draft.freq === "none" || draft.byDay.length ? null : (
+        {draft.freq === "none" || draft.byDay.length ? null : (
           <>
             <Field
               label="Every"
@@ -717,14 +626,14 @@ export function EventForm({
       <div className="mt-4 flex items-center gap-2">
         <button
           type="submit"
-          className="rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
+          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
         >
           Save
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+          className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
         >
           Cancel
         </button>
@@ -734,7 +643,7 @@ export function EventForm({
             onClick={() =>
               inSeries ? setAsking("delete") : onDelete(editing, "one")
             }
-            className="ml-auto rounded-lg px-3 py-1.5 text-[13px] text-ink-muted hover:bg-surface-muted"
+            className="ml-auto rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
           >
             Delete
           </button>
