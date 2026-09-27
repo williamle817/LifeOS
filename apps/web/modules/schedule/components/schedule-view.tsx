@@ -16,6 +16,7 @@ import {
   canUndo,
   ensureLoaded,
   lastWriteError,
+  duplicateOccurrence,
   removeOccurrence,
   saveOccurrence,
   undo,
@@ -47,6 +48,7 @@ type Popover = {
   range?: Range;
   mode: "details" | "edit" | "scope";
   ask?: "delete";
+  intent?: "move" | "duplicate";
   revert?: () => void;
 };
 
@@ -134,6 +136,7 @@ export function ScheduleView() {
         ...place(info.el.getBoundingClientRect(), FORM_W),
         editing: moved,
         mode: "scope",
+        intent: "move",
         revert: info.revert,
       });
       return;
@@ -372,9 +375,11 @@ export function ScheduleView() {
           >
             {popover.mode === "scope" && popover.editing ? (
               <ScopeAsk
-                title="Change repeating event"
                 onPick={(scope) => {
-                  void saveOccurrence(popover.editing!, scope);
+                  const target = popover.editing!;
+                  if (popover.intent === "duplicate")
+                    void duplicateOccurrence(target, scope);
+                  else void saveOccurrence(target, scope);
                   setPopover(null);
                 }}
                 onCancel={close}
@@ -383,6 +388,19 @@ export function ScheduleView() {
               <EventDetails
                 event={popover.editing}
                 onEdit={() => setPopover({ ...popover, mode: "edit" })}
+                onDuplicate={() => {
+                  const target = popover.editing!;
+                  if (target.seriesId && target.occurrenceDate)
+                    setPopover({
+                      ...popover,
+                      mode: "scope",
+                      intent: "duplicate",
+                    });
+                  else {
+                    void duplicateOccurrence(target, "one");
+                    setPopover(null);
+                  }
+                }}
                 onDelete={() => {
                   const target = popover.editing!;
                   if (target.seriesId && target.occurrenceDate)

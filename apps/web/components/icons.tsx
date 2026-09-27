@@ -29,6 +29,8 @@ const ACTIONS = {
   edit: "M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z",
   trash: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
   close: "M6 6l12 12M18 6L6 18",
+  copy: "M9 9h10v10H9zM5 15V5h10",
+  grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
 };
 
 export function ActionIcon({ name }: { name: keyof typeof ACTIONS }) {

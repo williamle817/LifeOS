@@ -477,11 +477,7 @@ export function EventForm({
 
   if (asking) {
     return (
-      <ScopeAsk
-        title={asking === "delete" ? "Delete repeating event" : "Save changes to"}
-        onPick={apply}
-        onCancel={() => setAsking(null)}
-      />
+      <ScopeAsk onPick={apply} onCancel={() => setAsking(null)} />
     );
   }
 

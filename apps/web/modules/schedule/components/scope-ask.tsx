@@ -9,17 +9,15 @@ const SCOPE_LABELS: Record<EditScope, string> = {
 };
 
 export function ScopeAsk({
-  title,
   onPick,
   onCancel,
 }: {
-  title: string;
   onPick: (scope: EditScope) => void;
   onCancel: () => void;
 }) {
   return (
     <div className="p-3">
-      <h2 className="text-sm font-medium">{title}</h2>
+      <h2 className="text-sm font-medium">Apply to</h2>
       <div className="mt-3 grid gap-2">
         {EDIT_SCOPES.map((scope) => (
           <button

@@ -3,6 +3,7 @@
 import type { Course } from "@lifeos/contracts";
 import { show, type CourseGrade } from "@/modules/academic/lib/grade";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
+import { DragHandle, useDragList } from "@/modules/academic/components/reorder";
 
 export function CourseStrip({
   courses,
@@ -10,24 +11,39 @@ export function CourseStrip({
   selected,
   onSelect,
   onNew,
+  onMove,
 }: {
   courses: Course[];
   grades: Map<string, CourseGrade>;
   selected: string | null;
   onSelect: (id: string) => void;
   onNew: () => void;
+  onMove: (from: number, to: number) => void;
 }) {
+  const drag = useDragList((_list, from, to) => onMove(from, to));
   return (
     <div className="flex flex-wrap items-stretch gap-3">
-      {courses.map((course) => {
+      {courses.map((course, index) => {
         const grade = grades.get(course.id);
         const active = course.id === selected;
         const color = course.color ?? "blue";
         const banked = grade?.banked ?? 0;
 
         return (
-          <button
+          <div
             key={course.id}
+            data-drag="course"
+            style={drag.style("course", index)}
+            className="relative"
+          >
+          <DragHandle
+            list="course"
+            index={index}
+            drag={drag}
+            label={course.code || course.title}
+            className="absolute top-2.5 right-2.5 z-10"
+          />
+          <button
             type="button"
             onClick={() => onSelect(course.id)}
             aria-pressed={active}
@@ -40,7 +56,7 @@ export function CourseStrip({
                   }
                 : undefined
             }
-            className={`relative min-w-52 overflow-hidden rounded-3xl border p-4 text-left transition-all hover:-translate-y-0.5 ${
+            className={`relative block min-w-52 overflow-hidden rounded-3xl border p-4 text-left transition-all hover:-translate-y-0.5 ${
               active
                 ? "shadow-md"
                 : "border-line bg-surface shadow-sm hover:bg-surface-muted"
@@ -62,7 +78,7 @@ export function CourseStrip({
               {course.code || course.title}
             </span>
 
-            <span className="mt-1.5 flex items-baseline gap-2">
+            <span className="mt-1.5 flex items-baseline gap-2 pr-6">
               <span className="text-[1.75rem] leading-none font-semibold">
                 {grade?.currentGrade == null ? "--" : show(grade.currentGrade)}
                 <span className="text-base font-medium">
@@ -100,6 +116,7 @@ export function CourseStrip({
               {grade ? `${show(banked)} of 100 earned` : "no grading set up"}
             </span>
           </button>
+          </div>
         );
       })}
 

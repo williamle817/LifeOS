@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import type { LifeEvent } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
 
@@ -27,14 +28,36 @@ function timeLabel(event: LifeEvent): string {
   return `${from} - ${to}`;
 }
 
+function extras(event: LifeEvent): Array<[string, string]> {
+  switch (event.type) {
+    case "work":
+      return event.place ? [["Workplace", event.place]] : [];
+    case "gym":
+      return [
+        ["Workout", event.workout],
+        ...(event.calories === undefined
+          ? []
+          : ([["Calories", String(event.calories)]] as Array<[string, string]>)),
+      ];
+    case "dining":
+      return [["Place", event.place]];
+    case "class":
+      return [["Course", event.course]];
+    default:
+      return [];
+  }
+}
+
 export function EventDetails({
   event,
   onEdit,
+  onDuplicate,
   onDelete,
   onClose,
 }: {
   event: LifeEvent;
   onEdit: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -61,6 +84,14 @@ export function EventDetails({
           </button>
           <button
             type="button"
+            onClick={onDuplicate}
+            aria-label="Duplicate"
+            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+          >
+            <ActionIcon name="copy" />
+          </button>
+          <button
+            type="button"
             onClick={onDelete}
             aria-label="Delete"
             className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
@@ -83,6 +114,12 @@ export function EventDetails({
         <dd>{dateLabel(event)}</dd>
         <dt className="text-ink-faint">Time</dt>
         <dd>{timeLabel(event)}</dd>
+        {extras(event).map(([label, value]) => (
+          <Fragment key={label}>
+            <dt className="text-ink-faint">{label}</dt>
+            <dd className="break-words">{value}</dd>
+          </Fragment>
+        ))}
         {event.notes ? (
           <>
             <dt className="text-ink-faint">Notes</dt>
