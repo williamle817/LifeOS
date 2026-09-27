@@ -16,6 +16,7 @@ import {
   canUndo,
   ensureLoaded,
   lastWriteError,
+  duplicateOccurrence,
   removeOccurrence,
   saveOccurrence,
   undo,
@@ -47,6 +48,7 @@ type Popover = {
   range?: Range;
   mode: "details" | "edit" | "scope";
   ask?: "delete";
+  intent?: "move" | "duplicate";
   revert?: () => void;
 };
 
@@ -60,6 +62,14 @@ function place(anchor: DOMRect, width: number): { top: number; left: number } {
     Math.min(anchor.top, window.innerHeight - MAX_HEIGHT - GAP),
   );
   return { top, left };
+}
+
+function clock(at: Date): string {
+  return at.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 function pointRect(event: MouseEvent | null): DOMRect {
@@ -126,6 +136,7 @@ export function ScheduleView() {
         ...place(info.el.getBoundingClientRect(), FORM_W),
         editing: moved,
         mode: "scope",
+        intent: "move",
         revert: info.revert,
       });
       return;
@@ -166,12 +177,12 @@ export function ScheduleView() {
   return (
     <>
       {lastWriteError() ? (
-        <p className="mb-3 rounded-lg border border-line bg-surface px-3 py-2 text-[13px] text-ink-muted">
+        <p className="mb-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
           Could not save: {lastWriteError()}
         </p>
       ) : null}
 
-      <div className="rounded-xl border border-line bg-surface p-3">
+      <div className="rounded-3xl border border-line bg-surface p-4 shadow-sm">
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
@@ -195,6 +206,7 @@ export function ScheduleView() {
           nowIndicator
           snapDuration="00:15:00"
           editable
+          slotEventOverlap={false}
           selectable
           selectMirror
           slotLabelFormat={{
@@ -268,6 +280,39 @@ export function ScheduleView() {
               );
             }
 
+            const span =
+              arg.event.start && arg.event.end
+                ? (arg.event.end.getTime() - arg.event.start.getTime()) / 60000
+                : 60;
+
+            if (span < 45) {
+              const tiny = span < 30;
+              return (
+                <div className="flex h-full items-center overflow-hidden px-1">
+                  <span className="truncate leading-none">
+                    <span
+                      style={ink}
+                      className={`font-medium ${
+                        tiny ? "text-[10px]" : "text-[12px]"
+                      }`}
+                    >
+                      {title}
+                    </span>
+                    {arg.event.start ? (
+                      <span
+                        style={inkMuted}
+                        className={`ml-1.5 ${
+                          tiny ? "text-[9px]" : "text-[10px]"
+                        }`}
+                      >
+                        {clock(arg.event.start)}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+              );
+            }
+
             return (
               <div className="overflow-hidden px-1 py-0.5 leading-tight">
                 <div
@@ -326,13 +371,15 @@ export function ScheduleView() {
               maxHeight: MAX_HEIGHT,
               width: popover.mode === "details" ? DETAIL_W : FORM_W,
             }}
-            className="fixed z-30 overflow-y-auto rounded-xl border border-line bg-surface shadow-lg"
+            className="fixed z-30 overflow-y-auto rounded-3xl border border-line bg-surface shadow-lg"
           >
             {popover.mode === "scope" && popover.editing ? (
               <ScopeAsk
-                title="Change repeating event"
                 onPick={(scope) => {
-                  void saveOccurrence(popover.editing!, scope);
+                  const target = popover.editing!;
+                  if (popover.intent === "duplicate")
+                    void duplicateOccurrence(target, scope);
+                  else void saveOccurrence(target, scope);
                   setPopover(null);
                 }}
                 onCancel={close}
@@ -341,6 +388,19 @@ export function ScheduleView() {
               <EventDetails
                 event={popover.editing}
                 onEdit={() => setPopover({ ...popover, mode: "edit" })}
+                onDuplicate={() => {
+                  const target = popover.editing!;
+                  if (target.seriesId && target.occurrenceDate)
+                    setPopover({
+                      ...popover,
+                      mode: "scope",
+                      intent: "duplicate",
+                    });
+                  else {
+                    void duplicateOccurrence(target, "one");
+                    setPopover(null);
+                  }
+                }}
                 onDelete={() => {
                   const target = popover.editing!;
                   if (target.seriesId && target.occurrenceDate)

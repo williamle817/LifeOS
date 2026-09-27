@@ -12,6 +12,9 @@ import {
   getSnapshot,
   lastWriteError,
   deleteItem,
+  reorderCategories,
+  reorderCourses,
+  reorderItems,
   saveCategory,
   saveCourse,
   saveSemester,
@@ -33,6 +36,7 @@ import { CourseForm } from "@/modules/academic/components/course-form";
 import { GradeTable } from "@/modules/academic/components/grade-table";
 import { Upcoming } from "@/modules/academic/components/upcoming";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
+import { move } from "@/modules/academic/components/reorder";
 
 export function AcademicView() {
   const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -53,7 +57,9 @@ export function AcademicView() {
     selection,
   );
 
-  const courses = data.courses.filter((c) => c.semesterId === semesterId);
+  const courses = data.courses
+    .filter((c) => c.semesterId === semesterId)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const course = courses.find((c) => c.id === courseId) ?? null;
 
   const grades = useMemo(() => {
@@ -116,6 +122,9 @@ export function AcademicView() {
             setEditing(null);
           }}
           onNew={() => setEditing("new")}
+          onMove={(from, to) =>
+            void reorderCourses(move(courses.map((c) => c.id), from, to))
+          }
         />
       ) : null}
 
@@ -155,7 +164,7 @@ export function AcademicView() {
 
       {!editing && course && grade ? (
         <div className="grid gap-5">
-          <div className="rounded-3xl border border-line bg-gradient-to-br from-surface to-surface-muted p-5 shadow-sm">
+          <div className="rounded-3xl border border-line-strong bg-surface p-5 shadow-md">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 style={{
@@ -234,9 +243,19 @@ export function AcademicView() {
               onSave={(item: GradeItem) => void saveItem(item)}
               onRemove={(id) => void deleteItem(id)}
               onSaveCategory={(category) => void saveCategory(category)}
+              onMoveCategory={(from, to) =>
+                void reorderCategories(move(mine.map((c) => c.id), from, to))
+              }
+              onMoveItem={(categoryId, from, to) => {
+                const ids = data.items
+                  .filter((one) => one.categoryId === categoryId)
+                  .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+                  .map((one) => one.id);
+                void reorderItems(move(ids, from, to));
+              }}
             />
 
-            <div className="rounded-3xl border border-line bg-surface p-5 shadow-sm lg:sticky lg:top-24">
+            <div className="rounded-3xl border border-line-strong bg-surface p-5 shadow-md lg:sticky lg:top-24">
               <Upcoming
                 items={data.items.filter(
                   (item) => item.courseId === course.id,

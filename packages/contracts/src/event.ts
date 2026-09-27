@@ -4,7 +4,6 @@ export const EVENT_TYPES = [
   "gym",
   "dining",
   "class",
-  "exam",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -58,6 +57,8 @@ export type GeneralEvent = EventBase & {
 
 export type WorkEvent = EventBase & {
   type: "work";
+  place?: string;
+  wage?: Money;
   tips?: Money;
 };
 
@@ -79,18 +80,9 @@ export type ClassEvent = EventBase & {
   courseId?: string;
 };
 
-export type ExamEvent = EventBase & {
-  type: "exam";
-  course: string;
-  courseId?: string;
-  categoryId?: string;
-  maxScore: number;
-};
-
 export type LifeEvent =
   | GeneralEvent
   | WorkEvent
   | GymEvent
   | DiningEvent
-  | ClassEvent
-  | ExamEvent;
+  | ClassEvent;

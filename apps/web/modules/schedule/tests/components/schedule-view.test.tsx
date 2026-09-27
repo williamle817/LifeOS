@@ -141,7 +141,7 @@ describe("clicking an event", () => {
     await waitFor(() => expect(screen.getByText("Coffee")).toBeDefined());
     await user.click(screen.getByText("Coffee"));
     await user.click(screen.getByRole("button", { name: "Delete" }));
-    expect(screen.getByText("Delete repeating event")).toBeDefined();
+    expect(screen.getByText("Apply to")).toBeDefined();
     expect(removed).toHaveLength(0);
   });
 });

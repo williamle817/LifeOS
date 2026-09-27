@@ -11,6 +11,7 @@ function local(day: string, hour = 9, minute = 0): string {
 
 function show(over: Partial<LifeEvent> = {}) {
   const onEdit = vi.fn();
+  const onDuplicate = vi.fn();
   const onDelete = vi.fn();
   const onClose = vi.fn();
   const event = {
@@ -27,11 +28,12 @@ function show(over: Partial<LifeEvent> = {}) {
     <EventDetails
       event={event}
       onEdit={onEdit}
+      onDuplicate={onDuplicate}
       onDelete={onDelete}
       onClose={onClose}
     />,
   );
-  return { onEdit, onDelete, onClose };
+  return { onEdit, onDuplicate, onDelete, onClose };
 }
 
 describe("the details card", () => {
@@ -104,5 +106,62 @@ describe("the details card, buttons", () => {
     const { onClose } = show();
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("the details card, the rest of what an event carries", () => {
+  it("asks to duplicate", async () => {
+    const user = userEvent.setup();
+    const { onDuplicate } = show();
+    await user.click(screen.getByRole("button", { name: "Duplicate" }));
+    expect(onDuplicate).toHaveBeenCalledOnce();
+  });
+
+  it("sits the copy button between the pencil and the bin", () => {
+    show();
+    const names = screen
+      .getAllByRole("button")
+      .map((b) => b.getAttribute("aria-label"));
+    expect(names).toEqual(["Edit", "Duplicate", "Delete", "Close"]);
+  });
+
+  it("shows where a shift was worked", () => {
+    show({ type: "work", place: "Pho 24", wage: 17.5 } as Partial<LifeEvent>);
+    expect(screen.getByText("Workplace")).toBeDefined();
+    expect(screen.getByText("Pho 24")).toBeDefined();
+  });
+
+  it("keeps the pay out of the details card", () => {
+    show({ type: "work", place: "Pho 24", wage: 17.5 } as Partial<LifeEvent>);
+    expect(screen.queryByText("17.5")).toBeNull();
+  });
+
+  it("shows the workout and the calories", () => {
+    show({ type: "gym", workout: "Squats", calories: 400 } as Partial<LifeEvent>);
+    expect(screen.getByText("Squats")).toBeDefined();
+    expect(screen.getByText("400")).toBeDefined();
+  });
+
+  it("leaves calories out when none were recorded", () => {
+    show({ type: "gym", workout: "Squats" } as Partial<LifeEvent>);
+    expect(screen.queryByText("Calories")).toBeNull();
+  });
+
+  it("shows where a meal was", () => {
+    show({ type: "dining", place: "Banh mi cart", amount: 5 } as Partial<LifeEvent>);
+    expect(screen.getByText("Place")).toBeDefined();
+    expect(screen.getByText("Banh mi cart")).toBeDefined();
+  });
+
+  it("shows which course a class is for", () => {
+    show({ type: "class", course: "CS 201" } as Partial<LifeEvent>);
+    expect(screen.getByText("Course")).toBeDefined();
+    expect(screen.getByText("CS 201")).toBeDefined();
+  });
+
+  it("adds nothing extra for a plain event", () => {
+    show();
+    expect(screen.queryByText("Workplace")).toBeNull();
+    expect(screen.queryByText("Course")).toBeNull();
   });
 });

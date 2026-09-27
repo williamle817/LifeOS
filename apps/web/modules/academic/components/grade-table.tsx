@@ -4,18 +4,10 @@ import { useState } from "react";
 import type { Category, GradeItem } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
 import type { CourseGrade } from "@/modules/academic/lib/grade";
+import { DragHandle, useDragList } from "@/modules/academic/components/reorder";
 
 const input =
   "rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent";
-
-const LAST = "9999-12-31";
-
-export function byDueThenName(a: GradeItem, b: GradeItem): number {
-  const left = a.dueOn ?? LAST;
-  const right = b.dueOn ?? LAST;
-  if (left !== right) return left < right ? -1 : 1;
-  return a.title.localeCompare(b.title);
-}
 
 function scoreText(item: GradeItem): string {
   return item.score === null ? "" : String(item.score);
@@ -38,6 +30,8 @@ export function GradeTable({
   onSave,
   onRemove,
   onSaveCategory,
+  onMoveCategory,
+  onMoveItem,
 }: {
   grade: CourseGrade;
   userId: string;
@@ -46,7 +40,14 @@ export function GradeTable({
   onSave: (item: GradeItem) => void;
   onRemove: (id: string) => void;
   onSaveCategory: (category: Category) => void;
+  onMoveCategory: (from: number, to: number) => void;
+  onMoveItem: (categoryId: string, from: number, to: number) => void;
 }) {
+  const drag = useDragList((list, from, to) => {
+    if (list === "category") onMoveCategory(from, to);
+    else onMoveItem(list.replace("item-", ""), from, to);
+  });
+
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [heading, setHeading] = useState<string | null>(null);
@@ -172,22 +173,25 @@ export function GradeTable({
   }
 
   return (
-    <div className="grid gap-4">
-      {grade.categories.map((entry) => {
+    <div className="rounded-3xl border border-line-strong bg-surface p-4 shadow-md">
+      <div className="grid gap-3">
+      {grade.categories.map((entry, slot) => {
         const category = entry.category;
         const rows = [...entry.kept, ...entry.dropped, ...entry.pending].sort(
-          byDueThenName,
+          (a, b) => (a.position ?? 0) - (b.position ?? 0),
         );
         const dropped = new Set(entry.dropped.map((one) => one.id));
 
         return (
           <section
             key={category.id}
+            data-drag="category"
+            style={drag.style("category", slot)}
             aria-label={category.name}
-            className="overflow-hidden rounded-3xl border border-line bg-surface shadow-sm"
+            className="overflow-hidden rounded-2xl border border-line"
           >
             {heading === category.id ? (
-              <header className="flex flex-wrap items-end gap-2 bg-surface-muted px-4 py-3">
+              <header className="flex flex-wrap items-end gap-2 border-b border-line bg-accent-soft px-4 py-3">
                 {field(
                   "Name",
                   <input
@@ -238,7 +242,7 @@ export function GradeTable({
                 </button>
               </header>
             ) : (
-              <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1 bg-surface-muted px-4 py-2.5">
+              <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line bg-accent-soft px-4 py-2.5">
                 <h3 className="text-sm font-medium">{category.name}</h3>
                 <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] text-ink-muted">
                   {category.weight}%
@@ -261,18 +265,24 @@ export function GradeTable({
                 >
                   <ActionIcon name="edit" />
                 </button>
-                <span className="ml-auto text-[13px]">
+                <span className="ml-auto flex items-center gap-1 text-[13px]">
                   {entry.pct === null ? (
-                    <span className="text-ink-faint">nothing marked yet</span>
+                    <span className="text-ink-muted">nothing marked yet</span>
                   ) : (
                     <span className="font-medium">{entry.pct}%</span>
                   )}
+                  <DragHandle
+                    list="category"
+                    index={slot}
+                    drag={drag}
+                    label={category.name}
+                  />
                 </span>
               </header>
             )}
 
             <ul className="divide-y divide-line">
-              {rows.map((item) =>
+              {rows.map((item, seat) =>
                 editing === item.id ? (
                   <li key={item.id} className="bg-surface-muted px-4 py-3">
                     <p className="text-[11px] text-ink-faint">
@@ -299,7 +309,9 @@ export function GradeTable({
                 ) : (
                   <li
                     key={item.id}
-                    className="flex items-center gap-2 px-4 py-2 text-[13px]"
+                    data-drag={`item-${category.id}`}
+                    style={drag.style(`item-${category.id}`, seat)}
+                    className="flex items-center gap-2 bg-surface px-4 py-2.5 text-[13px] transition-colors hover:bg-surface-muted"
                   >
                     <span className="min-w-0 flex-1">
                       <span
@@ -351,6 +363,12 @@ export function GradeTable({
                     >
                       <ActionIcon name="trash" />
                     </button>
+                    <DragHandle
+                      list={`item-${category.id}`}
+                      index={seat}
+                      drag={drag}
+                      label={item.title}
+                    />
                   </li>
                 ),
               )}
@@ -397,6 +415,7 @@ export function GradeTable({
           </section>
         );
       })}
+      </div>
     </div>
   );
 }

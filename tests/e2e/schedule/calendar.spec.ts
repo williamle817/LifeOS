@@ -118,7 +118,7 @@ test("asks which occurrences before deleting from a series", async ({
   await page.getByText("Weekly standup").click();
   await page.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText("Delete repeating event")).toBeVisible();
+  await expect(page.getByText("Apply to")).toBeVisible();
   await page.getByRole("button", { name: "This event" }).click();
 
   await expect(page.getByText("Weekly standup")).toHaveCount(0);

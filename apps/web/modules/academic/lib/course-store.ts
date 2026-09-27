@@ -42,6 +42,7 @@ type CourseRow = {
   code: string | null;
   color: EventColor | null;
   scale: ScaleStep[];
+  position: number | null;
 };
 
 type CategoryRow = {
@@ -65,6 +66,7 @@ type ItemRow = {
   max_score: number;
   due_on: string | null;
   event_id: string | null;
+  position: number | null;
 };
 
 function emit(): void {
@@ -102,6 +104,7 @@ function toCourse(row: CourseRow): Course {
     ...(row.code ? { code: row.code } : {}),
     ...(row.color ? { color: row.color } : {}),
     scale: row.scale,
+    position: row.position ?? 0,
   };
 }
 
@@ -114,6 +117,7 @@ function courseRow(value: Course): CourseRow {
     code: value.code ?? null,
     color: value.color ?? null,
     scale: value.scale,
+    position: value.position ?? 0,
   };
 }
 
@@ -154,6 +158,7 @@ function toItem(row: ItemRow): GradeItem {
     maxScore: row.max_score,
     ...(row.due_on ? { dueOn: row.due_on } : {}),
     ...(row.event_id ? { eventId: row.event_id } : {}),
+    position: row.position ?? 0,
   };
 }
 
@@ -168,6 +173,7 @@ function itemRow(value: GradeItem): ItemRow {
     max_score: value.maxScore,
     due_on: value.dueOn ?? null,
     event_id: value.eventId ?? null,
+    position: value.position ?? 0,
   };
 }
 
@@ -284,8 +290,17 @@ export async function saveCourse(
   await ensureLoaded();
   lastError = null;
 
-  const saved = { ...course, userId: owner(course.userId) };
   const exists = cache.courses.some((c) => c.id === course.id);
+  const saved = {
+    ...course,
+    userId: owner(course.userId),
+    position:
+      course.position ??
+      (exists
+        ? 0
+        : cache.courses.filter((c) => c.semesterId === course.semesterId)
+            .length),
+  };
   const mine = categories.map((category, index) => ({
     ...category,
     userId: owner(category.userId),
@@ -376,8 +391,17 @@ export async function deleteCourse(id: string): Promise<void> {
 export async function saveItem(gradeItem: GradeItem): Promise<void> {
   await ensureLoaded();
   lastError = null;
-  const saved = { ...gradeItem, userId: owner(gradeItem.userId) };
-  const exists = cache.items.some((i) => i.id === saved.id);
+  const exists = cache.items.some((i) => i.id === gradeItem.id);
+  const saved = {
+    ...gradeItem,
+    userId: owner(gradeItem.userId),
+    position:
+      gradeItem.position ??
+      (exists
+        ? 0
+        : cache.items.filter((i) => i.categoryId === gradeItem.categoryId)
+            .length),
+  };
   cache = {
     ...cache,
     items: exists
@@ -390,6 +414,64 @@ export async function saveItem(gradeItem: GradeItem): Promise<void> {
       ? supabase.from("grade_items").update(itemRow(saved)).eq("id", saved.id)
       : supabase.from("grade_items").insert(itemRow(saved)),
   );
+}
+
+type Ordered = { id: string; position?: number };
+
+function renumber<T extends Ordered>(rows: T[], ids: string[]): T[] {
+  return rows.map((row) => {
+    const at = ids.indexOf(row.id);
+    return at < 0 || row.position === at ? row : { ...row, position: at };
+  });
+}
+
+function moved<T extends Ordered>(before: T[], after: T[]): T[] {
+  return after.filter((row, i) => row !== before[i]);
+}
+
+export async function reorderCourses(ids: string[]): Promise<void> {
+  await ensureLoaded();
+  lastError = null;
+  const next = renumber(cache.courses, ids);
+  const changed = moved(cache.courses, next);
+  cache = { ...cache, courses: next };
+  emit();
+  for (const course of changed) {
+    await guard(
+      supabase.from("courses").update(courseRow(course)).eq("id", course.id),
+    );
+  }
+}
+
+export async function reorderCategories(ids: string[]): Promise<void> {
+  await ensureLoaded();
+  lastError = null;
+  const next = renumber(cache.categories, ids);
+  const changed = moved(cache.categories, next);
+  cache = { ...cache, categories: next };
+  emit();
+  for (const category of changed) {
+    await guard(
+      supabase
+        .from("categories")
+        .update(categoryRow(category))
+        .eq("id", category.id),
+    );
+  }
+}
+
+export async function reorderItems(ids: string[]): Promise<void> {
+  await ensureLoaded();
+  lastError = null;
+  const next = renumber(cache.items, ids);
+  const changed = moved(cache.items, next);
+  cache = { ...cache, items: next };
+  emit();
+  for (const item of changed) {
+    await guard(
+      supabase.from("grade_items").update(itemRow(item)).eq("id", item.id),
+    );
+  }
 }
 
 export async function deleteItem(id: string): Promise<void> {

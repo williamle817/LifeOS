@@ -65,6 +65,7 @@ function setup(
 ) {
   const onSelect = vi.fn();
   const onNew = vi.fn();
+  const onMove = vi.fn();
   render(
     <CourseStrip
       courses={courses}
@@ -72,9 +73,10 @@ function setup(
       selected={selected}
       onSelect={onSelect}
       onNew={onNew}
+      onMove={onMove}
     />,
   );
-  return { onSelect, onNew };
+  return { onSelect, onNew, onMove };
 }
 
 describe("the course strip", () => {
@@ -153,8 +155,16 @@ describe("the course strip", () => {
         selected={null}
         onSelect={() => {}}
         onNew={() => {}}
+        onMove={() => {}}
       />,
     );
     expect(container.firstElementChild?.className).toContain("flex");
+  });
+});
+
+describe("putting the courses in order", () => {
+  it("offers a handle on every card", () => {
+    setup([course()], [category()], []);
+    expect(document.querySelector('[data-reorder="CS 201"]')).not.toBeNull();
   });
 });

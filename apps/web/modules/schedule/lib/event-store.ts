@@ -294,6 +294,56 @@ async function dropPatches(seriesId: string, from: string): Promise<void> {
   await supabase.from("events").delete().in("id", ids);
 }
 
+export async function duplicateOccurrence(
+  event: LifeEvent,
+  scope: EditScope,
+): Promise<void> {
+  await ensureLoaded();
+  undoTo = cache;
+  const id = crypto.randomUUID();
+  const seriesId = event.seriesId;
+
+  if (!seriesId || !event.occurrenceDate) {
+    await addEvent({ ...event, id, cancelled: false } as LifeEvent);
+    return;
+  }
+
+  if (scope === "one") {
+    await addEvent({
+      ...event,
+      id,
+      seriesId: undefined,
+      occurrenceDate: undefined,
+      recurrence: undefined,
+      cancelled: false,
+    } as LifeEvent);
+    return;
+  }
+
+  const head = master(seriesId);
+  if (!head) return;
+
+  if (scope === "all") {
+    await addEvent({
+      ...head,
+      id,
+      seriesId: id,
+      occurrenceDate: undefined,
+      cancelled: false,
+    } as LifeEvent);
+    return;
+  }
+
+  await addEvent({
+    ...event,
+    id,
+    seriesId: id,
+    occurrenceDate: undefined,
+    recurrence: event.recurrence ?? head.recurrence,
+    cancelled: false,
+  } as LifeEvent);
+}
+
 export async function removeOccurrence(
   event: LifeEvent,
   scope: EditScope,

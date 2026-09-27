@@ -50,6 +50,8 @@ function setup(categories: Category[], items: GradeItem[]) {
   const onSave = vi.fn();
   const onRemove = vi.fn();
   const onSaveCategory = vi.fn();
+  const onMoveCategory = vi.fn();
+  const onMoveItem = vi.fn();
   render(
     <GradeTable
       grade={gradeCourse(course, categories, items)}
@@ -59,9 +61,11 @@ function setup(categories: Category[], items: GradeItem[]) {
       onSave={onSave}
       onRemove={onRemove}
       onSaveCategory={onSaveCategory}
+      onMoveCategory={onMoveCategory}
+      onMoveItem={onMoveItem}
     />,
   );
-  return { onScore, onSave, onRemove, onSaveCategory };
+  return { onScore, onSave, onRemove, onSaveCategory, onMoveCategory, onMoveItem };
 }
 
 describe("the grade table, what it shows", () => {
@@ -315,58 +319,63 @@ describe("the grade table, order of the rows", () => {
       .map((row) => row.querySelector("span > span")?.textContent ?? "");
   }
 
-  it("puts the soonest due date first", () => {
+  it("keeps the order you put them in", () => {
     setup(
       [category({ id: "exams" })],
       [
-        item({ categoryId: "exams", title: "Later", dueOn: "2026-11-01" }),
-        item({ categoryId: "exams", title: "Sooner", dueOn: "2026-10-01" }),
+        item({ categoryId: "exams", title: "Second", position: 1 }),
+        item({ categoryId: "exams", title: "First", position: 0 }),
+        item({ categoryId: "exams", title: "Third", position: 2 }),
       ],
     );
-    expect(titles()).toEqual(["Sooner", "Later"]);
+    expect(titles()).toEqual(["First", "Second", "Third"]);
   });
 
-  it("falls back to alphabetical when two share a date", () => {
+  it("ignores the due date, which the Coming up list handles", () => {
     setup(
       [category({ id: "exams" })],
       [
-        item({ categoryId: "exams", title: "Beta", dueOn: "2026-10-01" }),
-        item({ categoryId: "exams", title: "Alpha", dueOn: "2026-10-01" }),
+        item({
+          categoryId: "exams",
+          title: "Later date first",
+          dueOn: "2026-12-01",
+          position: 0,
+        }),
+        item({
+          categoryId: "exams",
+          title: "Sooner date second",
+          dueOn: "2026-10-01",
+          position: 1,
+        }),
       ],
     );
-    expect(titles()).toEqual(["Alpha", "Beta"]);
+    expect(titles()[0]).toBe("Later date first");
   });
 
-  it("leaves items with no date at the end", () => {
-    setup(
-      [category({ id: "exams" })],
-      [
-        item({ categoryId: "exams", title: "Undated" }),
-        item({ categoryId: "exams", title: "Dated", dueOn: "2026-10-01" }),
-      ],
-    );
-    expect(titles()).toEqual(["Dated", "Undated"]);
-  });
-
-  it("keeps a dropped item in date order rather than pushing it away", () => {
+  it("leaves a dropped item where it sits", () => {
     setup(
       [category({ id: "exams", dropLowest: 1 })],
       [
-        item({
-          categoryId: "exams",
-          title: "Bad one",
-          score: 10,
-          dueOn: "2026-10-01",
-        }),
-        item({
-          categoryId: "exams",
-          title: "Good one",
-          score: 95,
-          dueOn: "2026-11-01",
-        }),
+        item({ categoryId: "exams", title: "Bad one", score: 10, position: 0 }),
+        item({ categoryId: "exams", title: "Good one", score: 95, position: 1 }),
       ],
     );
     expect(titles()).toEqual(["Bad one", "Good one"]);
+  });
+
+  it("offers a handle on every row", () => {
+    setup(
+      [category({ id: "exams" })],
+      [item({ categoryId: "exams", title: "Midterm" })],
+    );
+    expect(
+      document.querySelector('[data-reorder="Midterm"]'),
+    ).not.toBeNull();
+  });
+
+  it("offers a handle on every category", () => {
+    setup([category({ id: "exams", name: "Exams" })], []);
+    expect(document.querySelector('[data-reorder="Exams"]')).not.toBeNull();
   });
 });
 

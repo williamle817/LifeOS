@@ -29,6 +29,7 @@ export type Course = {
   code?: string;
   color?: EventColor;
   scale: ScaleStep[];
+  position?: number;
 };
 
 export type Category = {
@@ -52,4 +53,5 @@ export type GradeItem = {
   maxScore: number;
   dueOn?: string;
   eventId?: string;
+  position?: number;
 };

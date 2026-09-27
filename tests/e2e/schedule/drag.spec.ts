@@ -125,7 +125,7 @@ test("moving one occurrence of a series asks which occurrences", async ({
 
   await dragBlock(page, "Standup", dayOf(start), "14:00:00");
 
-  await expect(page.getByText("Change repeating event")).toBeVisible();
+  await expect(page.getByText("Apply to")).toBeVisible();
   expect(calendar.db.events).toHaveLength(1);
 });
 
