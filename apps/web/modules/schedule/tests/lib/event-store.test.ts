@@ -561,3 +561,62 @@ describe("undo", () => {
     expect(storedEvents()).toHaveLength(1);
   });
 });
+
+describe("duplicating", () => {
+  it("copies a plain event under a new id", async () => {
+    const s = await store([row()]);
+    await s.duplicateOccurrence(plain(), "one");
+    expect(storedEvents()).toHaveLength(2);
+    const copy = storedEvents().find((r) => r.id !== "e1");
+    expect(copy?.title).toBe("Coffee");
+  });
+
+  it("keeps the copy at the same time", async () => {
+    const s = await store([row()]);
+    await s.duplicateOccurrence(plain(), "one");
+    const copy = storedEvents().find((r) => r.id !== "e1");
+    expect(copy?.start_at).toBe(plain().start);
+  });
+
+  it("copies one occurrence of a series as a standalone event", async () => {
+    const s = await store([headRow()]);
+    await s.duplicateOccurrence(occurrence("2026-03-16"), "one");
+    const copy = storedEvents().find((r) => r.id !== HEAD);
+    expect(copy?.series_id).toBeNull();
+    expect(copy?.recurrence).toBeNull();
+    expect(copy?.occurrence_date).toBeNull();
+  });
+
+  it("copies the whole series from its own start", async () => {
+    const s = await store([headRow()]);
+    await s.duplicateOccurrence(occurrence("2026-03-16"), "all");
+    const copy = storedEvents().find((r) => r.id !== HEAD);
+    expect(copy?.series_id).toBe(copy?.id);
+    expect(copy?.recurrence).toEqual({ freq: "weekly", interval: 1 });
+    expect(dayKey(copy?.start_at as string)).toBe("2026-03-02");
+  });
+
+  it("copies the tail as a new series starting at the clicked day", async () => {
+    const s = await store([headRow()]);
+    await s.duplicateOccurrence(occurrence("2026-03-16"), "following");
+    const copy = storedEvents().find((r) => r.id !== HEAD);
+    expect(copy?.series_id).toBe(copy?.id);
+    expect(dayKey(copy?.start_at as string)).toBe("2026-03-16");
+  });
+
+  it("never touches the event it copied", async () => {
+    const s = await store([headRow()]);
+    await s.duplicateOccurrence(occurrence("2026-03-16"), "all");
+    expect(storedEvent(HEAD)).toMatchObject({
+      series_id: HEAD,
+      recurrence: { freq: "weekly", interval: 1 },
+    });
+  });
+
+  it("can be undone", async () => {
+    const s = await store([row()]);
+    await s.duplicateOccurrence(plain(), "one");
+    await s.undo();
+    expect(storedEvents()).toHaveLength(1);
+  });
+});

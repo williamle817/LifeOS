@@ -449,7 +449,7 @@ describe("the form, choosing a scope", () => {
     const user = userEvent.setup();
     const { saved } = setup({ editing: occurrence() });
     await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(screen.getByText("Save changes to")).toBeDefined();
+    expect(screen.getByText("Apply to")).toBeDefined();
     expect(saved).toHaveLength(0);
   });
 
@@ -475,7 +475,7 @@ describe("the form, choosing a scope", () => {
     const user = userEvent.setup();
     const { deleted } = setup({ editing: occurrence() });
     await user.click(screen.getByRole("button", { name: "Delete" }));
-    expect(screen.getByText("Delete repeating event")).toBeDefined();
+    expect(screen.getByText("Apply to")).toBeDefined();
     expect(deleted).toHaveLength(0);
   });
 
@@ -507,7 +507,7 @@ describe("the form, choosing a scope", () => {
 
   it("opens straight on the delete question when asked to", () => {
     setup({ editing: occurrence(), initialAsk: "delete" });
-    expect(screen.getByText("Delete repeating event")).toBeDefined();
+    expect(screen.getByText("Apply to")).toBeDefined();
   });
 
   it("offers no delete button for a brand new event", () => {

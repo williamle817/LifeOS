@@ -6,20 +6,14 @@ import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
 function show() {
   const onPick = vi.fn();
   const onCancel = vi.fn();
-  render(
-    <ScopeAsk
-      title="Change repeating event"
-      onPick={onPick}
-      onCancel={onCancel}
-    />,
-  );
+  render(<ScopeAsk onPick={onPick} onCancel={onCancel} />);
   return { onPick, onCancel };
 }
 
 describe("the scope question", () => {
-  it("shows the title it was given", () => {
+  it("uses one heading for every action that needs a scope", () => {
     show();
-    expect(screen.getByText("Change repeating event")).toBeDefined();
+    expect(screen.getByText("Apply to")).toBeDefined();
   });
 
   it("offers exactly the three scopes, in order", () => {
