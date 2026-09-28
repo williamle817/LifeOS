@@ -1,8 +1,9 @@
 import { loadEvents } from "@/modules/schedule/lib/event-store";
 import { loadAcademic } from "@/modules/academic/lib/course-store";
+import { loadFlows } from "@/modules/finance/lib/flow-store";
 
 export async function refreshAll(): Promise<void> {
-  await Promise.all([loadEvents(), loadAcademic()]);
+  await Promise.all([loadEvents(), loadAcademic(), loadFlows()]);
 }
 
 export function watchReturn(): () => void {

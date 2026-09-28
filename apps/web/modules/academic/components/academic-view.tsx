@@ -36,7 +36,7 @@ import { CourseForm } from "@/modules/academic/components/course-form";
 import { GradeTable } from "@/modules/academic/components/grade-table";
 import { Upcoming } from "@/modules/academic/components/upcoming";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
-import { move } from "@/modules/academic/components/reorder";
+import { move } from "@/components/reorder";
 
 export function AcademicView() {
   const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

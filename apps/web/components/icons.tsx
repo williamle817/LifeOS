@@ -31,6 +31,8 @@ const ACTIONS = {
   close: "M6 6l12 12M18 6L6 18",
   copy: "M9 9h10v10H9zM5 15V5h10",
   grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
+  back: "M15 5l-7 7 7 7",
+  forward: "M9 5l7 7-7 7",
 };
 
 export function ActionIcon({ name }: { name: keyof typeof ACTIONS }) {
