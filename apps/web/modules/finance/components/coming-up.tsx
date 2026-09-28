@@ -19,7 +19,7 @@ export function ComingUp({
 
   return (
     <div className="rounded-3xl border border-line-strong bg-surface p-4 shadow-md">
-      <h3 className="text-sm font-medium">Coming up</h3>
+      <h3 className="text-[15px] font-bold">Coming up</h3>
 
       <ul
         aria-label="Coming up"

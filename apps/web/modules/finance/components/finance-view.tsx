@@ -4,14 +4,15 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { EditScope, Flow } from "@lifeos/contracts";
 import {
   ensureEvents,
+  eventFor,
   eventsServer,
   eventsSnapshot,
-  removeShift,
-  saveShift,
-  shiftFor,
+  mealsIn,
+  removeFromSchedule,
+  saveFromSchedule,
   shiftsIn,
   subscribeEvents,
-} from "@/lib/shifts";
+} from "@/lib/from-schedule";
 import {
   currentUserId,
   deleteFlow,
@@ -58,7 +59,10 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
     ...shown.filter((one) => one.flow.kind === "income"),
     ...shiftsIn(events, month),
   ]);
-  const spending = shown.filter((one) => one.flow.kind === "expense");
+  const spending = [
+    ...shown.filter((one) => one.flow.kind === "expense"),
+    ...mealsIn(events, month),
+  ];
   const gone = newestFirst(settled(spending, today));
   const due = pending(spending, today);
 
@@ -69,8 +73,14 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
     scope: EditScope | null,
   ): void {
     if (flow.eventId) {
-      const event = shiftFor(events, month, flow.id);
-      if (event) void saveShift(event, next.title, next.place, scope ?? "one");
+      const event = eventFor(events, month, flow.id);
+      if (event) {
+        void saveFromSchedule(
+          event,
+          { title: next.title, place: next.place, amount: next.amount },
+          scope ?? "one",
+        );
+      }
       return;
     }
     if (scope) void saveOccurrence(flow, on, next, scope);
@@ -79,8 +89,8 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
 
   function onRemove(flow: Flow, on: string, scope: EditScope | null): void {
     if (flow.eventId) {
-      const event = shiftFor(events, month, flow.id);
-      if (event) void removeShift(event, scope ?? "one");
+      const event = eventFor(events, month, flow.id);
+      if (event) void removeFromSchedule(event, scope ?? "one");
       return;
     }
     if (scope) void deleteOccurrence(flow, on, scope);

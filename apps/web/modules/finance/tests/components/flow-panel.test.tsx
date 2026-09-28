@@ -423,6 +423,7 @@ describe("a row that came from the calendar", () => {
   const row = (over: Partial<Dated> = {}): Dated => ({
     flow: paid(),
     on: "2026-03-04",
+    from: "work",
     ...over,
   });
 
@@ -511,6 +512,35 @@ describe("a row that came from the calendar", () => {
     expect(onSave).not.toHaveBeenCalled();
     await userEvent.click(screen.getByText("This entry"));
     expect(onSave.mock.calls[0][3]).toBe("one");
+  });
+
+  it("lets a meal fix its own price, because that is one field", async () => {
+    const { onSave } = setupRows(
+      [
+        {
+          flow: paid({
+            id: "from-d1",
+            kind: "expense",
+            title: "Dinner",
+            category: "Dining out",
+            amount: 0,
+            eventId: "d1",
+          }),
+          on: "2026-03-04",
+          from: "dining",
+        },
+      ],
+      "expense",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Edit Dinner" }));
+    expect(screen.getByLabelText("Expenses amount")).toBeTruthy();
+    expect(screen.queryByLabelText("Expenses date")).toBeNull();
+
+    await userEvent.clear(screen.getByLabelText("Expenses amount"));
+    await userEvent.type(screen.getByLabelText("Expenses amount"), "24.5");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave.mock.calls[0][2].amount).toBe(24.5);
   });
 
   it("leaves an entry typed in here alone", () => {

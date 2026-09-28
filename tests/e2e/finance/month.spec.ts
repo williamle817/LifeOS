@@ -470,3 +470,95 @@ test("reads the newest date at the top", async ({ app, page }) => {
   expect(names[0]).toContain("Latest");
   expect(names[2]).toContain("Earliest");
 });
+
+test("counts a meal from the calendar as spending", async ({ app, page }) => {
+  app.db.events = [
+    eventRow({
+      id: "d1",
+      type: "dining",
+      title: "Dinner",
+      start_at: shiftAt(3, 19),
+      end_at: shiftAt(3, 20),
+      data: { place: "The noodle shop", amount: 24.5 },
+    }),
+  ];
+
+  await app.open("/finance");
+
+  const expenses = page.getByRole("region", { name: "Expenses" });
+  await expect(expenses.getByText("Dinner")).toBeVisible();
+  await expect(expenses.getByText("-$24.50")).toBeVisible();
+  await expect(expenses.getByText(/Dining out/)).toBeVisible();
+  await expect(expenses.getByText(/The noodle shop/)).toBeVisible();
+
+  await expect(
+    page.getByRole("region", { name: "Income" }).getByText("Dinner"),
+  ).toHaveCount(0);
+});
+
+test("shows a meal with no price yet as nothing spent", async ({
+  app,
+  page,
+}) => {
+  app.db.events = [
+    eventRow({
+      id: "d1",
+      type: "dining",
+      title: "Dinner",
+      start_at: shiftAt(3, 19),
+      end_at: shiftAt(3, 20),
+      data: { place: "The noodle shop" },
+    }),
+  ];
+
+  await app.open("/finance");
+
+  const expenses = page.getByRole("region", { name: "Expenses" });
+  await expect(expenses.getByText("Dinner")).toBeVisible();
+  await expect(expenses.getByText("-$0.00")).toBeVisible();
+});
+
+test("types the price of a meal in and it lands on the event", async ({
+  app,
+  page,
+}) => {
+  app.db.events = [
+    eventRow({
+      id: "d1",
+      type: "dining",
+      title: "Dinner",
+      start_at: shiftAt(3, 19),
+      end_at: shiftAt(3, 20),
+      data: { place: "The noodle shop" },
+    }),
+  ];
+
+  await app.open("/finance");
+  await page.getByRole("button", { name: "Edit Dinner" }).click();
+  await page.getByLabel("Expenses amount").fill("24.5");
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(
+    page.getByRole("region", { name: "Expenses" }).getByText("-$24.50"),
+  ).toBeVisible();
+  expect(app.db.events[0].data).toMatchObject({ amount: 24.5 });
+  expect(app.db.flows).toHaveLength(0);
+});
+
+test("a shift with no tips still pays its wage", async ({ app, page }) => {
+  app.db.events = [
+    eventRow({
+      id: "e1",
+      type: "work",
+      title: "Working shift",
+      start_at: shiftAt(3, 9),
+      end_at: shiftAt(3, 14),
+      data: { wage: 20 },
+    }),
+  ];
+
+  await app.open("/finance");
+  await expect(
+    page.getByRole("region", { name: "Income" }).getByText("+$100.00"),
+  ).toBeVisible();
+});

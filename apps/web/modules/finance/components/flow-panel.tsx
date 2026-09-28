@@ -135,7 +135,7 @@ export function FlowPanel({
     );
   }
 
-  function fields(fromSchedule = false) {
+  function fields(from?: "work" | "dining") {
     return (
       <>
         {field(
@@ -159,7 +159,7 @@ export function FlowPanel({
             className={`min-w-28 ${input}`}
           />,
         )}
-        {fromSchedule ? null : field(
+        {from ? null : field(
           "Type",
           <select
             aria-label={`${heading} type`}
@@ -175,7 +175,7 @@ export function FlowPanel({
             ))}
           </select>,
         )}
-        {fromSchedule ? null : field(
+        {from ? null : field(
           "Date",
           <input
             aria-label={`${heading} date`}
@@ -185,7 +185,7 @@ export function FlowPanel({
             className={input}
           />,
         )}
-        {fromSchedule ? null : field(
+        {from === "work" ? null : field(
           "Amount",
           <input
             aria-label={`${heading} amount`}
@@ -198,7 +198,7 @@ export function FlowPanel({
             className={`w-24 text-right ${input}`}
           />,
         )}
-        {fromSchedule ? null : field(
+        {from ? null : field(
           "Repeats",
           <select
             aria-label={`${heading} repeats`}
@@ -223,7 +223,7 @@ export function FlowPanel({
       className="overflow-hidden rounded-3xl border border-line-strong bg-surface shadow-md"
     >
       <header className="flex items-center gap-2 border-b border-line-strong bg-surface px-4 py-2.5">
-        <h3 className="text-sm font-medium">{heading}</h3>
+        <h3 className="text-[15px] font-bold">{heading}</h3>
         <span style={{ color: ink }} className="ml-auto text-sm font-semibold">
           {money(sum)}
         </span>
@@ -243,7 +243,7 @@ export function FlowPanel({
                     : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
-                  {fields(Boolean(flow.eventId))}
+                  {fields(row.from)}
                   <button
                     type="button"
                     onClick={() => submitEdit(row)}
