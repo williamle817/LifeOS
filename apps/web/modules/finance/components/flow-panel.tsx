@@ -26,6 +26,10 @@ const REPEAT_LABEL: Record<FlowRepeat, string> = {
 
 type Asking = { flow: Flow; on: string; next: Flow | null };
 
+function repeats(row: Dated): boolean {
+  return row.series ?? row.flow.repeat !== "once";
+}
+
 function firstOf(month: Month): string {
   const mm = String(month.month + 1).padStart(2, "0");
   return `${month.year}-${mm}-01`;
@@ -115,17 +119,17 @@ export function FlowPanel({
     reset(on);
   }
 
-  function submitEdit(flow: Flow, when: string) {
+  function submitEdit(row: Dated) {
     if (!title.trim()) return;
-    const next = build({ userId: flow.userId });
+    const next = build({ userId: row.flow.userId });
     setEditing(null);
-    if (flow.repeat === "once") onSave(flow, when, next, null);
-    else setAsking({ flow, on: when, next });
+    if (repeats(row)) setAsking({ flow: row.flow, on: row.on, next });
+    else onSave(row.flow, row.on, next, null);
   }
 
-  function remove(flow: Flow, when: string) {
-    if (flow.repeat === "once") onRemove(flow, when, null);
-    else setAsking({ flow, on: when, next: null });
+  function remove(row: Dated) {
+    if (repeats(row)) setAsking({ flow: row.flow, on: row.on, next: null });
+    else onRemove(row.flow, row.on, null);
   }
 
   function field(caption: string, control: React.ReactNode) {
@@ -137,7 +141,7 @@ export function FlowPanel({
     );
   }
 
-  function fields() {
+  function fields(fromSchedule = false) {
     return (
       <>
         {field(
@@ -161,7 +165,7 @@ export function FlowPanel({
             className={`min-w-28 ${input}`}
           />,
         )}
-        {field(
+        {fromSchedule ? null : field(
           "Type",
           <select
             aria-label={`${heading} type`}
@@ -177,7 +181,7 @@ export function FlowPanel({
             ))}
           </select>,
         )}
-        {field(
+        {fromSchedule ? null : field(
           "Date",
           <input
             aria-label={`${heading} date`}
@@ -187,7 +191,7 @@ export function FlowPanel({
             className={input}
           />,
         )}
-        {field(
+        {fromSchedule ? null : field(
           "Amount",
           <input
             aria-label={`${heading} amount`}
@@ -200,7 +204,7 @@ export function FlowPanel({
             className={`w-24 text-right ${input}`}
           />,
         )}
-        {field(
+        {fromSchedule ? null : field(
           "Repeats",
           <select
             aria-label={`${heading} repeats`}
@@ -233,18 +237,22 @@ export function FlowPanel({
 
       {rows.length ? (
         <ul className="divide-y divide-line">
-          {rows.map(({ flow, on: when }, seat) =>
-            editing === flow.id ? (
+          {rows.map((row, seat) => {
+            const { flow, on: when } = row;
+            return editing === flow.id ? (
               <li key={flow.id} className="bg-surface px-4 py-3">
                 <p className="text-[11px] text-ink-faint">
                   Editing{" "}
                   <span className="font-medium text-ink">{flow.title}</span>
+                  {flow.eventId
+                    ? ", the shift itself changes in Schedule"
+                    : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
-                  {fields()}
+                  {fields(Boolean(flow.eventId))}
                   <button
                     type="button"
-                    onClick={() => submitEdit(flow, when)}
+                    onClick={() => submitEdit(row)}
                     className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
                   >
                     Save
@@ -285,35 +293,35 @@ export function FlowPanel({
                   {money(flow.amount)}
                 </span>
 
-                {flow.eventId ? null : (
-                  <>
-                    <button
-                      type="button"
-                      aria-label={`Edit ${flow.title}`}
-                      onClick={() => startEdit(flow, when)}
-                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                    >
-                      <ActionIcon name="edit" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${flow.title}`}
-                      onClick={() => remove(flow, when)}
-                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                    >
-                      <ActionIcon name="trash" />
-                    </button>
-                    <DragHandle
-                      list={list}
-                      index={seat}
-                      drag={drag}
-                      label={flow.title}
-                    />
-                  </>
+                <button
+                  type="button"
+                  aria-label={`Edit ${flow.title}`}
+                  onClick={() => startEdit(flow, when)}
+                  className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                >
+                  <ActionIcon name="edit" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Remove ${flow.title}`}
+                  onClick={() => remove(row)}
+                  className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                >
+                  <ActionIcon name="trash" />
+                </button>
+                {flow.eventId ? (
+                  <span className="size-6" aria-hidden="true" />
+                ) : (
+                  <DragHandle
+                    list={list}
+                    index={seat}
+                    drag={drag}
+                    label={flow.title}
+                  />
                 )}
               </li>
-            ),
-          )}
+            );
+          })}
         </ul>
       ) : (
         <p className="px-4 py-5 text-[13px] text-ink-muted">

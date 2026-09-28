@@ -2,7 +2,7 @@ import type { Flow } from "@lifeos/contracts";
 
 export type Month = { year: number; month: number };
 
-export type Dated = { flow: Flow; on: string };
+export type Dated = { flow: Flow; on: string; series?: boolean };
 
 export function thisMonth(today = new Date()): Month {
   return { year: today.getFullYear(), month: today.getMonth() };

@@ -346,7 +346,44 @@ test("counts a work shift from the calendar as income", async ({
   ).toBeVisible();
 });
 
-test("leaves a calendar shift for Schedule to edit", async ({ app, page }) => {
+test("editing a shift here writes to the calendar event", async ({
+  app,
+  page,
+}) => {
+  app.db.events = [
+    eventRow({
+      id: "e1",
+      type: "work",
+      title: "Working shift",
+      start_at: shiftAt(3, 9),
+      end_at: shiftAt(3, 14),
+      data: { place: "The cafe", wage: 20 },
+    }),
+  ];
+
+  await app.open("/finance");
+  await page.getByRole("button", { name: "Edit Working shift" }).click();
+
+  await expect(page.getByLabel("Income amount")).toHaveCount(0);
+  await expect(page.getByLabel("Income date")).toHaveCount(0);
+
+  await page.getByLabel("Income name").fill("Night shift");
+  await page.getByLabel("Income location").fill("The bar");
+  await page.getByRole("button", { name: "Save" }).click();
+
+  const incomes = page.getByRole("region", { name: "Income" });
+  await expect(incomes.getByText("Night shift")).toBeVisible();
+  await expect(incomes.getByText(/The bar/)).toBeVisible();
+
+  expect(app.db.events[0].title).toBe("Night shift");
+  expect(app.db.events[0].data).toMatchObject({ place: "The bar" });
+  expect(app.db.flows).toHaveLength(0);
+});
+
+test("removing a one off shift takes the event with it", async ({
+  app,
+  page,
+}) => {
   app.db.events = [
     eventRow({
       id: "e1",
@@ -359,16 +396,79 @@ test("leaves a calendar shift for Schedule to edit", async ({ app, page }) => {
   ];
 
   await app.open("/finance");
+  await page.getByRole("button", { name: "Remove Working shift" }).click();
+  await expect(page.getByText("Nothing in income this month")).toBeVisible();
+  expect(app.db.events).toHaveLength(0);
+});
+
+test("asks which shifts before removing a repeating one", async ({
+  app,
+  page,
+}) => {
+  app.db.events = [
+    eventRow({
+      id: "e1",
+      type: "work",
+      title: "Working shift",
+      start_at: shiftAt(2, 9),
+      end_at: shiftAt(2, 13),
+      series_id: "e1",
+      recurrence: { freq: "weekly", interval: 1 },
+      data: { wage: 25 },
+    }),
+  ];
+
+  await app.open("/finance");
+  const incomes = page.getByRole("region", { name: "Income" });
+  await expect(incomes.getByText("Working shift").first()).toBeVisible();
+  const before = await incomes.getByText("Working shift").count();
+
+  await page
+    .getByRole("button", { name: "Remove Working shift" })
+    .first()
+    .click();
+
+  const ask = page.getByRole("dialog", { name: "Apply to" });
+  await expect(ask).toBeVisible();
+  await ask.getByText("This entry").click();
+
+  await expect(incomes.getByText("Working shift")).toHaveCount(before - 1);
+  expect(app.db.events.length).toBeGreaterThan(1);
+});
+
+test("takes the whole series away when all is chosen", async ({
+  app,
+  page,
+}) => {
+  app.db.events = [
+    eventRow({
+      id: "e1",
+      type: "work",
+      title: "Working shift",
+      start_at: shiftAt(2, 9),
+      end_at: shiftAt(2, 13),
+      series_id: "e1",
+      recurrence: { freq: "weekly", interval: 1 },
+      data: { wage: 25 },
+    }),
+  ];
+
+  await app.open("/finance");
   await expect(
-    page.getByRole("region", { name: "Income" }).getByText("Working shift"),
+    page.getByRole("region", { name: "Income" }).getByText("Working shift").first(),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Edit Working shift" }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Remove Working shift" }),
-  ).toHaveCount(0);
-  expect(app.db.flows).toHaveLength(0);
+
+  await page
+    .getByRole("button", { name: "Remove Working shift" })
+    .first()
+    .click();
+  await page
+    .getByRole("dialog", { name: "Apply to" })
+    .getByText("All entries")
+    .click();
+
+  await expect(page.getByText("Nothing in income this month")).toBeVisible();
+  expect(app.db.events).toHaveLength(0);
 });
 
 test("adds a repeating shift up over the whole month", async ({

@@ -23,6 +23,7 @@ export const EXPENSE_TYPES = [
 export type ExpenseType = (typeof EXPENSE_TYPES)[number];
 
 export const INCOME_TYPES = [
+  "Work",
   "Paycheck",
   "Tips",
   "Side job",

@@ -3,7 +3,11 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Flow } from "@lifeos/contracts";
 import { FlowPanel } from "@/modules/finance/components/flow-panel";
-import { inMonth, type Month } from "@/modules/finance/lib/month";
+import {
+  inMonth,
+  type Dated,
+  type Month,
+} from "@/modules/finance/lib/month";
 
 const MARCH: Month = { year: 2026, month: 2 };
 
@@ -21,6 +25,26 @@ function flow(over: Partial<Flow> = {}): Flow {
     repeat: "once",
     ...over,
   };
+}
+
+function setupRows(rows: Dated[], kind: Flow["kind"] = "expense") {
+  const onAdd = vi.fn();
+  const onSave = vi.fn();
+  const onRemove = vi.fn();
+  const onMove = vi.fn();
+  render(
+    <FlowPanel
+      kind={kind}
+      rows={rows}
+      userId="u1"
+      month={MARCH}
+      onAdd={onAdd}
+      onSave={onSave}
+      onRemove={onRemove}
+      onMove={onMove}
+    />,
+  );
+  return { onAdd, onSave, onRemove, onMove };
 }
 
 function setup(flows: Flow[], kind: Flow["kind"] = "expense") {
@@ -388,42 +412,119 @@ describe("touching a repeating entry", () => {
 });
 
 describe("a row that came from the calendar", () => {
-  const paid = () =>
+  const paid = (over: Partial<Flow> = {}): Flow =>
     flow({
       id: "shift-e1",
       kind: "income",
       title: "Working shift",
       place: "The cafe",
+      category: "Work",
       amount: 115,
       eventId: "e1",
+      ...over,
     });
 
-  it("says where it came from", () => {
-    setup([paid()], "income");
-    expect(screen.getByText(/from Schedule/)).toBeTruthy();
+  const row = (over: Partial<Dated> = {}): Dated => ({
+    flow: paid(),
+    on: "2026-03-04",
+    ...over,
+  });
+
+  it("says where it came from, filed under Work", () => {
+    setupRows([row()], "income");
+    expect(screen.getByText(/Work \u00b7 The cafe \u00b7 from Schedule/)).toBeTruthy();
   });
 
   it("counts toward the total like any other income", () => {
-    setup([paid()], "income");
+    setupRows([row()], "income");
     const panel = screen.getByRole("region", { name: "Income" });
     expect(within(panel).getByText("$115.00")).toBeTruthy();
   });
 
-  it("offers no pencil, no bin and no handle, because Schedule owns it", () => {
-    setup([paid()], "income");
+  it("offers a pencil and a bin", () => {
+    setupRows([row()], "income");
     expect(
-      screen.queryByRole("button", { name: "Edit Working shift" }),
-    ).toBeNull();
+      screen.getByRole("button", { name: "Edit Working shift" }),
+    ).toBeTruthy();
     expect(
-      screen.queryByRole("button", { name: "Remove Working shift" }),
-    ).toBeNull();
+      screen.getByRole("button", { name: "Remove Working shift" }),
+    ).toBeTruthy();
+  });
+
+  it("offers no drag handle, because there is no row to renumber", () => {
+    setupRows([row()], "income");
     expect(document.querySelector('[data-reorder="Working shift"]')).toBeNull();
+  });
+
+  it("only edits the name and the location", async () => {
+    setupRows([row()], "income");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Edit Working shift" }),
+    );
+    expect(screen.getByLabelText("Income name")).toBeTruthy();
+    expect(screen.getByLabelText("Income location")).toBeTruthy();
+    expect(screen.queryByLabelText("Income type")).toBeNull();
+    expect(screen.queryByLabelText("Income date")).toBeNull();
+    expect(screen.queryByLabelText("Income amount")).toBeNull();
+    expect(screen.queryByLabelText("Income repeats")).toBeNull();
+  });
+
+  it("warns that the change lands in Schedule", async () => {
+    setupRows([row()], "income");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Edit Working shift" }),
+    );
+    expect(screen.getByText(/changes in Schedule/)).toBeTruthy();
+  });
+
+  it("saves a one off shift without asking anything", async () => {
+    const { onSave } = setupRows([row()], "income");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Edit Working shift" }),
+    );
+    await userEvent.clear(screen.getByLabelText("Income location"));
+    await userEvent.type(screen.getByLabelText("Income location"), "The bar");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    const [one, on, next, scope] = onSave.mock.calls[0];
+    expect(one.eventId).toBe("e1");
+    expect(on).toBe("2026-03-04");
+    expect(next.place).toBe("The bar");
+    expect(scope).toBeNull();
+  });
+
+  it("removes a one off shift without asking anything", async () => {
+    const { onRemove } = setupRows([row()], "income");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove Working shift" }),
+    );
+    expect(onRemove.mock.calls[0][2]).toBeNull();
+  });
+
+  it("asks which shifts when the shift repeats", async () => {
+    const { onRemove } = setupRows([row({ series: true })], "income");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Remove Working shift" }),
+    );
+    expect(onRemove).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByText("All entries"));
+    expect(onRemove.mock.calls[0][2]).toBe("all");
+  });
+
+  it("asks the same question when saving a repeating shift", async () => {
+    const { onSave } = setupRows([row({ series: true })], "income");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Edit Working shift" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByText("This entry"));
+    expect(onSave.mock.calls[0][3]).toBe("one");
   });
 
   it("leaves an entry typed in here alone", () => {
     setup([flow({ kind: "income", title: "Tutoring" })], "income");
-    expect(
-      screen.getByRole("button", { name: "Edit Tutoring" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Edit Tutoring" })).toBeTruthy();
+    expect(document.querySelector('[data-reorder="Tutoring"]')).not.toBeNull();
   });
 });

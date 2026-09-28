@@ -1,5 +1,9 @@
-import type { Flow, LifeEvent } from "@lifeos/contracts";
+import type { EditScope, Flow, LifeEvent } from "@lifeos/contracts";
 import { dayKey, expand } from "@/modules/schedule/lib/recurrence";
+import {
+  removeOccurrence,
+  saveOccurrence,
+} from "@/modules/schedule/lib/event-store";
 import {
   daysInMonth,
   round,
@@ -32,38 +36,72 @@ function day(month: Month, at: number): string {
   return `${month.year}-${mm}-${String(at).padStart(2, "0")}`;
 }
 
-export function shiftsIn(events: LifeEvent[], month: Month): Dated[] {
+export function shiftId(event: LifeEvent): string {
+  return `shift-${event.id}`;
+}
+
+export function workIn(events: LifeEvent[], month: Month): LifeEvent[] {
   const first = day(month, 1);
   const last = day(month, daysInMonth(month));
-  const rows: Dated[] = [];
 
-  for (const one of expand(
+  return expand(
     events,
     new Date(month.year, month.month, 1),
     new Date(month.year, month.month, daysInMonth(month)),
-  )) {
-    if (one.type !== "work") continue;
+  ).filter((one) => {
+    if (one.type !== "work") return false;
     const on = dayKey(one.start);
-    if (on < first || on > last) continue;
+    return on >= first && on <= last;
+  });
+}
 
-    rows.push({
-      on,
+export function shiftsIn(events: LifeEvent[], month: Month): Dated[] {
+  return workIn(events, month)
+    .map((one) => ({
+      on: dayKey(one.start),
+      series: Boolean(one.seriesId),
       flow: {
-        id: `shift-${one.id}`,
+        id: shiftId(one),
         userId: one.userId,
         kind: "income",
         title: one.title,
-        ...(one.place ? { place: one.place } : {}),
-        on,
+        category: "Work",
+        ...(one.type === "work" && one.place ? { place: one.place } : {}),
+        on: dayKey(one.start),
         amount: payFor(one),
         repeat: "once",
         eventId: one.id,
       } satisfies Flow,
+    }))
+    .sort((a, b) => {
+      if (a.on !== b.on) return a.on < b.on ? -1 : 1;
+      return a.flow.title.localeCompare(b.flow.title);
     });
-  }
+}
 
-  return rows.sort((a, b) => {
-    if (a.on !== b.on) return a.on < b.on ? -1 : 1;
-    return a.flow.title.localeCompare(b.flow.title);
-  });
+export function shiftFor(
+  events: LifeEvent[],
+  month: Month,
+  flowId: string,
+): LifeEvent | undefined {
+  return workIn(events, month).find((one) => shiftId(one) === flowId);
+}
+
+export async function saveShift(
+  event: LifeEvent,
+  title: string,
+  place: string | undefined,
+  scope: EditScope,
+): Promise<void> {
+  await saveOccurrence(
+    { ...event, title, place } as LifeEvent,
+    scope,
+  );
+}
+
+export async function removeShift(
+  event: LifeEvent,
+  scope: EditScope,
+): Promise<void> {
+  await removeOccurrence(event, scope);
 }

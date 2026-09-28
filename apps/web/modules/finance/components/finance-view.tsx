@@ -7,6 +7,9 @@ import {
   ensureEvents,
   eventsServer,
   eventsSnapshot,
+  removeShift,
+  saveShift,
+  shiftFor,
   shiftsIn,
   subscribeEvents,
 } from "@/lib/shifts";
@@ -80,11 +83,21 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
     next: Flow,
     scope: EditScope | null,
   ): void {
+    if (flow.eventId) {
+      const event = shiftFor(events, month, flow.id);
+      if (event) void saveShift(event, next.title, next.place, scope ?? "one");
+      return;
+    }
     if (scope) void saveOccurrence(flow, on, next, scope);
     else void saveFlow({ ...next, id: flow.id, position: flow.position });
   }
 
   function onRemove(flow: Flow, on: string, scope: EditScope | null): void {
+    if (flow.eventId) {
+      const event = shiftFor(events, month, flow.id);
+      if (event) void removeShift(event, scope ?? "one");
+      return;
+    }
     if (scope) void deleteOccurrence(flow, on, scope);
     else void deleteFlow(flow.id);
   }
