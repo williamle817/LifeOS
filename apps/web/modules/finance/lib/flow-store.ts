@@ -214,21 +214,3 @@ export async function deleteFlow(id: string): Promise<void> {
   emit();
   await guard(supabase.from("flows").delete().eq("id", id));
 }
-
-export async function reorderFlows(ids: string[]): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-
-  const next = cache.map((flow) => {
-    const at = ids.indexOf(flow.id);
-    return at < 0 || flow.position === at ? flow : { ...flow, position: at };
-  });
-  const changed = next.filter((flow, i) => flow !== cache[i]);
-
-  cache = next;
-  emit();
-
-  for (const flow of changed) {
-    await guard(supabase.from("flows").update(flowRow(flow)).eq("id", flow.id));
-  }
-}

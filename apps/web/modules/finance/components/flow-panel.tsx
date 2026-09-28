@@ -5,7 +5,6 @@ import type { EditScope, Flow, FlowKind, FlowRepeat } from "@lifeos/contracts";
 import { EXPENSE_TYPES, FLOW_REPEATS, INCOME_TYPES } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
 import { Modal } from "@/components/modal";
-import { DragHandle, useDragList } from "@/components/reorder";
 import { ScopeAsk } from "@/components/scope-ask";
 import {
   dayLabel,
@@ -43,7 +42,6 @@ export function FlowPanel({
   onAdd,
   onSave,
   onRemove,
-  onMove,
 }: {
   kind: FlowKind;
   rows: Dated[];
@@ -52,11 +50,7 @@ export function FlowPanel({
   onAdd: (flow: Flow) => void;
   onSave: (flow: Flow, on: string, next: Flow, scope: EditScope | null) => void;
   onRemove: (flow: Flow, on: string, scope: EditScope | null) => void;
-  onMove: (from: number, to: number) => void;
 }) {
-  const list = `flow-${kind}`;
-  const drag = useDragList((_list, from, to) => onMove(from, to));
-
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [asking, setAsking] = useState<Asking | null>(null);
@@ -237,7 +231,7 @@ export function FlowPanel({
 
       {rows.length ? (
         <ul className="divide-y divide-line">
-          {rows.map((row, seat) => {
+          {rows.map((row) => {
             const { flow, on: when } = row;
             return editing === flow.id ? (
               <li key={flow.id} className="bg-surface px-4 py-3">
@@ -269,8 +263,6 @@ export function FlowPanel({
             ) : (
               <li
                 key={flow.id}
-                data-drag={list}
-                style={drag.style(list, seat)}
                 className="flex items-center gap-2 bg-surface px-4 py-2.5 text-[13px] transition-colors hover:bg-surface-muted"
               >
                 <span className="min-w-0 flex-1">
@@ -309,16 +301,6 @@ export function FlowPanel({
                 >
                   <ActionIcon name="trash" />
                 </button>
-                {flow.eventId ? (
-                  <span className="size-6" aria-hidden="true" />
-                ) : (
-                  <DragHandle
-                    list={list}
-                    index={seat}
-                    drag={drag}
-                    label={flow.title}
-                  />
-                )}
               </li>
             );
           })}

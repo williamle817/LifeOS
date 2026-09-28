@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { EditScope, Flow } from "@lifeos/contracts";
-import { move } from "@/components/reorder";
 import {
   ensureEvents,
   eventsServer,
@@ -21,7 +20,6 @@ import {
   getServerSnapshot,
   getSnapshot,
   lastWriteError,
-  reorderFlows,
   saveFlow,
   saveOccurrence,
   subscribe,
@@ -63,19 +61,6 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
   const spending = shown.filter((one) => one.flow.kind === "expense");
   const gone = newestFirst(settled(spending, today));
   const due = pending(spending, today);
-
-  function onMove(rows: typeof income) {
-    return (from: number, to: number) => {
-      const ids = move(
-        rows.map((one) => one.flow.id),
-        from,
-        to,
-      );
-      void reorderFlows(
-        ids.filter((id) => rows.some((one) => one.flow.id === id && !one.flow.eventId)),
-      );
-    };
-  }
 
   function onSave(
     flow: Flow,
@@ -125,7 +110,6 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
           onAdd={(flow: Flow) => void saveFlow(flow)}
           onSave={onSave}
           onRemove={onRemove}
-          onMove={onMove(income)}
         />
         <FlowPanel
           kind="expense"
@@ -135,7 +119,6 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
           onAdd={(flow: Flow) => void saveFlow(flow)}
           onSave={onSave}
           onRemove={onRemove}
-          onMove={onMove(gone)}
         />
       </div>
     </div>

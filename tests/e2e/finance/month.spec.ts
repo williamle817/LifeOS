@@ -144,53 +144,6 @@ test("edits and then removes an entry", async ({ app, page }) => {
   expect(app.db.flows).toHaveLength(0);
 });
 
-test("drags one entry above another on the same day", async ({
-  app,
-  page,
-}) => {
-  const now = thisMonth();
-  app.db.flows = [
-    flowRow({
-      id: "first",
-      kind: "income",
-      title: "Morning shift",
-      on_date: now.day(4),
-      position: 0,
-    }),
-    flowRow({
-      id: "second",
-      kind: "income",
-      title: "Evening shift",
-      on_date: now.day(4),
-      position: 1,
-    }),
-  ];
-
-  await app.open("/finance");
-
-  const rows = page.getByRole("region", { name: "Income" }).getByRole("listitem");
-  await expect(rows.first()).toContainText("Morning shift");
-
-  const grip = page.locator('[data-reorder="Evening shift"]');
-  const from = await grip.boundingBox();
-  const target = await rows.first().boundingBox();
-  if (!from || !target) throw new Error("no rows to drag");
-
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(
-    from.x + from.width / 2,
-    target.y + target.height / 2 - 4,
-    { steps: 12 },
-  );
-  await page.mouse.up();
-
-  await expect(rows.first()).toContainText("Evening shift");
-  expect(
-    app.db.flows.find((one) => one.id === "second")?.position,
-  ).toBe(0);
-});
-
 test("files an expense under a type", async ({ app, page }) => {
   await app.open("/finance");
 

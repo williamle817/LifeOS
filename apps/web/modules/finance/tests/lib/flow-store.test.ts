@@ -205,39 +205,6 @@ describe("when the database refuses", () => {
   });
 });
 
-describe("putting the entries in order", () => {
-  it("numbers the rows the way they were dragged", async () => {
-    const loaded = await store([
-      row({ id: "a", position: 0 }),
-      row({ id: "b", position: 1 }),
-      row({ id: "c", position: 2 }),
-    ]);
-    await loaded.reorderFlows(["c", "a", "b"]);
-    expect(storedIn("flows", "c")?.position).toBe(0);
-    expect(storedIn("flows", "a")?.position).toBe(1);
-    expect(storedIn("flows", "b")?.position).toBe(2);
-  });
-
-  it("writes only the rows whose number moved", async () => {
-    const loaded = await store([
-      row({ id: "a", position: 0 }),
-      row({ id: "b", position: 1 }),
-      row({ id: "c", position: 2 }),
-    ]);
-    await loaded.reorderFlows(["a", "c", "b"]);
-    expect(calls().filter((c) => c === "update flows")).toHaveLength(2);
-  });
-
-  it("leaves a row it was not given alone", async () => {
-    const loaded = await store([
-      row({ id: "a", position: 0 }),
-      row({ id: "other", kind: "income", position: 7 }),
-    ]);
-    await loaded.reorderFlows(["a"]);
-    expect(storedIn("flows", "other")?.position).toBe(7);
-  });
-});
-
 describe("removing one occurrence of a repeating entry", () => {
   const rent = {
     id: "rent",

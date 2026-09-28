@@ -31,7 +31,6 @@ function setupRows(rows: Dated[], kind: Flow["kind"] = "expense") {
   const onAdd = vi.fn();
   const onSave = vi.fn();
   const onRemove = vi.fn();
-  const onMove = vi.fn();
   render(
     <FlowPanel
       kind={kind}
@@ -41,17 +40,15 @@ function setupRows(rows: Dated[], kind: Flow["kind"] = "expense") {
       onAdd={onAdd}
       onSave={onSave}
       onRemove={onRemove}
-      onMove={onMove}
     />,
   );
-  return { onAdd, onSave, onRemove, onMove };
+  return { onAdd, onSave, onRemove };
 }
 
 function setup(flows: Flow[], kind: Flow["kind"] = "expense") {
   const onAdd = vi.fn();
   const onSave = vi.fn();
   const onRemove = vi.fn();
-  const onMove = vi.fn();
   render(
     <FlowPanel
       kind={kind}
@@ -61,10 +58,9 @@ function setup(flows: Flow[], kind: Flow["kind"] = "expense") {
       onAdd={onAdd}
       onSave={onSave}
       onRemove={onRemove}
-      onMove={onMove}
     />,
   );
-  return { onAdd, onSave, onRemove, onMove };
+  return { onAdd, onSave, onRemove };
 }
 
 describe("the panel of entries", () => {
@@ -276,9 +272,9 @@ describe("changing an entry", () => {
     expect(scope).toBeNull();
   });
 
-  it("offers a drag handle on every row", () => {
+  it("offers no drag handle, because the date decides the order", () => {
     setup([flow({ title: "Groceries" })]);
-    expect(document.querySelector('[data-reorder="Groceries"]')).not.toBeNull();
+    expect(document.querySelector("[data-reorder]")).toBeNull();
   });
 });
 
@@ -451,11 +447,6 @@ describe("a row that came from the calendar", () => {
     ).toBeTruthy();
   });
 
-  it("offers no drag handle, because there is no row to renumber", () => {
-    setupRows([row()], "income");
-    expect(document.querySelector('[data-reorder="Working shift"]')).toBeNull();
-  });
-
   it("only edits the name and the location", async () => {
     setupRows([row()], "income");
     await userEvent.click(
@@ -525,6 +516,5 @@ describe("a row that came from the calendar", () => {
   it("leaves an entry typed in here alone", () => {
     setup([flow({ kind: "income", title: "Tutoring" })], "income");
     expect(screen.getByRole("button", { name: "Edit Tutoring" })).toBeTruthy();
-    expect(document.querySelector('[data-reorder="Tutoring"]')).not.toBeNull();
   });
 });
