@@ -25,6 +25,7 @@ import {
 } from "@/modules/finance/lib/flow-store";
 import {
   inMonth,
+  newestFirst,
   pending,
   settled,
   thisMonth,
@@ -52,12 +53,12 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
 
   const userId = currentUserId() ?? "";
   const shown = inMonth(flows, month);
-  const income = [
+  const income = newestFirst([
     ...shown.filter((one) => one.flow.kind === "income"),
     ...shiftsIn(events, month),
-  ].sort((a, b) => (a.on < b.on ? -1 : a.on > b.on ? 1 : 0));
+  ]);
   const spending = shown.filter((one) => one.flow.kind === "expense");
-  const gone = settled(spending, today);
+  const gone = newestFirst(settled(spending, today));
   const due = pending(spending, today);
 
   function onMove(rows: typeof income) {

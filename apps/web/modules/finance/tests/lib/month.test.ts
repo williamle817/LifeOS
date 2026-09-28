@@ -7,6 +7,7 @@ import {
   daysInMonth,
   inMonth,
   monthLabel,
+  newestFirst,
   money,
   round,
   pending,
@@ -265,5 +266,52 @@ describe("cutting a series short", () => {
 
   it("leaves a one off alone when nothing was skipped", () => {
     expect(dateIn(flow({ on: "2026-03-10" }), MARCH)).toBe("2026-03-10");
+  });
+});
+
+describe("the order the lists read in", () => {
+  const MARCH = { year: 2026, month: 2 };
+
+  it("puts the latest date at the top", () => {
+    const rows = newestFirst(
+      inMonth(
+        [
+          flow({ id: "early", on: "2026-03-02" }),
+          flow({ id: "late", on: "2026-03-28" }),
+          flow({ id: "middle", on: "2026-03-15" }),
+        ],
+        MARCH,
+      ),
+    );
+    expect(rows.map((one) => one.flow.id)).toEqual([
+      "late",
+      "middle",
+      "early",
+    ]);
+  });
+
+  it("keeps the order you dragged them into on the same date", () => {
+    const rows = newestFirst(
+      inMonth(
+        [
+          flow({ id: "second", on: "2026-03-02", position: 1 }),
+          flow({ id: "first", on: "2026-03-02", position: 0 }),
+        ],
+        MARCH,
+      ),
+    );
+    expect(rows.map((one) => one.flow.id)).toEqual(["first", "second"]);
+  });
+
+  it("leaves the list it was given alone", () => {
+    const rows = inMonth(
+      [
+        flow({ id: "early", on: "2026-03-02" }),
+        flow({ id: "late", on: "2026-03-28" }),
+      ],
+      MARCH,
+    );
+    newestFirst(rows);
+    expect(rows.map((one) => one.flow.id)).toEqual(["early", "late"]);
   });
 });

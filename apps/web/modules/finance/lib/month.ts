@@ -108,6 +108,13 @@ export function whenLabel(on: string, today = new Date()): string {
   return `in ${days} days`;
 }
 
+export function newestFirst(rows: Dated[]): Dated[] {
+  return [...rows].sort((a, b) => {
+    if (a.on !== b.on) return a.on > b.on ? -1 : 1;
+    return (a.flow.position ?? 0) - (b.flow.position ?? 0);
+  });
+}
+
 export function settled(rows: Dated[], today = new Date()): Dated[] {
   const now = todayIso(today);
   return rows.filter((one) => one.on <= now);

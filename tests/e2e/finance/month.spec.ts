@@ -396,3 +396,24 @@ test("adds a repeating shift up over the whole month", async ({
   expect(seen).toBeGreaterThan(3);
   await expect(incomes.getByText("+$100.00").first()).toBeVisible();
 });
+
+test("reads the newest date at the top", async ({ app, page }) => {
+  const back = thisMonth(-1);
+
+  app.db.flows = [
+    flowRow({ id: "a", title: "Earliest", on_date: back.day(2) }),
+    flowRow({ id: "b", title: "Latest", on_date: back.day(26) }),
+    flowRow({ id: "c", title: "Middle", on_date: back.day(14) }),
+  ];
+
+  await app.open("/finance");
+  await page.getByRole("button", { name: "Previous month" }).click();
+
+  const rows = page
+    .getByRole("region", { name: "Expenses" })
+    .getByRole("listitem");
+  await expect(rows.first()).toBeVisible();
+  const names = await rows.allTextContents();
+  expect(names[0]).toContain("Latest");
+  expect(names[2]).toContain("Earliest");
+});
