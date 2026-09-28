@@ -62,6 +62,30 @@ describe("the income against spending ring", () => {
     expect(screen.getAllByText("-$300.00").length).toBeGreaterThan(0);
   });
 
+  it("paints a surplus green", () => {
+    const { container } = render(<SplitChart income={1200} expense={800} />);
+    const left = [...container.querySelectorAll("p")].find(
+      (one) => one.textContent === "$400.00",
+    );
+    expect(left?.style.color).toBe("var(--money-in)");
+  });
+
+  it("paints a shortfall red", () => {
+    const { container } = render(<SplitChart income={500} expense={800} />);
+    const left = [...container.querySelectorAll("p")].find(
+      (one) => one.textContent === "-$300.00",
+    );
+    expect(left?.style.color).toBe("var(--money-out)");
+  });
+
+  it("leaves breaking even in plain ink", () => {
+    const { container } = render(<SplitChart income={800} expense={800} />);
+    const left = [...container.querySelectorAll("p")].find(
+      (one) => one.textContent === "$0.00",
+    );
+    expect(left?.style.color).toBe("var(--ink)");
+  });
+
   it("draws no slices at all in an empty month", () => {
     const { container } = render(<SplitChart income={0} expense={0} />);
     expect(container.querySelectorAll("circle")).toHaveLength(1);

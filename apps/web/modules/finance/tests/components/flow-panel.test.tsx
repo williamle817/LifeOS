@@ -24,6 +24,7 @@ function flow(over: Partial<Flow> = {}): Flow {
 }
 
 function setup(flows: Flow[], kind: Flow["kind"] = "expense") {
+  const onAdd = vi.fn();
   const onSave = vi.fn();
   const onRemove = vi.fn();
   const onMove = vi.fn();
@@ -33,12 +34,13 @@ function setup(flows: Flow[], kind: Flow["kind"] = "expense") {
       rows={inMonth(flows, MARCH)}
       userId="u1"
       month={MARCH}
+      onAdd={onAdd}
       onSave={onSave}
       onRemove={onRemove}
       onMove={onMove}
     />,
   );
-  return { onSave, onRemove, onMove };
+  return { onAdd, onSave, onRemove, onMove };
 }
 
 describe("the panel of entries", () => {
@@ -104,7 +106,7 @@ describe("adding an entry", () => {
   });
 
   it("hands back what was typed", async () => {
-    const { onSave } = setup([]);
+    const { onAdd } = setup([]);
     await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
     await userEvent.type(screen.getByLabelText("Expenses name"), "Rent");
     await userEvent.type(screen.getByLabelText("Expenses location"), "Home");
@@ -116,7 +118,7 @@ describe("adding an entry", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Add" }));
 
-    expect(onSave).toHaveBeenCalledWith(
+    expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: "expense",
         title: "Rent",
@@ -129,27 +131,27 @@ describe("adding an entry", () => {
   });
 
   it("refuses an entry with no name", async () => {
-    const { onSave } = setup([]);
+    const { onAdd } = setup([]);
     await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
     await userEvent.type(screen.getByLabelText("Expenses amount"), "10");
     await userEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(onSave).not.toHaveBeenCalled();
+    expect(onAdd).not.toHaveBeenCalled();
   });
 
   it("leaves the location off when it was not filled in", async () => {
-    const { onSave } = setup([]);
+    const { onAdd } = setup([]);
     await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
     await userEvent.type(screen.getByLabelText("Expenses name"), "Bus fare");
     await userEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(onSave.mock.calls[0][0].place).toBeUndefined();
+    expect(onAdd.mock.calls[0][0].place).toBeUndefined();
   });
 
   it("reads an empty amount as nothing, not as text", async () => {
-    const { onSave } = setup([]);
+    const { onAdd } = setup([]);
     await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
     await userEvent.type(screen.getByLabelText("Expenses name"), "Bus fare");
     await userEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(onSave.mock.calls[0][0].amount).toBe(0);
+    expect(onAdd.mock.calls[0][0].amount).toBe(0);
   });
 
   it("stays open for the next entry and keeps the date", async () => {
@@ -205,15 +207,15 @@ describe("changing an entry", () => {
     ).toBe("monthly");
   });
 
-  it("edits the day the series starts, not the day it landed", async () => {
+  it("edits the day this occurrence landed on", async () => {
     setup([flow({ title: "Rent", on: "2026-01-31", repeat: "monthly" })]);
     await userEvent.click(screen.getByRole("button", { name: "Edit Rent" }));
     expect(
       (screen.getByLabelText("Expenses date") as HTMLInputElement).value,
-    ).toBe("2026-01-31");
+    ).toBe("2026-03-31");
   });
 
-  it("keeps the same entry rather than making a second one", async () => {
+  it("hands back the entry, its date and the new values", async () => {
     const { onSave } = setup([flow({ id: "keep", title: "Groceries" })]);
     await userEvent.click(
       screen.getByRole("button", { name: "Edit Groceries" }),
@@ -222,9 +224,11 @@ describe("changing an entry", () => {
     await userEvent.type(screen.getByLabelText("Expenses name"), "Food");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "keep", title: "Food" }),
-    );
+    const [original, on, next, scope] = onSave.mock.calls[0];
+    expect(original.id).toBe("keep");
+    expect(on).toBe("2026-03-10");
+    expect(next.title).toBe("Food");
+    expect(scope).toBeNull();
   });
 
   it("drops out of the form on cancel without saving", async () => {
@@ -237,16 +241,148 @@ describe("changing an entry", () => {
     expect(screen.queryByText(/Editing/)).toBeNull();
   });
 
-  it("removes an entry", async () => {
+  it("removes a one off without asking anything", async () => {
     const { onRemove } = setup([flow({ id: "gone", title: "Groceries" })]);
     await userEvent.click(
       screen.getByRole("button", { name: "Remove Groceries" }),
     );
-    expect(onRemove).toHaveBeenCalledWith("gone");
+    const [gone, on, scope] = onRemove.mock.calls[0];
+    expect(gone.id).toBe("gone");
+    expect(on).toBe("2026-03-10");
+    expect(scope).toBeNull();
   });
 
   it("offers a drag handle on every row", () => {
     setup([flow({ title: "Groceries" })]);
     expect(document.querySelector('[data-reorder="Groceries"]')).not.toBeNull();
+  });
+});
+
+describe("what an expense is for", () => {
+  it("offers a type on an expense", async () => {
+    setup([]);
+    await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
+    expect(screen.getByLabelText("Expenses type")).toBeTruthy();
+  });
+
+  it("asks income what it is too, from its own list", async () => {
+    setup([], "income");
+    await userEvent.click(screen.getByRole("button", { name: "Add income" }));
+    const type = screen.getByLabelText("Income type") as HTMLSelectElement;
+    const options = [...type.options].map((one) => one.text);
+    expect(options).toContain("Paycheck");
+    expect(options).toContain("Gift");
+    expect(options).not.toContain("Groceries");
+  });
+
+  it("leaves the type not set to start with", async () => {
+    setup([]);
+    await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
+    const type = screen.getByLabelText("Expenses type") as HTMLSelectElement;
+    expect(type.value).toBe("");
+    expect(type.options[0].text).toBe("Not set");
+  });
+
+  it("saves the type that was picked", async () => {
+    const { onAdd } = setup([]);
+    await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
+    await userEvent.type(screen.getByLabelText("Expenses name"), "Netflix");
+    await userEvent.selectOptions(
+      screen.getByLabelText("Expenses type"),
+      "Subscription",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(onAdd.mock.calls[0][0].category).toBe("Subscription");
+  });
+
+  it("leaves the type off when it was not picked", async () => {
+    const { onAdd } = setup([]);
+    await userEvent.click(screen.getByRole("button", { name: "Add expense" }));
+    await userEvent.type(screen.getByLabelText("Expenses name"), "Bus fare");
+    await userEvent.click(screen.getByRole("button", { name: "Add" }));
+    expect(onAdd.mock.calls[0][0].category).toBeUndefined();
+  });
+
+  it("shows the type under the name", () => {
+    setup([flow({ category: "Groceries", on: "2026-03-04" })]);
+    expect(screen.getByText(/Mar 4 · Groceries/)).toBeTruthy();
+  });
+
+  it("fills the type back in when the entry is edited", async () => {
+    setup([flow({ title: "Netflix", category: "Subscription" })]);
+    await userEvent.click(screen.getByRole("button", { name: "Edit Netflix" }));
+    expect(
+      (screen.getByLabelText("Expenses type") as HTMLSelectElement).value,
+    ).toBe("Subscription");
+  });
+});
+
+describe("touching a repeating entry", () => {
+  const rent = () =>
+    flow({
+      id: "rent",
+      title: "Rent",
+      on: "2026-01-05",
+      repeat: "monthly",
+      amount: 650,
+    });
+
+  it("asks which entries before removing one", async () => {
+    const { onRemove } = setup([rent()]);
+    await userEvent.click(screen.getByRole("button", { name: "Remove Rent" }));
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Apply to" })).toBeTruthy();
+  });
+
+  it("offers the same three choices the calendar offers", async () => {
+    setup([rent()]);
+    await userEvent.click(screen.getByRole("button", { name: "Remove Rent" }));
+    const panel = screen.getByRole("dialog", { name: "Apply to" });
+    expect(within(panel).getByText("This entry")).toBeTruthy();
+    expect(within(panel).getByText("This and following entries")).toBeTruthy();
+    expect(within(panel).getByText("All entries")).toBeTruthy();
+  });
+
+  it("removes with the scope that was picked, at the right date", async () => {
+    const { onRemove } = setup([rent()]);
+    await userEvent.click(screen.getByRole("button", { name: "Remove Rent" }));
+    await userEvent.click(screen.getByText("This and following entries"));
+    const [one, on, scope] = onRemove.mock.calls[0];
+    expect(one.id).toBe("rent");
+    expect(on).toBe("2026-03-05");
+    expect(scope).toBe("following");
+  });
+
+  it("does nothing when the question is cancelled", async () => {
+    const { onRemove } = setup([rent()]);
+    await userEvent.click(screen.getByRole("button", { name: "Remove Rent" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onRemove).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("asks the same question when saving an edit", async () => {
+    const { onSave } = setup([rent()]);
+    await userEvent.click(screen.getByRole("button", { name: "Edit Rent" }));
+    await userEvent.clear(screen.getByLabelText("Expenses amount"));
+    await userEvent.type(screen.getByLabelText("Expenses amount"), "700");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onSave).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByText("This entry"));
+
+    const [one, on, next, scope] = onSave.mock.calls[0];
+    expect(one.id).toBe("rent");
+    expect(on).toBe("2026-03-05");
+    expect(next.amount).toBe(700);
+    expect(scope).toBe("one");
+  });
+
+  it("keeps the owner of the entry it is editing", async () => {
+    const { onSave } = setup([{ ...rent(), userId: "someone" }]);
+    await userEvent.click(screen.getByRole("button", { name: "Edit Rent" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    await userEvent.click(screen.getByText("All entries"));
+    expect(onSave.mock.calls[0][2].userId).toBe("someone");
   });
 });

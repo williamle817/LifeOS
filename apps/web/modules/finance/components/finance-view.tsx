@@ -1,27 +1,32 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import type { Flow } from "@lifeos/contracts";
+import type { EditScope, Flow } from "@lifeos/contracts";
 import { move } from "@/components/reorder";
 import {
   currentUserId,
   deleteFlow,
+  deleteOccurrence,
   ensureLoaded,
   getServerSnapshot,
   getSnapshot,
   lastWriteError,
   reorderFlows,
   saveFlow,
+  saveOccurrence,
   subscribe,
 } from "@/modules/finance/lib/flow-store";
 import {
   inMonth,
+  pending,
+  settled,
   thisMonth,
   total,
   type Month,
 } from "@/modules/finance/lib/month";
 import { MonthBar } from "@/modules/finance/components/month-bar";
 import { SplitChart } from "@/modules/finance/components/split-chart";
+import { ComingUp } from "@/modules/finance/components/coming-up";
 import { FlowPanel } from "@/modules/finance/components/flow-panel";
 
 export function FinanceView({ today = new Date() }: { today?: Date }) {
@@ -35,18 +40,35 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
   const userId = currentUserId() ?? "";
   const shown = inMonth(flows, month);
   const income = shown.filter((one) => one.flow.kind === "income");
-  const expense = shown.filter((one) => one.flow.kind === "expense");
+  const spending = shown.filter((one) => one.flow.kind === "expense");
+  const gone = settled(spending, today);
+  const due = pending(spending, today);
 
-  function onMove(kind: "income" | "expense") {
+  function onMove(rows: typeof income) {
     return (from: number, to: number) => {
-      const rows = kind === "income" ? income : expense;
-      const ids = move(
-        rows.map((one) => one.flow.id),
-        from,
-        to,
+      void reorderFlows(
+        move(
+          rows.map((one) => one.flow.id),
+          from,
+          to,
+        ),
       );
-      void reorderFlows(ids);
     };
+  }
+
+  function onSave(
+    flow: Flow,
+    on: string,
+    next: Flow,
+    scope: EditScope | null,
+  ): void {
+    if (scope) void saveOccurrence(flow, on, next, scope);
+    else void saveFlow({ ...next, id: flow.id, position: flow.position });
+  }
+
+  function onRemove(flow: Flow, on: string, scope: EditScope | null): void {
+    if (scope) void deleteOccurrence(flow, on, scope);
+    else void deleteFlow(flow.id);
   }
 
   return (
@@ -59,7 +81,9 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
 
       <MonthBar month={month} onChange={setMonth} today={today} />
 
-      <SplitChart income={total(income)} expense={total(expense)} />
+      <SplitChart income={total(income)} expense={total(gone)} />
+
+      <ComingUp rows={due} today={today} />
 
       <div className="grid items-start gap-5 lg:grid-cols-2">
         <FlowPanel
@@ -67,18 +91,20 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
           rows={income}
           userId={userId}
           month={month}
-          onSave={(flow: Flow) => void saveFlow(flow)}
-          onRemove={(id) => void deleteFlow(id)}
-          onMove={onMove("income")}
+          onAdd={(flow: Flow) => void saveFlow(flow)}
+          onSave={onSave}
+          onRemove={onRemove}
+          onMove={onMove(income)}
         />
         <FlowPanel
           kind="expense"
-          rows={expense}
+          rows={gone}
           userId={userId}
           month={month}
-          onSave={(flow: Flow) => void saveFlow(flow)}
-          onRemove={(id) => void deleteFlow(id)}
-          onMove={onMove("expense")}
+          onAdd={(flow: Flow) => void saveFlow(flow)}
+          onSave={onSave}
+          onRemove={onRemove}
+          onMove={onMove(gone)}
         />
       </div>
     </div>

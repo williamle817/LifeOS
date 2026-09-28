@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Flow, FlowKind, FlowRepeat } from "@lifeos/contracts";
-import { FLOW_REPEATS } from "@lifeos/contracts";
+import type { EditScope, Flow, FlowKind, FlowRepeat } from "@lifeos/contracts";
+import { EXPENSE_TYPES, FLOW_REPEATS, INCOME_TYPES } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
+import { Modal } from "@/components/modal";
 import { DragHandle, useDragList } from "@/components/reorder";
+import { ScopeAsk } from "@/components/scope-ask";
 import {
   dayLabel,
   money,
@@ -22,6 +24,8 @@ const REPEAT_LABEL: Record<FlowRepeat, string> = {
   yearly: "Every year",
 };
 
+type Asking = { flow: Flow; on: string; next: Flow | null };
+
 function firstOf(month: Month): string {
   const mm = String(month.month + 1).padStart(2, "0");
   return `${month.year}-${mm}-01`;
@@ -32,6 +36,7 @@ export function FlowPanel({
   rows,
   userId,
   month,
+  onAdd,
   onSave,
   onRemove,
   onMove,
@@ -40,8 +45,9 @@ export function FlowPanel({
   rows: Dated[];
   userId: string;
   month: Month;
-  onSave: (flow: Flow) => void;
-  onRemove: (id: string) => void;
+  onAdd: (flow: Flow) => void;
+  onSave: (flow: Flow, on: string, next: Flow, scope: EditScope | null) => void;
+  onRemove: (flow: Flow, on: string, scope: EditScope | null) => void;
   onMove: (from: number, to: number) => void;
 }) {
   const list = `flow-${kind}`;
@@ -49,19 +55,23 @@ export function FlowPanel({
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+  const [asking, setAsking] = useState<Asking | null>(null);
   const [title, setTitle] = useState("");
   const [place, setPlace] = useState("");
+  const [category, setCategory] = useState("");
   const [on, setOn] = useState(() => firstOf(month));
   const [amount, setAmount] = useState("");
   const [repeat, setRepeat] = useState<FlowRepeat>("once");
 
   const heading = kind === "income" ? "Income" : "Expenses";
-  const tint = kind === "income" ? "green" : "red";
+  const ink = kind === "income" ? "var(--money-in)" : "var(--money-out)";
+  const types = kind === "income" ? INCOME_TYPES : EXPENSE_TYPES;
   const sum = total(rows);
 
   function reset(startOn: string) {
     setTitle("");
     setPlace("");
+    setCategory("");
     setOn(startOn);
     setAmount("");
     setRepeat("once");
@@ -73,23 +83,25 @@ export function FlowPanel({
     reset(firstOf(month));
   }
 
-  function startEdit(flow: Flow) {
+  function startEdit(flow: Flow, when: string) {
     setAdding(false);
     setEditing(flow.id);
     setTitle(flow.title);
     setPlace(flow.place ?? "");
-    setOn(flow.on);
+    setCategory(flow.category ?? "");
+    setOn(when);
     setAmount(String(flow.amount));
     setRepeat(flow.repeat);
   }
 
-  function build(over: Partial<Flow>): Flow {
+  function build(over: Partial<Flow> = {}): Flow {
     return {
       id: crypto.randomUUID(),
       userId,
       kind,
       title: title.trim(),
       ...(place.trim() ? { place: place.trim() } : { place: undefined }),
+      ...(category ? { category } : { category: undefined }),
       on,
       amount: Number(amount) || 0,
       repeat,
@@ -99,14 +111,21 @@ export function FlowPanel({
 
   function submitNew() {
     if (!title.trim()) return;
-    onSave(build({}));
+    onAdd(build());
     reset(on);
   }
 
-  function submitEdit(flow: Flow) {
+  function submitEdit(flow: Flow, when: string) {
     if (!title.trim()) return;
-    onSave(build({ id: flow.id, userId: flow.userId, position: flow.position }));
+    const next = build({ userId: flow.userId });
     setEditing(null);
+    if (flow.repeat === "once") onSave(flow, when, next, null);
+    else setAsking({ flow, on: when, next });
+  }
+
+  function remove(flow: Flow, when: string) {
+    if (flow.repeat === "once") onRemove(flow, when, null);
+    else setAsking({ flow, on: when, next: null });
   }
 
   function field(caption: string, control: React.ReactNode) {
@@ -141,6 +160,22 @@ export function FlowPanel({
             onChange={(e) => setPlace(e.target.value)}
             className={`min-w-28 ${input}`}
           />,
+        )}
+        {field(
+          "Type",
+          <select
+            aria-label={`${heading} type`}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={input}
+          >
+            <option value="">Not set</option>
+            {types.map((one) => (
+              <option key={one} value={one}>
+                {one}
+              </option>
+            ))}
+          </select>,
         )}
         {field(
           "Date",
@@ -191,10 +226,7 @@ export function FlowPanel({
     >
       <header className="flex items-center gap-2 border-b border-line bg-accent-soft px-4 py-2.5">
         <h3 className="text-sm font-medium">{heading}</h3>
-        <span
-          style={{ color: `var(--event-${tint}-ink)` }}
-          className="ml-auto text-sm font-semibold"
-        >
+        <span style={{ color: ink }} className="ml-auto text-sm font-semibold">
           {money(sum)}
         </span>
       </header>
@@ -212,7 +244,7 @@ export function FlowPanel({
                   {fields()}
                   <button
                     type="button"
-                    onClick={() => submitEdit(flow)}
+                    onClick={() => submitEdit(flow, when)}
                     className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
                   >
                     Save
@@ -238,6 +270,7 @@ export function FlowPanel({
                   <span className="text-[11px] text-ink-faint">
                     {[
                       dayLabel(when),
+                      flow.category,
                       flow.place,
                       flow.repeat === "once" ? null : REPEAT_LABEL[flow.repeat],
                     ]
@@ -246,10 +279,7 @@ export function FlowPanel({
                   </span>
                 </span>
 
-                <span
-                  style={{ color: `var(--event-${tint}-ink)` }}
-                  className="shrink-0 font-medium"
-                >
+                <span style={{ color: ink }} className="shrink-0 font-medium">
                   {kind === "income" ? "+" : "-"}
                   {money(flow.amount)}
                 </span>
@@ -257,7 +287,7 @@ export function FlowPanel({
                 <button
                   type="button"
                   aria-label={`Edit ${flow.title}`}
-                  onClick={() => startEdit(flow)}
+                  onClick={() => startEdit(flow, when)}
                   className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
                 >
                   <ActionIcon name="edit" />
@@ -265,7 +295,7 @@ export function FlowPanel({
                 <button
                   type="button"
                   aria-label={`Remove ${flow.title}`}
-                  onClick={() => onRemove(flow.id)}
+                  onClick={() => remove(flow, when)}
                   className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
                 >
                   <ActionIcon name="trash" />
@@ -324,6 +354,22 @@ export function FlowPanel({
           </button>
         )}
       </div>
+
+      {asking ? (
+        <Modal label="Apply to" onClose={() => setAsking(null)}>
+          <ScopeAsk
+            noun="entry"
+            plural="entries"
+            onPick={(scope) => {
+              if (asking.next)
+                onSave(asking.flow, asking.on, asking.next, scope);
+              else onRemove(asking.flow, asking.on, scope);
+              setAsking(null);
+            }}
+            onCancel={() => setAsking(null)}
+          />
+        </Modal>
+      ) : null}
     </section>
   );
 }

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function FinancePage() {
   return (
     <>
-      <Theme name="slate" />
+      <Theme name="sand" />
       <FinanceView />
     </>
   );

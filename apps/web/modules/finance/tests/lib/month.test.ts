@@ -2,15 +2,21 @@ import { describe, expect, it } from "vitest";
 import type { Flow } from "@lifeos/contracts";
 import {
   dateIn,
+  dayBefore,
+  daysUntil,
   daysInMonth,
   inMonth,
   monthLabel,
   money,
   round,
+  pending,
   sameMonth,
+  settled,
   shift,
   thisMonth,
+  todayIso,
   total,
+  whenLabel,
 } from "@/modules/finance/lib/month";
 
 function flow(over: Partial<Flow> = {}): Flow {
@@ -176,5 +182,88 @@ describe("adding money up", () => {
   it("writes an amount the way money is written", () => {
     expect(money(1234.5)).toBe("$1,234.50");
     expect(money(-20)).toBe("-$20.00");
+  });
+});
+
+describe("what has happened and what has not", () => {
+  const TODAY = new Date(2026, 2, 10);
+  const MARCH = { year: 2026, month: 2 };
+
+  it("writes today the way a date is stored", () => {
+    expect(todayIso(TODAY)).toBe("2026-03-10");
+  });
+
+  it("counts the days to a date", () => {
+    expect(daysUntil("2026-03-13", TODAY)).toBe(3);
+    expect(daysUntil("2026-03-10", TODAY)).toBe(0);
+    expect(daysUntil("2026-03-09", TODAY)).toBe(-1);
+  });
+
+  it("says when in plain words", () => {
+    expect(whenLabel("2026-03-10", TODAY)).toBe("today");
+    expect(whenLabel("2026-03-11", TODAY)).toBe("tomorrow");
+    expect(whenLabel("2026-03-15", TODAY)).toBe("in 5 days");
+  });
+
+  it("counts today as already gone out", () => {
+    const rows = inMonth([flow({ id: "now", on: "2026-03-10" })], MARCH);
+    expect(settled(rows, TODAY)).toHaveLength(1);
+    expect(pending(rows, TODAY)).toHaveLength(0);
+  });
+
+  it("splits the month at today", () => {
+    const rows = inMonth(
+      [
+        flow({ id: "past", on: "2026-03-04" }),
+        flow({ id: "soon", on: "2026-03-14" }),
+      ],
+      MARCH,
+    );
+    expect(settled(rows, TODAY).map((one) => one.flow.id)).toEqual(["past"]);
+    expect(pending(rows, TODAY).map((one) => one.flow.id)).toEqual(["soon"]);
+  });
+
+  it("treats a whole past month as gone", () => {
+    const rows = inMonth([flow({ on: "2026-01-20" })], { year: 2026, month: 0 });
+    expect(pending(rows, TODAY)).toHaveLength(0);
+  });
+
+  it("treats a whole future month as still to come", () => {
+    const rows = inMonth([flow({ on: "2026-05-20" })], { year: 2026, month: 4 });
+    expect(settled(rows, TODAY)).toHaveLength(0);
+  });
+});
+
+describe("cutting a series short", () => {
+  const MARCH = { year: 2026, month: 2 };
+
+  it("steps back a day, over the turn of a month", () => {
+    expect(dayBefore("2026-03-01")).toBe("2026-02-28");
+    expect(dayBefore("2026-01-01")).toBe("2025-12-31");
+    expect(dayBefore("2026-03-15")).toBe("2026-03-14");
+  });
+
+  it("stops a series after the day it was ended on", () => {
+    const one = flow({
+      on: "2026-01-10",
+      repeat: "monthly",
+      until: "2026-02-28",
+    });
+    expect(dateIn(one, { year: 2026, month: 1 })).toBe("2026-02-10");
+    expect(dateIn(one, MARCH)).toBeNull();
+  });
+
+  it("drops a single skipped date and keeps the rest", () => {
+    const one = flow({
+      on: "2026-01-10",
+      repeat: "monthly",
+      skips: ["2026-03-10"],
+    });
+    expect(dateIn(one, MARCH)).toBeNull();
+    expect(dateIn(one, { year: 2026, month: 3 })).toBe("2026-04-10");
+  });
+
+  it("leaves a one off alone when nothing was skipped", () => {
+    expect(dateIn(flow({ on: "2026-03-10" }), MARCH)).toBe("2026-03-10");
   });
 });

@@ -34,9 +34,15 @@ test("opens on this month and shows what falls in it", async ({
   await app.open("/finance");
 
   await expect(page.getByRole("heading", { name: now.label })).toBeVisible();
-  await expect(page.getByText("Working shift")).toBeVisible();
-  await expect(page.getByText("Groceries")).toBeVisible();
-  await expect(page.getByText("Next month")).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "Income" }).getByText("Working shift"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Expenses" }).getByText("Groceries"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Expenses" }).getByText("Next month"),
+  ).toHaveCount(0);
 
   await expect(
     page.getByRole("img", { name: /Income \$120\.00, expenses \$40\.00/ }),
@@ -45,43 +51,52 @@ test("opens on this month and shows what falls in it", async ({
 
 test("walks to another month and back", async ({ app, page }) => {
   const now = thisMonth();
-  const next = thisMonth(1);
+  const back = thisMonth(-1);
 
   app.db.flows = [
-    flowRow({ id: "c", title: "Next month", on_date: next.day(3) }),
+    flowRow({ id: "c", title: "Last month", on_date: back.day(3) }),
   ];
+  const expenses = page.getByRole("region", { name: "Expenses" });
 
   await app.open("/finance");
-  await expect(page.getByText("Next month")).toHaveCount(0);
+  await expect(expenses.getByText("Last month")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Next month" }).click();
-  await expect(page.getByRole("heading", { name: next.label })).toBeVisible();
-  await expect(page.getByText("Next month").first()).toBeVisible();
+  await page.getByRole("button", { name: "Previous month" }).click();
+  await expect(page.getByRole("heading", { name: back.label })).toBeVisible();
+  await expect(expenses.getByText("Last month")).toBeVisible();
 
   await page.getByRole("button", { name: "This month" }).click();
   await expect(page.getByRole("heading", { name: now.label })).toBeVisible();
 });
 
 test("a monthly entry comes back every month", async ({ app, page }) => {
-  const now = thisMonth();
-  const next = thisMonth(1);
+  const back = thisMonth(-1);
+  const further = thisMonth(-2);
 
   app.db.flows = [
     flowRow({
       id: "sub",
       title: "Netflix",
       amount: 15,
-      on_date: now.day(5),
+      on_date: further.day(5),
       recur: "monthly",
     }),
   ];
 
-  await app.open("/finance");
-  await expect(page.getByText("Netflix")).toBeVisible();
+  const expenses = page.getByRole("region", { name: "Expenses" });
 
-  await page.getByRole("button", { name: "Next month" }).click();
-  await expect(page.getByRole("heading", { name: next.label })).toBeVisible();
-  await expect(page.getByText("Netflix")).toBeVisible();
+  await app.open("/finance");
+  await expect(expenses.getByText("Netflix")).toBeVisible();
+
+  await page.getByRole("button", { name: "Previous month" }).click();
+  await expect(page.getByRole("heading", { name: back.label })).toBeVisible();
+  await expect(expenses.getByText("Netflix")).toBeVisible();
+
+  await page.getByRole("button", { name: "Previous month" }).click();
+  await expect(
+    page.getByRole("heading", { name: further.label }),
+  ).toBeVisible();
+  await expect(expenses.getByText("Netflix")).toBeVisible();
 });
 
 test("adds an expense and keeps it", async ({ app, page }) => {
@@ -174,4 +189,126 @@ test("drags one entry above another on the same day", async ({
   expect(
     app.db.flows.find((one) => one.id === "second")?.position,
   ).toBe(0);
+});
+
+test("files an expense under a type", async ({ app, page }) => {
+  await app.open("/finance");
+
+  await page.getByRole("button", { name: "Add expense" }).click();
+  await page.getByLabel("Expenses name").fill("Netflix");
+  await page.getByLabel("Expenses type").selectOption("Subscription");
+  await page.getByLabel("Expenses amount").fill("15");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+
+  await expect(
+    page
+      .getByRole("region", { name: "Expenses" })
+      .getByRole("listitem")
+      .getByText(/Subscription/),
+  ).toBeVisible();
+  expect(app.db.flows[0].category).toBe("Subscription");
+});
+
+test("warns about a subscription without counting it as spent", async ({
+  app,
+  page,
+}) => {
+  const next = thisMonth(1);
+
+  app.db.flows = [
+    flowRow({
+      id: "sub",
+      title: "Netflix",
+      amount: 15,
+      on_date: next.day(14),
+      recur: "monthly",
+    }),
+  ];
+
+  await app.open("/finance");
+  await page.getByRole("button", { name: "Next month" }).click();
+  await expect(page.getByRole("heading", { name: next.label })).toBeVisible();
+
+  const strip = page.getByLabel("Coming up");
+  await expect(strip.getByText("Netflix")).toBeVisible();
+
+  const expenses = page.getByRole("region", { name: "Expenses" });
+  await expect(expenses.getByText("Netflix")).toHaveCount(0);
+  await expect(
+    page.getByRole("img", { name: /expenses \$0\.00/ }),
+  ).toBeVisible();
+});
+
+test("asks which entries before removing a repeating one", async ({
+  app,
+  page,
+}) => {
+  const now = thisMonth();
+  const back = thisMonth(-2);
+
+  app.db.flows = [
+    flowRow({
+      id: "rent",
+      title: "Rent",
+      amount: 650,
+      on_date: back.day(1),
+      recur: "monthly",
+    }),
+  ];
+
+  await app.open("/finance");
+  await page.getByRole("button", { name: "Remove Rent" }).click();
+
+  const ask = page.getByRole("dialog", { name: "Apply to" });
+  await expect(ask).toBeVisible();
+  await ask.getByText("This entry").click();
+
+  await expect(page.getByText("Nothing in expenses this month")).toBeVisible();
+  expect(app.db.flows).toHaveLength(1);
+  expect(app.db.flows[0].skips).toEqual([now.day(1)]);
+
+  await page.getByRole("button", { name: "Previous month" }).click();
+  await expect(
+    page.getByRole("region", { name: "Expenses" }).getByText("Rent"),
+  ).toBeVisible();
+});
+
+test("splits a repeating entry when only this one is changed", async ({
+  app,
+  page,
+}) => {
+  const now = thisMonth();
+  const back = thisMonth(-2);
+
+  app.db.flows = [
+    flowRow({
+      id: "rent",
+      title: "Rent",
+      amount: 650,
+      on_date: back.day(1),
+      recur: "monthly",
+    }),
+  ];
+
+  await app.open("/finance");
+  await page.getByRole("button", { name: "Edit Rent" }).click();
+  await page.getByLabel("Expenses amount").fill("700");
+  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("dialog", { name: "Apply to" }).getByText("This entry").click();
+
+  const expenses = page.getByRole("region", { name: "Expenses" });
+  await expect(expenses.getByText("-$700.00")).toBeVisible();
+
+  expect(app.db.flows).toHaveLength(2);
+  const series = app.db.flows.find((one) => one.id === "rent");
+  expect(series?.skips).toEqual([now.day(1)]);
+  expect(series?.amount).toBe(650);
+});
+
+test("says nothing about what is coming when nothing is", async ({
+  app,
+  page,
+}) => {
+  await app.open("/finance");
+  await expect(page.getByLabel("Coming up")).toHaveCount(0);
 });

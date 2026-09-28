@@ -39,6 +39,26 @@
   --event-slate-line: #b4bcc7;
   --event-slate-ink: #2b3440;
   --event-slate-ink-muted: #47525f;
+  --money-in: #177643;
+  --money-out: #c23636;
+}
+
+:root[data-theme="sand"] {
+  --canvas: #fdf7f0;
+  --surface-muted: #faf1e6;
+  --line: #efe0cd;
+  --line-strong: #e0cbb0;
+  --accent: #8f5323;
+  --accent-soft: #fbe8d2;
+}
+
+:root[data-theme="stone"] {
+  --canvas: #f8f7f5;
+  --surface-muted: #f1efec;
+  --line: #e3dfd9;
+  --line-strong: #cdc7be;
+  --accent: #5d564d;
+  --accent-soft: #eae6e0;
 }
 
 :root[data-theme="slate"] {
@@ -48,6 +68,24 @@
   --line-strong: #c2c7d0;
   --accent: #3f4653;
   --accent-soft: #e4e7ec;
+}
+
+:root[data-theme="teal"] {
+  --canvas: #eff9f8;
+  --surface-muted: #e6f4f2;
+  --line: #cfe7e4;
+  --line-strong: #a9d2cd;
+  --accent: #0e6f66;
+  --accent-soft: #d5edea;
+}
+
+:root[data-theme="plum"] {
+  --canvas: #faf4fb;
+  --surface-muted: #f4ebf6;
+  --line: #e6d6ea;
+  --line-strong: #d2b8d9;
+  --accent: #7a3d86;
+  --accent-soft: #efe0f2;
 }
 
 @theme inline {

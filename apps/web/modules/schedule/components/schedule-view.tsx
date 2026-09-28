@@ -24,7 +24,7 @@ import {
 } from "@/modules/schedule/lib/event-store";
 import { EventForm } from "@/modules/schedule/components/event-form";
 import { EventDetails } from "@/modules/schedule/components/event-details";
-import { ScopeAsk } from "@/modules/schedule/components/scope-ask";
+import { ScopeAsk } from "@/components/scope-ask";
 
 const FORM_W = 272;
 const DETAIL_W = 320;

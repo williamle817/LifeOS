@@ -42,6 +42,14 @@ function iso(month: Month, day: number): string {
   return `${month.year}-${mm}-${dd}`;
 }
 
+export function dayBefore(on: string): string {
+  const [y, m, d] = on.split("-").map(Number);
+  const back = new Date(y, m - 1, d - 1);
+  return `${back.getFullYear()}-${String(back.getMonth() + 1).padStart(2, "0")}-${String(
+    back.getDate(),
+  ).padStart(2, "0")}`;
+}
+
 export function dateIn(flow: Flow, month: Month): string | null {
   const [year, one, day] = flow.on.split("-").map(Number);
   if (!year || !one || !day) return null;
@@ -49,13 +57,19 @@ export function dateIn(flow: Flow, month: Month): string | null {
   const from = { year, month: one - 1 };
   const started = month.year * 12 + month.month >= from.year * 12 + from.month;
 
-  if (flow.repeat === "once") {
-    return sameMonth(from, month) ? flow.on : null;
-  }
-  if (!started) return null;
-  if (flow.repeat === "yearly" && from.month !== month.month) return null;
+  const on =
+    flow.repeat === "once"
+      ? sameMonth(from, month)
+        ? flow.on
+        : null
+      : !started || (flow.repeat === "yearly" && from.month !== month.month)
+        ? null
+        : iso(month, Math.min(day, daysInMonth(month)));
 
-  return iso(month, Math.min(day, daysInMonth(month)));
+  if (!on) return null;
+  if (flow.until && on > flow.until) return null;
+  if (flow.skips?.includes(on)) return null;
+  return on;
 }
 
 export function inMonth(flows: Flow[], month: Month): Dated[] {
@@ -68,6 +82,40 @@ export function inMonth(flows: Flow[], month: Month): Dated[] {
     if (a.on !== b.on) return a.on < b.on ? -1 : 1;
     return (a.flow.position ?? 0) - (b.flow.position ?? 0);
   });
+}
+
+export function todayIso(today = new Date()): string {
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+export function daysUntil(on: string, today = new Date()): number {
+  const [y, m, d] = on.split("-").map(Number);
+  const then = new Date(y, m - 1, d).getTime();
+  const now = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  ).getTime();
+  return Math.round((then - now) / 86400000);
+}
+
+export function whenLabel(on: string, today = new Date()): string {
+  const days = daysUntil(on, today);
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  return `in ${days} days`;
+}
+
+export function settled(rows: Dated[], today = new Date()): Dated[] {
+  const now = todayIso(today);
+  return rows.filter((one) => one.on <= now);
+}
+
+export function pending(rows: Dated[], today = new Date()): Dated[] {
+  const now = todayIso(today);
+  return rows.filter((one) => one.on > now);
 }
 
 export function round(value: number): number {

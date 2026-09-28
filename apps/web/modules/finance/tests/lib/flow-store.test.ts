@@ -36,6 +36,8 @@ function row(over: FakeRow = {}): FakeRow {
     on_date: "2026-03-10",
     amount: 15,
     recur: "monthly",
+    until_on: null,
+    skips: [],
     event_id: null,
     position: 0,
     ...over,
@@ -233,5 +235,181 @@ describe("putting the entries in order", () => {
     ]);
     await loaded.reorderFlows(["a"]);
     expect(storedIn("flows", "other")?.position).toBe(7);
+  });
+});
+
+describe("removing one occurrence of a repeating entry", () => {
+  const rent = {
+    id: "rent",
+    user_id: "u1",
+    kind: "expense",
+    title: "Rent",
+    place: null,
+    category: "Housing",
+    on_date: "2026-01-05",
+    amount: 650,
+    recur: "monthly",
+    until_on: null,
+    skips: [],
+    event_id: null,
+    position: 0,
+  };
+
+  it("takes the whole series away when all is chosen", async () => {
+    const loaded = await store([rent]);
+    await loaded.deleteOccurrence(loaded.getSnapshot()[0], "2026-03-05", "all");
+    expect(stored("flows")).toHaveLength(0);
+  });
+
+  it("skips just that date when one is chosen", async () => {
+    const loaded = await store([rent]);
+    await loaded.deleteOccurrence(loaded.getSnapshot()[0], "2026-03-05", "one");
+    expect(storedIn("flows", "rent")?.skips).toEqual(["2026-03-05"]);
+    expect(storedIn("flows", "rent")?.until_on).toBeNull();
+  });
+
+  it("keeps the dates skipped earlier", async () => {
+    const loaded = await store([{ ...rent, skips: ["2026-02-05"] }]);
+    await loaded.deleteOccurrence(loaded.getSnapshot()[0], "2026-03-05", "one");
+    expect(storedIn("flows", "rent")?.skips).toEqual([
+      "2026-02-05",
+      "2026-03-05",
+    ]);
+  });
+
+  it("ends the series the day before when following is chosen", async () => {
+    const loaded = await store([rent]);
+    await loaded.deleteOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-03-05",
+      "following",
+    );
+    expect(storedIn("flows", "rent")?.until_on).toBe("2026-03-04");
+  });
+
+  it("removes the row when following would leave nothing", async () => {
+    const loaded = await store([rent]);
+    await loaded.deleteOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-01-05",
+      "following",
+    );
+    expect(stored("flows")).toHaveLength(0);
+  });
+});
+
+describe("changing one occurrence of a repeating entry", () => {
+  const rent = {
+    id: "rent",
+    user_id: "u1",
+    kind: "expense",
+    title: "Rent",
+    place: null,
+    category: "Housing",
+    on_date: "2026-01-05",
+    amount: 650,
+    recur: "monthly",
+    until_on: null,
+    skips: [],
+    event_id: null,
+    position: 0,
+  };
+
+  function edited(over: Partial<Flow> = {}): Flow {
+    return {
+      id: "ignored",
+      userId: "u1",
+      kind: "expense",
+      title: "Rent",
+      category: "Housing",
+      on: "2026-03-05",
+      amount: 700,
+      repeat: "monthly",
+      ...over,
+    };
+  }
+
+  it("writes the new values onto the series when all is chosen", async () => {
+    const loaded = await store([rent]);
+    await loaded.saveOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-03-05",
+      edited(),
+      "all",
+    );
+    expect(stored("flows")).toHaveLength(1);
+    expect(storedIn("flows", "rent")?.amount).toBe(700);
+  });
+
+  it("keeps the month the series started in, taking only the new day", async () => {
+    const loaded = await store([rent]);
+    await loaded.saveOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-03-05",
+      edited({ on: "2026-03-12" }),
+      "all",
+    );
+    expect(storedIn("flows", "rent")?.on_date).toBe("2026-01-12");
+  });
+
+  it("does not resurrect a date that was skipped before", async () => {
+    const loaded = await store([{ ...rent, skips: ["2026-02-05"] }]);
+    await loaded.saveOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-03-05",
+      edited(),
+      "all",
+    );
+    expect(storedIn("flows", "rent")?.skips).toEqual(["2026-02-05"]);
+  });
+
+  it("splits out a single one off when one is chosen", async () => {
+    const loaded = await store([rent]);
+    await loaded.saveOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-03-05",
+      edited(),
+      "one",
+    );
+
+    expect(storedIn("flows", "rent")?.skips).toEqual(["2026-03-05"]);
+    const extra = stored("flows").find((one) => one.id !== "rent");
+    expect(extra).toMatchObject({
+      recur: "once",
+      on_date: "2026-03-05",
+      amount: 700,
+    });
+  });
+
+  it("starts a second series when following is chosen", async () => {
+    const loaded = await store([rent]);
+    await loaded.saveOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-03-05",
+      edited(),
+      "following",
+    );
+
+    expect(storedIn("flows", "rent")?.until_on).toBe("2026-03-04");
+    const extra = stored("flows").find((one) => one.id !== "rent");
+    expect(extra).toMatchObject({
+      recur: "monthly",
+      on_date: "2026-03-05",
+      amount: 700,
+    });
+    expect(extra?.until_on).toBeNull();
+    expect(extra?.skips).toEqual([]);
+  });
+
+  it("replaces the row outright when following starts at the very first one", async () => {
+    const loaded = await store([rent]);
+    await loaded.saveOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-01-05",
+      edited({ on: "2026-01-05" }),
+      "following",
+    );
+    expect(stored("flows")).toHaveLength(1);
+    expect(stored("flows")[0].id).not.toBe("rent");
   });
 });
