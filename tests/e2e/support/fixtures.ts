@@ -13,6 +13,7 @@ export type Db = {
   courses: Row[];
   categories: Row[];
   grade_items: Row[];
+  flows: Row[];
 };
 
 export function emptyDb(): Db {
@@ -22,6 +23,7 @@ export function emptyDb(): Db {
     courses: [],
     categories: [],
     grade_items: [],
+    flows: [],
   };
 }
 
@@ -237,6 +239,22 @@ export function gradeItemRow(over: Row = {}): Row {
     max_score: 100,
     due_on: null,
     event_id: null,
+    ...over,
+  };
+}
+
+export function flowRow(over: Row = {}): Row {
+  return {
+    id: "f1",
+    user_id: "u1",
+    kind: "expense",
+    title: "Groceries",
+    place: null,
+    on_date: "2026-03-10",
+    amount: 40,
+    recur: "once",
+    event_id: null,
+    position: 0,
     ...over,
   };
 }
