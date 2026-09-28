@@ -1,4 +1,4 @@
-import { expect, flowRow, test } from "../support/fixtures";
+import { eventRow, expect, flowRow, test } from "../support/fixtures";
 
 function thisMonth(offset = 0): { label: string; day: (n: number) => string } {
   const now = new Date();
@@ -311,4 +311,88 @@ test("says nothing about what is coming when nothing is", async ({
 }) => {
   await app.open("/finance");
   await expect(page.getByLabel("Coming up")).toHaveCount(0);
+});
+
+function shiftAt(day: number, hour: number, minute = 0): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), day, hour, minute).toISOString();
+}
+
+test("counts a work shift from the calendar as income", async ({
+  app,
+  page,
+}) => {
+  app.db.events = [
+    eventRow({
+      id: "e1",
+      type: "work",
+      title: "Working shift",
+      start_at: shiftAt(3, 9),
+      end_at: shiftAt(3, 14),
+      data: { place: "The cafe", wage: 20, tips: 15 },
+    }),
+  ];
+
+  await app.open("/finance");
+
+  const incomes = page.getByRole("region", { name: "Income" });
+  await expect(incomes.getByText("Working shift")).toBeVisible();
+  await expect(incomes.getByText("+$115.00")).toBeVisible();
+  await expect(incomes.getByText(/The cafe/)).toBeVisible();
+  await expect(incomes.getByText(/from Schedule/)).toBeVisible();
+
+  await expect(
+    page.getByRole("img", { name: /Income \$115\.00/ }),
+  ).toBeVisible();
+});
+
+test("leaves a calendar shift for Schedule to edit", async ({ app, page }) => {
+  app.db.events = [
+    eventRow({
+      id: "e1",
+      type: "work",
+      title: "Working shift",
+      start_at: shiftAt(3, 9),
+      end_at: shiftAt(3, 14),
+      data: { wage: 20 },
+    }),
+  ];
+
+  await app.open("/finance");
+  await expect(
+    page.getByRole("region", { name: "Income" }).getByText("Working shift"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Edit Working shift" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Remove Working shift" }),
+  ).toHaveCount(0);
+  expect(app.db.flows).toHaveLength(0);
+});
+
+test("adds a repeating shift up over the whole month", async ({
+  app,
+  page,
+}) => {
+  app.db.events = [
+    eventRow({
+      id: "e1",
+      type: "work",
+      title: "Working shift",
+      start_at: shiftAt(2, 9),
+      end_at: shiftAt(2, 13),
+      series_id: "e1",
+      recurrence: { freq: "weekly", interval: 1 },
+      data: { wage: 25 },
+    }),
+  ];
+
+  await app.open("/finance");
+
+  const incomes = page.getByRole("region", { name: "Income" });
+  await expect(incomes.getByText("Working shift").first()).toBeVisible();
+  const seen = await incomes.getByText("Working shift").count();
+  expect(seen).toBeGreaterThan(3);
+  await expect(incomes.getByText("+$100.00").first()).toBeVisible();
 });

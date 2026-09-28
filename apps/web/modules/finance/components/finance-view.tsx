@@ -4,6 +4,13 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { EditScope, Flow } from "@lifeos/contracts";
 import { move } from "@/components/reorder";
 import {
+  ensureEvents,
+  eventsServer,
+  eventsSnapshot,
+  shiftsIn,
+  subscribeEvents,
+} from "@/lib/shifts";
+import {
   currentUserId,
   deleteFlow,
   deleteOccurrence,
@@ -31,27 +38,37 @@ import { FlowPanel } from "@/modules/finance/components/flow-panel";
 
 export function FinanceView({ today = new Date() }: { today?: Date }) {
   const flows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const events = useSyncExternalStore(
+    subscribeEvents,
+    eventsSnapshot,
+    eventsServer,
+  );
   const [month, setMonth] = useState<Month>(() => thisMonth(today));
 
   useEffect(() => {
     void ensureLoaded();
+    void ensureEvents();
   }, []);
 
   const userId = currentUserId() ?? "";
   const shown = inMonth(flows, month);
-  const income = shown.filter((one) => one.flow.kind === "income");
+  const income = [
+    ...shown.filter((one) => one.flow.kind === "income"),
+    ...shiftsIn(events, month),
+  ].sort((a, b) => (a.on < b.on ? -1 : a.on > b.on ? 1 : 0));
   const spending = shown.filter((one) => one.flow.kind === "expense");
   const gone = settled(spending, today);
   const due = pending(spending, today);
 
   function onMove(rows: typeof income) {
     return (from: number, to: number) => {
+      const ids = move(
+        rows.map((one) => one.flow.id),
+        from,
+        to,
+      );
       void reorderFlows(
-        move(
-          rows.map((one) => one.flow.id),
-          from,
-          to,
-        ),
+        ids.filter((id) => rows.some((one) => one.flow.id === id && !one.flow.eventId)),
       );
     };
   }

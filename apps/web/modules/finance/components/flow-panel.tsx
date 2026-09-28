@@ -272,6 +272,7 @@ export function FlowPanel({
                       dayLabel(when),
                       flow.category,
                       flow.place,
+                      flow.eventId ? "from Schedule" : null,
                       flow.repeat === "once" ? null : REPEAT_LABEL[flow.repeat],
                     ]
                       .filter(Boolean)
@@ -284,28 +285,32 @@ export function FlowPanel({
                   {money(flow.amount)}
                 </span>
 
-                <button
-                  type="button"
-                  aria-label={`Edit ${flow.title}`}
-                  onClick={() => startEdit(flow, when)}
-                  className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                >
-                  <ActionIcon name="edit" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Remove ${flow.title}`}
-                  onClick={() => remove(flow, when)}
-                  className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                >
-                  <ActionIcon name="trash" />
-                </button>
-                <DragHandle
-                  list={list}
-                  index={seat}
-                  drag={drag}
-                  label={flow.title}
-                />
+                {flow.eventId ? null : (
+                  <>
+                    <button
+                      type="button"
+                      aria-label={`Edit ${flow.title}`}
+                      onClick={() => startEdit(flow, when)}
+                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                    >
+                      <ActionIcon name="edit" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${flow.title}`}
+                      onClick={() => remove(flow, when)}
+                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                    >
+                      <ActionIcon name="trash" />
+                    </button>
+                    <DragHandle
+                      list={list}
+                      index={seat}
+                      drag={drag}
+                      label={flow.title}
+                    />
+                  </>
+                )}
               </li>
             ),
           )}

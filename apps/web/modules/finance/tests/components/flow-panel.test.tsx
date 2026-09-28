@@ -386,3 +386,44 @@ describe("touching a repeating entry", () => {
     expect(onSave.mock.calls[0][2].userId).toBe("someone");
   });
 });
+
+describe("a row that came from the calendar", () => {
+  const paid = () =>
+    flow({
+      id: "shift-e1",
+      kind: "income",
+      title: "Working shift",
+      place: "The cafe",
+      amount: 115,
+      eventId: "e1",
+    });
+
+  it("says where it came from", () => {
+    setup([paid()], "income");
+    expect(screen.getByText(/from Schedule/)).toBeTruthy();
+  });
+
+  it("counts toward the total like any other income", () => {
+    setup([paid()], "income");
+    const panel = screen.getByRole("region", { name: "Income" });
+    expect(within(panel).getByText("$115.00")).toBeTruthy();
+  });
+
+  it("offers no pencil, no bin and no handle, because Schedule owns it", () => {
+    setup([paid()], "income");
+    expect(
+      screen.queryByRole("button", { name: "Edit Working shift" }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Remove Working shift" }),
+    ).toBeNull();
+    expect(document.querySelector('[data-reorder="Working shift"]')).toBeNull();
+  });
+
+  it("leaves an entry typed in here alone", () => {
+    setup([flow({ kind: "income", title: "Tutoring" })], "income");
+    expect(
+      screen.getByRole("button", { name: "Edit Tutoring" }),
+    ).toBeTruthy();
+  });
+});
