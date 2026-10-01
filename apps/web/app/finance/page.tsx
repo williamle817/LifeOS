@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Theme } from "@/components/theme";
 import { FinanceView } from "@/modules/finance/components/finance-view";
 
 export const metadata: Metadata = {
@@ -7,10 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function FinancePage() {
-  return (
-    <>
-      <Theme name="mono" />
-      <FinanceView />
-    </>
-  );
+  return <FinanceView />;
 }

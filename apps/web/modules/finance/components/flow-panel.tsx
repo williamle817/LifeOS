@@ -222,7 +222,7 @@ export function FlowPanel({
       aria-label={heading}
       className="overflow-hidden rounded-3xl border border-line-strong bg-surface shadow-md"
     >
-      <header className="flex items-center gap-2 border-b border-line-strong bg-surface px-4 py-2.5">
+      <header className="flex items-center gap-2 border-b border-line bg-accent-soft px-4 py-2.5">
         <h3 className="text-[15px] font-bold">{heading}</h3>
         <span style={{ color: ink }} className="ml-auto text-sm font-semibold">
           {money(sum)}
@@ -234,7 +234,7 @@ export function FlowPanel({
           {rows.map((row) => {
             const { flow, on: when } = row;
             return editing === flow.id ? (
-              <li key={flow.id} className="bg-surface px-4 py-3">
+              <li key={flow.id} className="bg-surface-muted px-4 py-3">
                 <p className="text-[11px] text-ink-faint">
                   Editing{" "}
                   <span className="font-medium text-ink">{flow.title}</span>
@@ -311,7 +311,7 @@ export function FlowPanel({
         </p>
       )}
 
-      <div className="border-t border-line-strong bg-surface px-4 py-3">
+      <div className="border-t border-line bg-surface-muted px-4 py-3">
         {adding ? (
           <div>
             <p className="text-[11px] text-ink-faint">

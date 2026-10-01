@@ -64,7 +64,7 @@ export function SplitChart({
           cy="64"
           r={R}
           fill="none"
-          stroke="var(--line)"
+          stroke="var(--surface-muted)"
           strokeWidth="16"
         />
         {sum > 0 ? (

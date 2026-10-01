@@ -30,7 +30,7 @@ export function ComingUp({
           return (
             <li
               key={`${flow.id}-${on}`}
-              className="shrink-0 rounded-2xl border border-line bg-surface px-3.5 py-2"
+              className="shrink-0 rounded-2xl bg-surface-muted px-3.5 py-2"
             >
               <span className="block text-[13px]">{flow.title}</span>
               <span className="mt-0.5 flex items-baseline gap-1.5">
@@ -44,7 +44,7 @@ export function ComingUp({
                   {dayLabel(on)}
                 </span>
                 <span
-                  style={soon ? { color: "var(--money-out)" } : undefined}
+                  style={soon ? { color: "var(--alert)" } : undefined}
                   className={`text-[11px] ${
                     soon ? "font-medium" : "text-ink-faint"
                   }`}
