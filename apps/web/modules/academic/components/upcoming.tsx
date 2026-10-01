@@ -88,7 +88,7 @@ export function Upcoming({
                     {dateLabel(item.dueOn!)}
                   </span>
                   <span
-                    style={soon ? { color: "var(--event-red-ink)" } : undefined}
+                    style={soon ? { color: "var(--alert)" } : undefined}
                     className={`text-[11px] ${
                       soon ? "font-medium" : "text-ink-faint"
                     }`}

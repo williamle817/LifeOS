@@ -33,6 +33,8 @@ const ACTIONS = {
   grip: "M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01",
   back: "M15 5l-7 7 7 7",
   forward: "M9 5l7 7-7 7",
+  sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
+  moon: "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z",
 };
 
 export function ActionIcon({ name }: { name: keyof typeof ACTIONS }) {

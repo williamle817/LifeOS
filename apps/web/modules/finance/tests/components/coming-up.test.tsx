@@ -61,7 +61,7 @@ describe("what is due later this month", () => {
 
   it("marks anything due within three days", () => {
     show([flow({ on: "2026-03-12" })]);
-    expect(screen.getByText("in 2 days").style.color).toBe("var(--money-out)");
+    expect(screen.getByText("in 2 days").style.color).toBe("var(--alert)");
   });
 
   it("leaves something further out unmarked", () => {
