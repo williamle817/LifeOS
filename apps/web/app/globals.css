@@ -3,42 +3,120 @@
 :root {
   color-scheme: light;
 
-  --canvas: #f1f7fe;
+  --canvas: #eef6ff;
   --surface: #ffffff;
-  --surface-muted: #edf4fd;
-  --line: #cfe0f5;
-  --line-strong: #aecdee;
+  --surface-muted: #eaf3ff;
+  --line: #c2ddfb;
+  --line-strong: #9bc8f6;
   --ink: #16202e;
-  --ink-muted: #4a5a72;
-  --ink-faint: #5e6e86;
-  --accent: #1462c0;
+  --ink-muted: #465873;
+  --ink-faint: #566880;
+  --accent: #0b5fc4;
   --bar-h: 3.8125rem;
   --toolbar-h: 2.75rem;
-  --accent-soft: #dcebfc;
-  --event-blue: #dcebfc;
-  --event-blue-line: #8cbdf0;
-  --event-blue-ink: #0d3f7d;
-  --event-blue-ink-muted: #2b598d;
-  --event-red: #fcdcdc;
-  --event-red-line: #f0a0a0;
-  --event-red-ink: #7d1f1f;
-  --event-red-ink-muted: #9c3535;
-  --event-yellow: #fbf0c8;
-  --event-yellow-line: #e8cf7a;
-  --event-yellow-ink: #6b4e0a;
-  --event-yellow-ink-muted: #866321;
-  --event-green: #d8f0dd;
-  --event-green-line: #8fd3a5;
-  --event-green-ink: #14532d;
-  --event-green-ink-muted: #2d6a43;
-  --event-pink: #fbdcef;
-  --event-pink-line: #f0a3d0;
-  --event-pink-ink: #7a1f56;
-  --event-pink-ink-muted: #96366e;
-  --event-slate: #e2e5ea;
-  --event-slate-line: #b4bcc7;
-  --event-slate-ink: #2b3440;
-  --event-slate-ink-muted: #47525f;
+  --accent-soft: #dcecff;
+  --event-blue: #cfe6ff;
+  --event-blue-line: #79b6f5;
+  --event-blue-ink: #0a3f7c;
+  --event-blue-ink-muted: #1d5798;
+  --event-red: #ffd8d8;
+  --event-red-line: #ff9d9d;
+  --event-red-ink: #8a1b1b;
+  --event-red-ink-muted: #a63333;
+  --event-yellow: #ffeeb8;
+  --event-yellow-line: #f3ca4f;
+  --event-yellow-ink: #6b4700;
+  --event-yellow-ink-muted: #84591a;
+  --event-green: #cdf5d9;
+  --event-green-line: #68d78e;
+  --event-green-ink: #0e5131;
+  --event-green-ink-muted: #1f6b45;
+  --event-pink: #ffd4ec;
+  --event-pink-line: #ff9ad5;
+  --event-pink-ink: #8a1259;
+  --event-pink-ink-muted: #a52d72;
+  --event-slate: #e3e8f1;
+  --event-slate-line: #a8b4c8;
+  --event-slate-ink: #2a3340;
+  --event-slate-ink-muted: #45515f;
+  --alert: #c62828;
+  --money-in: #177643;
+  --money-out: #c23636;
+}
+
+:root[data-theme="night"] {
+  color-scheme: dark;
+
+  --canvas: #101216;
+  --surface: #1b1e25;
+  --surface-muted: #262a33;
+  --line: #333844;
+  --line-strong: #4a5160;
+  --ink: #f3f5f9;
+  --ink-muted: #aeb6c4;
+  --ink-faint: #949cab;
+  --accent: #4c9aff;
+  --accent-soft: #23314a;
+  --alert: #ff6b6b;
+  --money-in: #4ade80;
+  --money-out: #ff6b6b;
+}
+
+:root[data-theme="mono"] {
+  --canvas: #ffffff;
+  --surface-muted: #ffffff;
+  --line: #111111;
+  --line-strong: #000000;
+  --ink: #000000;
+  --ink-muted: #404040;
+  --ink-faint: #595959;
+  --accent: #000000;
+  --accent-soft: #ffffff;
+}
+
+:root[data-theme="sand"] {
+  --canvas: #fdf7f0;
+  --surface-muted: #faf1e6;
+  --line: #efe0cd;
+  --line-strong: #e0cbb0;
+  --accent: #8f5323;
+  --accent-soft: #fbe8d2;
+}
+
+:root[data-theme="stone"] {
+  --canvas: #f8f7f5;
+  --surface-muted: #f1efec;
+  --line: #e3dfd9;
+  --line-strong: #cdc7be;
+  --accent: #5d564d;
+  --accent-soft: #eae6e0;
+}
+
+:root[data-theme="slate"] {
+  --canvas: #f6f7f9;
+  --surface-muted: #f0f2f5;
+  --line: #e1e5ea;
+  --line-strong: #c6ccd5;
+  --accent: #2f3742;
+  --accent-soft: #eaedf1;
+}
+
+:root[data-theme="teal"] {
+  --canvas: #eff9f8;
+  --surface-muted: #e6f4f2;
+  --line: #cfe7e4;
+  --line-strong: #a9d2cd;
+  --accent: #0e6f66;
+  --accent-soft: #d5edea;
+}
+
+:root[data-theme="plum"] {
+  --canvas: #faf4fb;
+  --surface-muted: #f4ebf6;
+  --line: #e6d6ea;
+  --line-strong: #d2b8d9;
+  --accent: #7a3d86;
+  --accent-soft: #efe0f2;
 }
 
 @theme inline {
@@ -74,7 +152,7 @@ body {
   --fc-button-hover-border-color: var(--accent);
   --fc-button-active-bg-color: var(--accent);
   --fc-button-active-border-color: var(--accent);
-  --fc-now-indicator-color: var(--event-red-ink);
+  --fc-now-indicator-color: var(--alert);
   font-size: 0.875rem;
 }
 
@@ -88,9 +166,8 @@ body {
 }
 
 .fc .fc-toolbar-title {
-  font-size: 1rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-size: 0.9375rem;
+  font-weight: 700;
 }
 
 .fc .fc-button {

@@ -3,7 +3,7 @@
 import type { Course } from "@lifeos/contracts";
 import { show, type CourseGrade } from "@/modules/academic/lib/grade";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
-import { DragHandle, useDragList } from "@/modules/academic/components/reorder";
+import { DragHandle, useDragList } from "@/components/reorder";
 
 export function CourseStrip({
   courses,

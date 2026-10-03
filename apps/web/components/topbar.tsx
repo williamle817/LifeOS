@@ -1,5 +1,6 @@
 import { Nav } from "@/components/nav";
 import { SignOut } from "@/components/sign-out";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function TopBar() {
   return (
@@ -9,6 +10,7 @@ export function TopBar() {
         <span className="font-semibold tracking-tight">LifeOS</span>
       </div>
       <Nav />
+      <ThemeToggle />
       <SignOut />
     </header>
   );

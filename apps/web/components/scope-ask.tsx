@@ -2,16 +2,20 @@
 
 import { EDIT_SCOPES, type EditScope } from "@lifeos/contracts";
 
-const SCOPE_LABELS: Record<EditScope, string> = {
-  one: "This event",
-  following: "This and following events",
-  all: "All events",
+const SCOPE_LABELS: Record<EditScope, (one: string, many: string) => string> = {
+  one: (noun) => `This ${noun}`,
+  following: (_noun, many) => `This and following ${many}`,
+  all: (_noun, many) => `All ${many}`,
 };
 
 export function ScopeAsk({
+  noun = "event",
+  plural = "events",
   onPick,
   onCancel,
 }: {
+  noun?: string;
+  plural?: string;
   onPick: (scope: EditScope) => void;
   onCancel: () => void;
 }) {
@@ -26,7 +30,7 @@ export function ScopeAsk({
             onClick={() => onPick(scope)}
             className="rounded-2xl border border-line px-3.5 py-2.5 text-left text-[13px] transition-colors hover:border-accent hover:bg-surface-muted"
           >
-            {SCOPE_LABELS[scope]}
+            {SCOPE_LABELS[scope](noun, plural)}
           </button>
         ))}
       </div>

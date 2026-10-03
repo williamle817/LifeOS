@@ -3,6 +3,7 @@ import { render } from "@testing-library/react";
 
 const loadedEvents = vi.fn(async () => {});
 const loadedAcademic = vi.fn(async () => {});
+const loadedFlows = vi.fn(async () => {});
 
 vi.mock("@/modules/schedule/lib/event-store", () => ({
   loadEvents: loadedEvents,
@@ -10,6 +11,10 @@ vi.mock("@/modules/schedule/lib/event-store", () => ({
 
 vi.mock("@/modules/academic/lib/course-store", () => ({
   loadAcademic: loadedAcademic,
+}));
+
+vi.mock("@/modules/finance/lib/flow-store", () => ({
+  loadFlows: loadedFlows,
 }));
 
 const { StayFresh } = await import("@/components/stay-fresh");
@@ -25,6 +30,7 @@ function setVisibility(state: "visible" | "hidden"): void {
 beforeEach(() => {
   loadedEvents.mockClear();
   loadedAcademic.mockClear();
+  loadedFlows.mockClear();
 });
 
 describe("coming back to the tab", () => {
@@ -33,11 +39,12 @@ describe("coming back to the tab", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("reads both stores again when the tab becomes visible", () => {
+  it("reads every store again when the tab becomes visible", () => {
     render(<StayFresh />);
     setVisibility("visible");
     expect(loadedEvents).toHaveBeenCalledOnce();
     expect(loadedAcademic).toHaveBeenCalledOnce();
+    expect(loadedFlows).toHaveBeenCalledOnce();
   });
 
   it("does nothing while the tab is hidden", () => {

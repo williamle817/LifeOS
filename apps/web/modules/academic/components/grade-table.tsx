@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Category, GradeItem } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
 import type { CourseGrade } from "@/modules/academic/lib/grade";
-import { DragHandle, useDragList } from "@/modules/academic/components/reorder";
+import { DragHandle, useDragList } from "@/components/reorder";
 
 const input =
   "rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent";

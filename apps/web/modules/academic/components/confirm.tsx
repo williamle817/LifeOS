@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Modal } from "@/components/modal";
 
 export function Confirm({
   title,
@@ -15,27 +15,9 @@ export function Confirm({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onCancel();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onCancel]);
-
   return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-ink/20"
-        onClick={onCancel}
-        aria-hidden="true"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        className="fixed top-1/2 left-1/2 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-line bg-surface p-5 shadow-lg"
-      >
+    <Modal label={title} onClose={onCancel}>
+      <div className="p-5">
         <h2 className="text-sm font-medium">{title}</h2>
         <p className="mt-2 text-[13px] text-ink-muted">{body}</p>
 
@@ -62,6 +44,6 @@ export function Confirm({
           </button>
         </div>
       </div>
-    </>
+    </Modal>
   );
 }
