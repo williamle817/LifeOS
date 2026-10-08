@@ -222,9 +222,21 @@ export function FlowPanel({
       aria-label={heading}
       className="overflow-hidden rounded-3xl border border-line-strong bg-surface shadow-md"
     >
-      <header className="flex items-center gap-2 border-b border-line bg-accent-soft px-4 py-2.5">
+      <header className="flex items-center gap-2.5 border-b border-line bg-surface-muted px-4 py-3">
+        <span
+          aria-hidden="true"
+          style={{
+            backgroundColor: `var(--event-${
+              kind === "income" ? "green" : "red"
+            }-line)`,
+          }}
+          className="size-2.5 shrink-0 rounded-full"
+        />
         <h3 className="text-[15px] font-bold">{heading}</h3>
-        <span style={{ color: ink }} className="ml-auto text-sm font-semibold">
+        <span
+          style={{ color: ink }}
+          className="ml-auto text-sm font-semibold tabular-nums"
+        >
           {money(sum)}
         </span>
       </header>
@@ -280,7 +292,10 @@ export function FlowPanel({
                   </span>
                 </span>
 
-                <span style={{ color: ink }} className="shrink-0 font-medium">
+                <span
+                  style={{ color: ink }}
+                  className="shrink-0 font-medium tabular-nums"
+                >
                   {kind === "income" ? "+" : "-"}
                   {money(flow.amount)}
                 </span>

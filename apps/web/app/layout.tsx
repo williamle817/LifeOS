@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/topbar";
 import { AuthGate } from "@/components/auth-gate";
 import { StayFresh } from "@/components/stay-fresh";
 
-const sans = Inter({
+const sans = Plus_Jakarta_Sans({
   variable: "--font-app",
   subsets: ["latin", "vietnamese"],
 });
