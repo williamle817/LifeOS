@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
 import { expand } from "@/modules/schedule/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
@@ -102,21 +102,8 @@ export function ScheduleView() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const settled = useRef(false);
-
   function onDates(arg: { start: Date; end: Date }) {
     setRange({ from: arg.start, to: arg.end });
-    scrollToMorning();
-  }
-
-  function scrollToMorning() {
-    if (settled.current) return;
-    settled.current = true;
-    requestAnimationFrame(() => {
-      document
-        .querySelector<HTMLElement>('[data-time="08:00:00"]')
-        ?.scrollIntoView({ block: "start" });
-    });
   }
 
   function applyDrag(info: EventDropArg | EventResizeDoneArg) {
@@ -177,12 +164,15 @@ export function ScheduleView() {
   return (
     <>
       {lastWriteError() ? (
-        <p className="mb-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
+        <p className="mx-5 mt-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
           Could not save: {lastWriteError()}
         </p>
       ) : null}
 
-      <div className="rounded-3xl border border-line bg-surface p-4 shadow-sm">
+      <div
+        data-page="schedule"
+        className="flex min-h-0 flex-1 flex-col bg-surface"
+      >
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="timeGridWeek"
@@ -191,8 +181,8 @@ export function ScheduleView() {
             center: "title",
             right: "timeGridDay,timeGridWeek,dayGridMonth",
           }}
-          height="auto"
-          stickyHeaderDates
+          height="100%"
+          scrollTime="08:00:00"
           datesSet={onDates}
           firstDay={1}
           allDayText="All day"

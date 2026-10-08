@@ -138,6 +138,47 @@ body {
   color: var(--ink);
 }
 
+:root:not([data-theme="night"]) body:has([data-page="schedule"]) {
+  --canvas: #ffffff;
+}
+
+body:has([data-page="schedule"]) > div {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body:has([data-page="schedule"]) main {
+  min-height: 0;
+  padding: 0;
+}
+
+[data-page="schedule"] > .fc {
+  min-height: 0;
+  flex: 1;
+}
+
+[data-page="schedule"] .fc .fc-header-toolbar.fc-toolbar {
+  position: static;
+  height: auto;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (width < 40rem) {
+  [data-page="schedule"] .fc .fc-header-toolbar.fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+  }
+
+  [data-page="schedule"] .fc .fc-toolbar-chunk {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+}
+
 .fc {
   --fc-border-color: var(--line);
   --fc-page-bg-color: var(--surface);
