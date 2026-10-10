@@ -12,8 +12,6 @@
   --ink-muted: #465873;
   --ink-faint: #566880;
   --accent: #0b5fc4;
-  --bar-h: 3.8125rem;
-  --toolbar-h: 2.75rem;
   --accent-soft: #dcecff;
   --event-blue: #cfe6ff;
   --event-blue-line: #79b6f5;
@@ -62,63 +60,6 @@
   --money-out: #ff6b6b;
 }
 
-:root[data-theme="mono"] {
-  --canvas: #ffffff;
-  --surface-muted: #ffffff;
-  --line: #111111;
-  --line-strong: #000000;
-  --ink: #000000;
-  --ink-muted: #404040;
-  --ink-faint: #595959;
-  --accent: #000000;
-  --accent-soft: #ffffff;
-}
-
-:root[data-theme="sand"] {
-  --canvas: #fdf7f0;
-  --surface-muted: #faf1e6;
-  --line: #efe0cd;
-  --line-strong: #e0cbb0;
-  --accent: #8f5323;
-  --accent-soft: #fbe8d2;
-}
-
-:root[data-theme="stone"] {
-  --canvas: #f8f7f5;
-  --surface-muted: #f1efec;
-  --line: #e3dfd9;
-  --line-strong: #cdc7be;
-  --accent: #5d564d;
-  --accent-soft: #eae6e0;
-}
-
-:root[data-theme="slate"] {
-  --canvas: #f6f7f9;
-  --surface-muted: #f0f2f5;
-  --line: #e1e5ea;
-  --line-strong: #c6ccd5;
-  --accent: #2f3742;
-  --accent-soft: #eaedf1;
-}
-
-:root[data-theme="teal"] {
-  --canvas: #eff9f8;
-  --surface-muted: #e6f4f2;
-  --line: #cfe7e4;
-  --line-strong: #a9d2cd;
-  --accent: #0e6f66;
-  --accent-soft: #d5edea;
-}
-
-:root[data-theme="plum"] {
-  --canvas: #faf4fb;
-  --surface-muted: #f4ebf6;
-  --line: #e6d6ea;
-  --line-strong: #d2b8d9;
-  --accent: #7a3d86;
-  --accent-soft: #efe0f2;
-}
-
 @theme inline {
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -138,10 +79,6 @@ body {
   color: var(--ink);
 }
 
-:root:not([data-theme="night"]) body:has([data-page="schedule"]) {
-  --canvas: #ffffff;
-}
-
 body:has([data-page="schedule"]) > div {
   height: 100dvh;
   overflow: hidden;
@@ -152,16 +89,19 @@ body:has([data-page="schedule"]) main {
   padding: 0;
 }
 
-[data-page="schedule"] > .fc {
-  min-height: 0;
-  flex: 1;
-}
-
 [data-page="schedule"] .fc .fc-header-toolbar.fc-toolbar {
-  position: static;
-  height: auto;
+  margin: 0;
   padding: 0.5rem 1.25rem;
   border-bottom: 1px solid var(--line);
+}
+
+[data-page="schedule"] .fc .fc-scrollgrid {
+  border-top-width: 0;
+}
+
+[data-page="schedule"] .fc .fc-col-header-cell,
+[data-page="schedule"] .fc .fc-scrollgrid-section-header .fc-timegrid-axis {
+  border-bottom-width: 0;
 }
 
 @media (width < 40rem) {
@@ -197,15 +137,6 @@ body:has([data-page="schedule"]) main {
   font-size: 0.875rem;
 }
 
-.fc .fc-header-toolbar.fc-toolbar {
-  position: sticky;
-  top: var(--bar-h);
-  z-index: 4;
-  height: var(--toolbar-h);
-  margin: 0;
-  background: var(--surface);
-}
-
 .fc .fc-toolbar-title {
   font-size: 0.9375rem;
   font-weight: 700;
@@ -220,16 +151,6 @@ body:has([data-page="schedule"]) main {
     border-color 150ms;
 }
 
-.fc .fc-button-group > .fc-button:not(:first-child) {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.fc .fc-button-group > .fc-button:not(:last-child) {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
 .fc .fc-timegrid-event,
 .fc .fc-daygrid-event {
   border-radius: 0.625rem;
@@ -240,7 +161,6 @@ body:has([data-page="schedule"]) main {
 }
 
 .fc .fc-col-header-cell-cushion {
-  padding: 2px 4px;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--ink-muted);
@@ -273,34 +193,20 @@ body:has([data-page="schedule"]) main {
 }
 
 .fc .fc-scrollgrid-section-header > * {
-  border-bottom: 3px solid var(--surface-muted);
+  border-bottom: 1px solid var(--line);
 }
 
-.fc .fc-scrollgrid-section-body > td:has(.fc-daygrid-body) {
+.fc .fc-timegrid .fc-scrollgrid-section-body > td:has(.fc-daygrid-body) {
+  border-top: 3px solid var(--surface-muted);
   border-bottom-width: 0;
 }
 
 .fc .fc-timegrid-divider {
   padding: 0 0 3px;
-  border-bottom-width: 0;
-  background: var(--surface-muted);
 }
 
 .fc .fc-timegrid-now-indicator-line {
   border-top-width: 2px;
-}
-
-.fc .fc-timegrid-now-indicator-arrow {
-  border-width: 5px 0 5px 6px;
-}
-
-.fc .fc-scrollgrid-section-sticky > * {
-  top: calc(var(--bar-h) + var(--toolbar-h)) !important;
-  background: var(--surface);
-}
-
-.fc .fc-timegrid-slot {
-  scroll-margin-top: calc(var(--bar-h) + var(--toolbar-h) + 3rem);
 }
 
 .fc .fc-timeGridWeek-view .fc-timegrid-col-events {
