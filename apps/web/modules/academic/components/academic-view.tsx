@@ -86,7 +86,7 @@ export function AcademicView() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div data-page="academic" className="grid gap-5">
       {lastWriteError() ? (
         <p className="rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
           Could not save: {lastWriteError()}
@@ -168,7 +168,7 @@ export function AcademicView() {
             <div className="flex flex-wrap items-center gap-2">
               <span
                 style={{
-                  backgroundColor: `var(--event-${course.color ?? "blue"})`,
+                  backgroundColor: `var(--event-${course.color ?? "blue"}-line)`,
                 }}
                 className="size-3 rounded-full"
               />

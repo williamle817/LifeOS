@@ -1,0 +1,25 @@
+body:has([data-page="finance"]) {
+  --canvas: #f2e0c8;
+  --surface: #f8e9d8;
+  --surface-muted: #edd8bd;
+  --line: #e4c7a1;
+  --line-strong: #d6ab72;
+  --ink: #231a0f;
+  --ink-muted: #57452d;
+  --ink-faint: #614f39;
+  --accent: #7f5300;
+  --accent-soft: #f3d1a6;
+}
+
+:root[data-theme="night"] body:has([data-page="finance"]) {
+  --canvas: #14110a;
+  --surface: #1e1a10;
+  --surface-muted: #2a2416;
+  --line: #3a3220;
+  --line-strong: #54482c;
+  --ink: #faf5e8;
+  --ink-muted: #cdbf9c;
+  --ink-faint: #b3a37d;
+  --accent: #f6c453;
+  --accent-soft: #3a2e10;
+}

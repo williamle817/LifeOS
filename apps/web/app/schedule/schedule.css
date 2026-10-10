@@ -1,0 +1,160 @@
+body:has([data-page="schedule"]) {
+  --canvas: #e0e3e7;
+  --surface: #f3f4f6;
+  --surface-muted: #d9dbe1;
+  --line: #c9ccd3;
+  --line-strong: #afb4be;
+  --ink: #1b1c1e;
+  --ink-muted: #47494d;
+  --ink-faint: #515357;
+  --accent: #2f3440;
+  --accent-soft: #d3d7e0;
+}
+
+:root[data-theme="night"] body:has([data-page="schedule"]) {
+  --canvas: #101216;
+  --surface: #1b1e25;
+  --surface-muted: #262a33;
+  --line: #333844;
+  --line-strong: #4a5160;
+  --ink: #f3f5f9;
+  --ink-muted: #aeb6c4;
+  --ink-faint: #949cab;
+  --accent: #c9ced8;
+  --accent-soft: #2b2f38;
+}
+
+body:has([data-page="schedule"]) > div {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body:has([data-page="schedule"]) main {
+  min-height: 0;
+  padding: 0;
+}
+
+[data-page="schedule"] .fc .fc-header-toolbar.fc-toolbar {
+  margin: 0;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+[data-page="schedule"] .fc .fc-scrollgrid {
+  border-top-width: 0;
+}
+
+[data-page="schedule"] .fc .fc-col-header-cell,
+[data-page="schedule"] .fc .fc-scrollgrid-section-header .fc-timegrid-axis {
+  border-bottom-width: 0;
+}
+
+@media (width < 40rem) {
+  [data-page="schedule"] .fc .fc-header-toolbar.fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+  }
+
+  [data-page="schedule"] .fc .fc-toolbar-chunk {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+}
+
+.fc {
+  --fc-border-color: var(--line);
+  --fc-page-bg-color: var(--surface);
+  --fc-neutral-bg-color: var(--surface-muted);
+  --fc-today-bg-color: transparent;
+  --fc-event-bg-color: var(--event-blue);
+  --fc-event-border-color: var(--event-blue-line);
+  --fc-event-text-color: var(--event-blue-ink);
+  --fc-button-text-color: var(--surface);
+  --fc-button-bg-color: var(--accent);
+  --fc-button-border-color: var(--accent);
+  --fc-button-hover-bg-color: var(--accent);
+  --fc-button-hover-border-color: var(--accent);
+  --fc-button-active-bg-color: var(--accent);
+  --fc-button-active-border-color: var(--accent);
+  --fc-now-indicator-color: var(--alert);
+  font-size: 0.875rem;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.fc .fc-button {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 0.75rem;
+  transition:
+    background-color 150ms,
+    border-color 150ms;
+}
+
+.fc .fc-timegrid-event,
+.fc .fc-daygrid-event {
+  border-radius: 0.625rem;
+}
+
+.fc .fc-timegrid-event {
+  box-shadow: none;
+}
+
+.fc .fc-col-header-cell-cushion {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-axis-cushion {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+
+.fc .fc-daygrid-day-number {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.fc .fc-scrollgrid-section-header .fc-scroller {
+  scrollbar-color: transparent transparent;
+}
+
+.fc .fc-timegrid .fc-scroller:has(.fc-daygrid-body) {
+  max-height: 1.875rem;
+}
+
+.fc .fc-timegrid-axis-frame-liquid {
+  position: sticky;
+  top: 0;
+  height: 1.875rem;
+  max-height: 1.875rem;
+}
+
+.fc .fc-scrollgrid-section-header > * {
+  border-bottom: 1px solid var(--line);
+}
+
+.fc .fc-timegrid .fc-scrollgrid-section-body > td:has(.fc-daygrid-body) {
+  border-top: 3px solid var(--surface-muted);
+  border-bottom-width: 0;
+}
+
+.fc .fc-timegrid-divider {
+  padding: 0 0 3px;
+}
+
+.fc .fc-timegrid-now-indicator-line {
+  border-top-width: 2px;
+}
+
+.fc .fc-timeGridWeek-view .fc-timegrid-col-events {
+  margin-right: 12%;
+}
