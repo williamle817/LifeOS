@@ -12,14 +12,6 @@ body:has([data-page="schedule"]) {
 }
 
 :root[data-theme="night"] body:has([data-page="schedule"]) {
-  --canvas: #101216;
-  --surface: #1b1e25;
-  --surface-muted: #262a33;
-  --line: #333844;
-  --line-strong: #4a5160;
-  --ink: #f3f5f9;
-  --ink-muted: #aeb6c4;
-  --ink-faint: #949cab;
   --accent: #c9ced8;
   --accent-soft: #2b2f38;
 }

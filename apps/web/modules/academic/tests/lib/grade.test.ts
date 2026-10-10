@@ -125,8 +125,6 @@ describe("gradeCategory, what counts", () => {
       item({ categoryId: "mine", score: 18, maxScore: 20 }),
       item({ categoryId: "mine", score: 27, maxScore: 30 }),
     ]);
-    expect(out.earned).toBe(45);
-    expect(out.possible).toBe(50);
     expect(out.pct).toBe(90);
   });
 
@@ -309,21 +307,6 @@ describe("gradeCourse", () => {
     expect(out.banked).toBe(59);
   });
 
-  it("says how much of the course is already locked in", () => {
-    const cats = [
-      category({ id: "exams", weight: 60 }),
-      category({ id: "hw", weight: 40 }),
-    ];
-    const out = gradeCourse(course(), cats, [
-      item({ categoryId: "exams", score: 90 }),
-      item({ categoryId: "exams" }),
-      item({ categoryId: "hw", score: 80 }),
-    ]);
-    expect(out.marked).toBe(70);
-    expect(out.remaining).toBe(30);
-    expect(out.required).toBe(100);
-  });
-
   it("counts a part marked category as a part, not as a whole", () => {
     const cats = [category({ id: "hw", weight: 100 })];
     const out = gradeCourse(course(), cats, [
@@ -332,7 +315,6 @@ describe("gradeCourse", () => {
       item({ categoryId: "hw" }),
       item({ categoryId: "hw" }),
     ]);
-    expect(out.marked).toBe(25);
     expect(out.banked).toBe(25);
     expect(out.currentGrade).toBe(100);
   });
@@ -346,8 +328,6 @@ describe("gradeCourse", () => {
       item({ categoryId: "exams", score: 90 }),
       item({ categoryId: "bonus", score: 100 }),
     ]);
-    expect(out.required).toBe(100);
-    expect(out.marked).toBe(100);
     expect(out.banked).toBe(95);
     expect(out.currentGrade).toBe(95);
   });

@@ -5,9 +5,9 @@ import {
   type Page,
 } from "@playwright/test";
 
-export type Row = Record<string, unknown>;
+type Row = Record<string, unknown>;
 
-export type Db = {
+type Db = {
   events: Row[];
   semesters: Row[];
   courses: Row[];
@@ -16,7 +16,7 @@ export type Db = {
   flows: Row[];
 };
 
-export function emptyDb(): Db {
+function emptyDb(): Db {
   return {
     events: [],
     semesters: [],
@@ -27,7 +27,7 @@ export function emptyDb(): Db {
   };
 }
 
-export const STORAGE_KEY = "sb-localhost-auth-token";
+const STORAGE_KEY = "sb-localhost-auth-token";
 
 function base64url(value: object): string {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -66,12 +66,16 @@ function session() {
   };
 }
 
-export function pad(n: number): string {
+function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
 export function dayOf(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function today(): string {
+  return dayOf(new Date());
 }
 
 export function monday(): Date {
@@ -180,7 +184,7 @@ async function installRoutes(page: BrowserContext, db: Db): Promise<void> {
   });
 }
 
-export type App = {
+type App = {
   db: Db;
   open: (path?: string) => Promise<void>;
 };

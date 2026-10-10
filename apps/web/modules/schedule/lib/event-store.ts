@@ -396,7 +396,3 @@ export async function removeOccurrence(
     recurrence: { ...head.recurrence!, until: shiftDay(date, -1) },
   } as LifeEvent);
 }
-
-export function exportEvents(): string {
-  return JSON.stringify(cache, null, 2);
-}

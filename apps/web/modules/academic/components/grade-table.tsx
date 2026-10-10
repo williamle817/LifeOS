@@ -5,21 +5,13 @@ import type { Category, GradeItem } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
 import type { CourseGrade } from "@/modules/academic/lib/grade";
 import { DragHandle, useDragList } from "@/components/reorder";
+import { dateLabel } from "@/modules/academic/components/upcoming";
 
 const input =
   "rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent";
 
 function scoreText(item: GradeItem): string {
   return item.score === null ? "" : String(item.score);
-}
-
-function dayLabel(value?: string): string {
-  if (!value) return "";
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export function GradeTable({
@@ -322,9 +314,8 @@ export function GradeTable({
                         {item.title}
                       </span>
                       <span className="ml-2 text-[11px] text-ink-faint">
-                        {dayLabel(item.dueOn)}
+                        {item.dueOn ? dateLabel(item.dueOn) : ""}
                         {dropped.has(item.id) ? " dropped" : ""}
-                        {item.eventId ? " from Schedule" : ""}
                       </span>
                     </span>
 

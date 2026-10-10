@@ -39,14 +39,14 @@ import { SplitChart } from "@/modules/finance/components/split-chart";
 import { ComingUp } from "@/modules/finance/components/coming-up";
 import { FlowPanel } from "@/modules/finance/components/flow-panel";
 
-export function FinanceView({ today = new Date() }: { today?: Date }) {
+export function FinanceView() {
   const flows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const events = useSyncExternalStore(
     subscribeEvents,
     eventsSnapshot,
     eventsServer,
   );
-  const [month, setMonth] = useState<Month>(() => thisMonth(today));
+  const [month, setMonth] = useState<Month>(() => thisMonth());
 
   useEffect(() => {
     void ensureLoaded();
@@ -63,8 +63,8 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
     ...shown.filter((one) => one.flow.kind === "expense"),
     ...mealsIn(events, month),
   ];
-  const gone = newestFirst(settled(spending, today));
-  const due = pending(spending, today);
+  const gone = newestFirst(settled(spending));
+  const due = pending(spending);
 
   function onSave(
     flow: Flow,
@@ -105,11 +105,11 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
         </p>
       ) : null}
 
-      <MonthBar month={month} onChange={setMonth} today={today} />
+      <MonthBar month={month} onChange={setMonth} />
 
       <SplitChart income={total(income)} expense={total(gone)} />
 
-      <ComingUp rows={due} today={today} />
+      <ComingUp rows={due} />
 
       <div className="grid items-start gap-5 lg:grid-cols-2">
         <FlowPanel

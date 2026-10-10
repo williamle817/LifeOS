@@ -1,14 +1,11 @@
-import { eventRow, expect, flowRow, test } from "../support/fixtures";
+import { dayOf, eventRow, expect, flowRow, test } from "../support/fixtures";
 
 function thisMonth(offset = 0): { label: string; day: (n: number) => string } {
   const now = new Date();
   const at = new Date(now.getFullYear(), now.getMonth() + offset, 1);
   return {
     label: at.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-    day: (n: number) =>
-      `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(
-        n,
-      ).padStart(2, "0")}`,
+    day: (n: number) => dayOf(new Date(at.getFullYear(), at.getMonth(), n)),
   };
 }
 

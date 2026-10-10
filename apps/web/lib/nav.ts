@@ -5,7 +5,7 @@ export type IconName =
   | "finance"
   | "fitness";
 
-export type NavItem = {
+type NavItem = {
   href: string;
   label: string;
   icon: IconName;

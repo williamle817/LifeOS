@@ -1,16 +1,12 @@
 import {
   at,
-  dayOf,
   dragSlots,
   eventRow,
   expect,
   monday,
   test,
+  today,
 } from "../support/fixtures";
-
-function today(): string {
-  return dayOf(new Date());
-}
 
 function weeksBefore(weeks: number): Date {
   const d = monday();

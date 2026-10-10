@@ -10,13 +10,7 @@ const TINT: Record<Letter, string> = {
   F: "red",
 };
 
-export function LetterPill({
-  letter,
-  size = "base",
-}: {
-  letter: Letter;
-  size?: "base" | "small";
-}) {
+export function LetterPill({ letter }: { letter: Letter }) {
   return (
     <span
       style={{
@@ -24,11 +18,7 @@ export function LetterPill({
         borderColor: `var(--event-${TINT[letter]}-line)`,
         color: `var(--event-${TINT[letter]}-ink)`,
       }}
-      className={`rounded-full border font-medium ${
-        size === "small"
-          ? "px-2 py-0.5 text-[11px]"
-          : "px-2.5 py-0.5 text-[13px]"
-      }`}
+      className="rounded-full border px-2.5 py-0.5 text-[13px] font-medium"
     >
       {letter}
     </span>

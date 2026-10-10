@@ -1,4 +1,5 @@
-body:has([data-page="dashboard"]) {
+body:has([data-page="dashboard"]),
+body:has([data-page="login"]) {
   --canvas: #cdebdc;
   --surface: #dcf2e6;
   --surface-muted: #c3e5d4;
@@ -11,7 +12,8 @@ body:has([data-page="dashboard"]) {
   --accent-soft: #aee6cb;
 }
 
-:root[data-theme="night"] body:has([data-page="dashboard"]) {
+:root[data-theme="night"] body:has([data-page="dashboard"]),
+:root[data-theme="night"] body:has([data-page="login"]) {
   --canvas: #0d1613;
   --surface: #14201b;
   --surface-muted: #1c2b24;

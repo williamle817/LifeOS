@@ -94,7 +94,7 @@ export function expand(
 
   for (const row of rows) {
     if (!row.seriesId || !row.occurrenceDate) continue;
-    patches.set(`${row.seriesId}::${row.occurrenceDate}`, row);
+    patches.set(occurrenceId(row.seriesId, row.occurrenceDate), row);
   }
 
   const out = [...singles];
@@ -122,11 +122,12 @@ export function expand(
       if (rule.until && date > rule.until) break;
 
       if (cursor >= lower) {
-        const patch = patches.get(`${seriesId}::${date}`);
+        const id = occurrenceId(seriesId, date);
+        const patch = patches.get(id);
         if (!patch) {
           out.push({
             ...master,
-            id: occurrenceId(seriesId, date),
+            id,
             seriesId,
             occurrenceDate: date,
             recurrence: rule,

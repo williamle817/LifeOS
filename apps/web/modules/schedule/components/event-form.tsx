@@ -12,6 +12,7 @@ import {
   type RecurFreq,
 } from "@lifeos/contracts";
 import { ScopeAsk } from "@/components/scope-ask";
+import { shiftDay } from "@/modules/schedule/lib/recurrence";
 
 const TYPE_LABELS: Record<EventType, string> = {
   general: "General",
@@ -75,13 +76,6 @@ function toIso(input: string): string {
 
 function toDate(value: string): string {
   return value.slice(0, 10);
-}
-
-function shiftDay(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function toDraft(event: LifeEvent): Draft {

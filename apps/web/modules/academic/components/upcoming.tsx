@@ -4,32 +4,24 @@ import type { Category, GradeItem } from "@lifeos/contracts";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-function startOfDay(value: Date): number {
-  return new Date(
-    value.getFullYear(),
-    value.getMonth(),
-    value.getDate(),
-  ).getTime();
+function dateOf(due: string): Date {
+  const [y, m, d] = due.split("-").map(Number);
+  return new Date(y, m - 1, d);
 }
 
-function dayOf(due: string): number {
-  const [y, m, d] = due.split("-").map(Number);
-  return new Date(y, m - 1, d).getTime();
-}
-
-function dateLabel(due: string): string {
-  const [y, m, d] = due.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+export function dateLabel(due: string): string {
+  return dateOf(due).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
 }
 
-export function daysAway(due: string, today: Date): number {
-  return Math.round((dayOf(due) - startOfDay(today)) / DAY);
+function daysAway(due: string, today: Date): number {
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((dateOf(due).getTime() - start.getTime()) / DAY);
 }
 
-export function whenLabel(due: string, today: Date): string {
+function whenLabel(due: string, today: Date): string {
   const days = daysAway(due, today);
   if (days < 0) return days === -1 ? "1 day late" : `${-days} days late`;
   if (days === 0) return "today";
@@ -39,7 +31,7 @@ export function whenLabel(due: string, today: Date): string {
   return `in ${Math.round(days / 30)} months`;
 }
 
-export function dueOrder(a: GradeItem, b: GradeItem): number {
+function dueOrder(a: GradeItem, b: GradeItem): number {
   const left = a.dueOn ?? "";
   const right = b.dueOn ?? "";
   if (left !== right) return left < right ? -1 : 1;
@@ -49,12 +41,11 @@ export function dueOrder(a: GradeItem, b: GradeItem): number {
 export function Upcoming({
   items,
   categories,
-  today = new Date(),
 }: {
   items: GradeItem[];
   categories: Category[];
-  today?: Date;
 }) {
+  const today = new Date();
   const waiting = items
     .filter((item) => item.score === null && item.dueOn)
     .sort(dueOrder);

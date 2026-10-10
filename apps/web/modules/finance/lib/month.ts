@@ -41,18 +41,13 @@ export function dayLabel(on: string): string {
   });
 }
 
-function iso(month: Month, day: number): string {
-  const mm = String(month.month + 1).padStart(2, "0");
-  const dd = String(day).padStart(2, "0");
-  return `${month.year}-${mm}-${dd}`;
+export function dayOf(month: Month, day: number): string {
+  return todayIso(new Date(month.year, month.month, day));
 }
 
 export function dayBefore(on: string): string {
   const [y, m, d] = on.split("-").map(Number);
-  const back = new Date(y, m - 1, d - 1);
-  return `${back.getFullYear()}-${String(back.getMonth() + 1).padStart(2, "0")}-${String(
-    back.getDate(),
-  ).padStart(2, "0")}`;
+  return todayIso(new Date(y, m - 1, d - 1));
 }
 
 export function dateIn(flow: Flow, month: Month): string | null {
@@ -69,7 +64,7 @@ export function dateIn(flow: Flow, month: Month): string | null {
         : null
       : !started || (flow.repeat === "yearly" && from.month !== month.month)
         ? null
-        : iso(month, Math.min(day, daysInMonth(month)));
+        : dayOf(month, Math.min(day, daysInMonth(month)));
 
   if (!on) return null;
   if (flow.until && on > flow.until) return null;

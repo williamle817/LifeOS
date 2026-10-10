@@ -8,7 +8,7 @@ import type {
 } from "@lifeos/contracts";
 import { supabase } from "@/lib/supabase";
 
-export type Academic = {
+type Academic = {
   semesters: Semester[];
   courses: Course[];
   categories: Category[];

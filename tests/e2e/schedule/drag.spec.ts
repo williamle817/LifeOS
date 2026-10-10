@@ -10,11 +10,8 @@ import {
   laneBox,
   monday,
   test,
+  today,
 } from "../support/fixtures";
-
-function today(): string {
-  return dayOf(new Date());
-}
 
 function minutesOf(iso: string): number {
   return new Date(iso).getMinutes();

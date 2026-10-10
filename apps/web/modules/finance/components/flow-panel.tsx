@@ -8,6 +8,7 @@ import { Modal } from "@/components/modal";
 import { ScopeAsk } from "@/components/scope-ask";
 import {
   dayLabel,
+  dayOf,
   money,
   total,
   type Dated,
@@ -27,11 +28,6 @@ type Asking = { flow: Flow; on: string; next: Flow | null };
 
 function repeats(row: Dated): boolean {
   return row.series ?? row.flow.repeat !== "once";
-}
-
-function firstOf(month: Month): string {
-  const mm = String(month.month + 1).padStart(2, "0");
-  return `${month.year}-${mm}-01`;
 }
 
 export function FlowPanel({
@@ -57,7 +53,7 @@ export function FlowPanel({
   const [title, setTitle] = useState("");
   const [place, setPlace] = useState("");
   const [category, setCategory] = useState("");
-  const [on, setOn] = useState(() => firstOf(month));
+  const [on, setOn] = useState(() => dayOf(month, 1));
   const [amount, setAmount] = useState("");
   const [repeat, setRepeat] = useState<FlowRepeat>("once");
 
@@ -78,7 +74,7 @@ export function FlowPanel({
   function startAdd() {
     setEditing(null);
     setAdding(true);
-    reset(firstOf(month));
+    reset(dayOf(month, 1));
   }
 
   function startEdit(flow: Flow, when: string) {

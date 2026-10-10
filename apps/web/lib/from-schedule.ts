@@ -1,10 +1,8 @@
 import type { EditScope, Flow, LifeEvent } from "@lifeos/contracts";
 import { dayKey, expand } from "@/modules/schedule/lib/recurrence";
+import { saveOccurrence } from "@/modules/schedule/lib/event-store";
 import {
-  removeOccurrence,
-  saveOccurrence,
-} from "@/modules/schedule/lib/event-store";
-import {
+  dayOf,
   daysInMonth,
   round,
   type Dated,
@@ -18,6 +16,7 @@ export {
   getSnapshot as eventsSnapshot,
   getServerSnapshot as eventsServer,
   ensureLoaded as ensureEvents,
+  removeOccurrence as removeFromSchedule,
 } from "@/modules/schedule/lib/event-store";
 
 export function hoursOf(event: LifeEvent): number {
@@ -36,22 +35,17 @@ export function costOf(event: LifeEvent): number {
   return round(event.amount ?? 0);
 }
 
-function day(month: Month, at: number): string {
-  const mm = String(month.month + 1).padStart(2, "0");
-  return `${month.year}-${mm}-${String(at).padStart(2, "0")}`;
-}
-
-export function rowId(event: LifeEvent): string {
+function rowId(event: LifeEvent): string {
   return `from-${event.id}`;
 }
 
-export function eventsIn(
+function eventsIn(
   events: LifeEvent[],
   month: Month,
   type: "work" | "dining",
 ): LifeEvent[] {
-  const first = day(month, 1);
-  const last = day(month, daysInMonth(month));
+  const first = dayOf(month, 1);
+  const last = dayOf(month, daysInMonth(month));
 
   return expand(
     events,
@@ -127,11 +121,4 @@ export async function saveFromSchedule(
     ...(event.type === "dining" ? { amount: next.amount ?? 0 } : {}),
   } as LifeEvent;
   await saveOccurrence(edited, scope);
-}
-
-export async function removeFromSchedule(
-  event: LifeEvent,
-  scope: EditScope,
-): Promise<void> {
-  await removeOccurrence(event, scope);
 }

@@ -7,13 +7,11 @@ import type {
 } from "@lifeos/contracts";
 import { DEFAULT_SCALE } from "@lifeos/contracts";
 
-export type CategoryGrade = {
+type CategoryGrade = {
   category: Category;
   kept: GradeItem[];
   dropped: GradeItem[];
   pending: GradeItem[];
-  earned: number;
-  possible: number;
   pct: number | null;
   progress: number;
 };
@@ -22,16 +20,13 @@ export type CourseGrade = {
   categories: CategoryGrade[];
   banked: number;
   bankedLetter: Letter;
-  marked: number;
-  required: number;
-  remaining: number;
   ceiling: number;
   ceilingLetter: Letter;
   currentGrade: number | null;
   letter: Letter | null;
 };
 
-export function round2(value: number): number {
+function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
@@ -81,8 +76,6 @@ export function gradeCategory(
     kept,
     dropped,
     pending,
-    earned: round2(earned),
-    possible: round2(possible),
     pct: possible > 0 ? round2((earned / possible) * 100) : null,
     progress,
   };
@@ -101,14 +94,12 @@ export function gradeCourse(
 
   let banked = 0;
   let marked = 0;
-  let required = 0;
 
   for (const entry of graded) {
     const weight = entry.category.weight;
     banked += (weight * (entry.pct ?? 0) * entry.progress) / 100;
     if (entry.category.extraCredit) continue;
     marked += weight * entry.progress;
-    required += weight;
   }
 
   const topped = items.map((item) =>
@@ -132,9 +123,6 @@ export function gradeCourse(
     categories: graded,
     banked: round2(banked),
     bankedLetter: letterFor(round2(banked), course.scale),
-    marked: round2(marked),
-    required: round2(required),
-    remaining: round2(required - marked),
     ceiling: round2(ceiling),
     ceilingLetter: letterFor(round2(ceiling), course.scale),
     currentGrade,

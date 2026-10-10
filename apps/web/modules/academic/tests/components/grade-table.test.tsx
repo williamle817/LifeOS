@@ -134,14 +134,6 @@ describe("the grade table, what it shows", () => {
     expect(screen.getByText("dropped")).toBeDefined();
   });
 
-  it("says when an item came from the calendar", () => {
-    setup(
-      [category({ id: "exams" })],
-      [item({ categoryId: "exams", eventId: "ev-1" })],
-    );
-    expect(screen.getByText("from Schedule")).toBeDefined();
-  });
-
   it("shows a due date when there is one", () => {
     setup(
       [category({ id: "exams" })],

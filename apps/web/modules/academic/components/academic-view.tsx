@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { Category, Course, GradeItem } from "@lifeos/contracts";
 import {
   addSemester,
@@ -62,13 +62,12 @@ export function AcademicView() {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const course = courses.find((c) => c.id === courseId) ?? null;
 
-  const grades = useMemo(() => {
-    const out = new Map<string, ReturnType<typeof gradeCourse>>();
-    for (const one of courses) {
-      out.set(one.id, gradeCourse(one, data.categories, data.items));
-    }
-    return out;
-  }, [courses, data.categories, data.items]);
+  const grades = new Map(
+    courses.map((one) => [
+      one.id,
+      gradeCourse(one, data.categories, data.items),
+    ]),
+  );
 
   const grade = course ? grades.get(course.id) : undefined;
 

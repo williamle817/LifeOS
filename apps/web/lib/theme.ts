@@ -1,6 +1,6 @@
-export type Mode = "light" | "dark";
+type Mode = "light" | "dark";
 
-export const THEME_KEY = "lifeos.theme";
+const THEME_KEY = "lifeos.theme";
 
 let cache: Mode | null = null;
 const listeners = new Set<() => void>();
@@ -15,13 +15,10 @@ function read(): Mode {
   }
 }
 
-function persist(mode: Mode): boolean {
+function persist(mode: Mode): void {
   try {
     window.localStorage.setItem(THEME_KEY, mode);
-    return true;
-  } catch {
-    return false;
-  }
+  } catch {}
 }
 
 export function subscribe(listener: () => void): () => void {
@@ -40,7 +37,7 @@ export function getServerSnapshot(): Mode {
   return "light";
 }
 
-export function apply(mode: Mode): void {
+function apply(mode: Mode): void {
   if (mode === "dark") document.documentElement.dataset.theme = "night";
   else delete document.documentElement.dataset.theme;
 }

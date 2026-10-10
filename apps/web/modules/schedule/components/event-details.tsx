@@ -74,38 +74,24 @@ export function EventDetails({
           {event.title}
         </h2>
         <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label="Edit"
-            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
-          >
-            <ActionIcon name="edit" />
-          </button>
-          <button
-            type="button"
-            onClick={onDuplicate}
-            aria-label="Duplicate"
-            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
-          >
-            <ActionIcon name="copy" />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label="Delete"
-            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
-          >
-            <ActionIcon name="trash" />
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
-          >
-            <ActionIcon name="close" />
-          </button>
+          {(
+            [
+              ["Edit", "edit", onEdit],
+              ["Duplicate", "copy", onDuplicate],
+              ["Delete", "trash", onDelete],
+              ["Close", "close", onClose],
+            ] as const
+          ).map(([label, icon, onClick]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={onClick}
+              aria-label={label}
+              className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+            >
+              <ActionIcon name={icon} />
+            </button>
+          ))}
         </div>
       </div>
 

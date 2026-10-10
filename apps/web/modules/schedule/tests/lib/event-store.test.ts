@@ -205,11 +205,6 @@ describe("writing", () => {
     await s.addEvent(plain({ id: "ghost" }));
     expect(s.getSnapshot().map((e) => e.id)).toEqual(["e1"]);
   });
-
-  it("exports what is in the cache", async () => {
-    const s = await store([row()]);
-    expect(JSON.parse(s.exportEvents())).toHaveLength(1);
-  });
 });
 
 describe("saveOccurrence, outside a series", () => {

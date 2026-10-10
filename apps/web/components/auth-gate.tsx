@@ -3,26 +3,22 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
+import "@/app/dashboard.css";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [ready, setReady] = useState(false);
+  const [session, setSession] = useState<Session | null>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [note, setNote] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-    });
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
     });
     return () => data.subscription.unsubscribe();
   }, []);
 
-  if (!ready) return null;
+  if (session === undefined) return null;
   if (session) return <>{children}</>;
 
   async function signIn(e: React.FormEvent) {
@@ -36,7 +32,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center">
+    <div data-page="login" className="flex flex-1 items-center justify-center">
       <form
         onSubmit={signIn}
         className="w-full max-w-xs rounded-xl border border-line bg-surface p-5"

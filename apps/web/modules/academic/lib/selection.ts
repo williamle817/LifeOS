@@ -2,7 +2,7 @@ import type { Course, Semester } from "@lifeos/contracts";
 
 const KEY = "lifeos.academic.selection";
 
-export type Selection = { semesterId: string | null; courseId: string | null };
+type Selection = { semesterId: string | null; courseId: string | null };
 
 const EMPTY: Selection = { semesterId: null, courseId: null };
 
@@ -39,13 +39,10 @@ export function getServerSnapshot(): Selection {
   return EMPTY;
 }
 
-function persist(value: Selection): boolean {
+function persist(value: Selection): void {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(value));
-    return true;
-  } catch {
-    return false;
-  }
+  } catch {}
 }
 
 export function select(patch: Partial<Selection>): void {
