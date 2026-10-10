@@ -1,0 +1,25 @@
+body:has([data-page="dashboard"]) {
+  --canvas: #effcf6;
+  --surface: #ffffff;
+  --surface-muted: #e3f8ee;
+  --line: #bdeed7;
+  --line-strong: #8de0bb;
+  --ink: #122019;
+  --ink-muted: #3d5a4c;
+  --ink-faint: #4c6b5c;
+  --accent: #08795a;
+  --accent-soft: #c8f5e1;
+}
+
+:root[data-theme="night"] body:has([data-page="dashboard"]) {
+  --canvas: #0d1613;
+  --surface: #14201b;
+  --surface-muted: #1c2b24;
+  --line: #27392f;
+  --line-strong: #3a5246;
+  --ink: #ecf8f2;
+  --ink-muted: #a6c4b6;
+  --ink-faint: #8cae9e;
+  --accent: #5ee8b4;
+  --accent-soft: #133427;
+}
