@@ -1,14 +1,14 @@
 body:has([data-page="schedule"]) {
-  --canvas: #f7f8fa;
-  --surface: #ffffff;
-  --surface-muted: #eef0f3;
-  --line: #dcdfe5;
-  --line-strong: #b9bec8;
-  --ink: #1c1f26;
-  --ink-muted: #4b505c;
-  --ink-faint: #5a606c;
+  --canvas: #e0e3e7;
+  --surface: #f3f4f6;
+  --surface-muted: #d9dbe1;
+  --line: #c9ccd3;
+  --line-strong: #afb4be;
+  --ink: #1b1c1e;
+  --ink-muted: #47494d;
+  --ink-faint: #515357;
   --accent: #2f3440;
-  --accent-soft: #eceef1;
+  --accent-soft: #d3d7e0;
 }
 
 :root[data-theme="night"] body:has([data-page="schedule"]) {

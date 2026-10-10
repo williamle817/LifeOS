@@ -1,14 +1,14 @@
 body:has([data-page="fitness"]) {
-  --canvas: #fff7f2;
-  --surface: #ffffff;
-  --surface-muted: #ffeee3;
-  --line: #fbd3ba;
-  --line-strong: #f4a77c;
-  --ink: #24160f;
-  --ink-muted: #5c4337;
-  --ink-faint: #674c3f;
-  --accent: #b23c08;
-  --accent-soft: #ffe6d6;
+  --canvas: #fadbd1;
+  --surface: #fee6de;
+  --surface-muted: #f6d3c7;
+  --line: #f0bfb0;
+  --line-strong: #e6a089;
+  --ink: #261814;
+  --ink-muted: #5e4037;
+  --ink-faint: #674b42;
+  --accent: #a23504;
+  --accent-soft: #ffc9b7;
 }
 
 :root[data-theme="night"] body:has([data-page="fitness"]) {

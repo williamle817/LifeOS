@@ -1,14 +1,14 @@
 body:has([data-page="finance"]) {
-  --canvas: #fffbef;
-  --surface: #ffffff;
-  --surface-muted: #fdf4da;
-  --line: #f2dda0;
-  --line-strong: #e3c06a;
-  --ink: #231c0c;
-  --ink-muted: #5a4c2c;
-  --ink-faint: #665634;
-  --accent: #855700;
-  --accent-soft: #fdeec2;
+  --canvas: #f2e0c8;
+  --surface: #f8e9d8;
+  --surface-muted: #edd8bd;
+  --line: #e4c7a1;
+  --line-strong: #d6ab72;
+  --ink: #231a0f;
+  --ink-muted: #57452d;
+  --ink-faint: #614f39;
+  --accent: #7f5300;
+  --accent-soft: #f3d1a6;
 }
 
 :root[data-theme="night"] body:has([data-page="finance"]) {

@@ -1,0 +1,25 @@
+body:has([data-page="academic"]) {
+  --canvas: #d3e4fc;
+  --surface: #e0edff;
+  --surface-muted: #caddf8;
+  --line: #b4cef4;
+  --line-strong: #8fb6ed;
+  --ink: #151d28;
+  --ink-muted: #394a61;
+  --ink-faint: #44546a;
+  --accent: #0059bd;
+  --accent-soft: #bfd9fe;
+}
+
+:root[data-theme="night"] body:has([data-page="academic"]) {
+  --canvas: #101216;
+  --surface: #1b1e25;
+  --surface-muted: #262a33;
+  --line: #333844;
+  --line-strong: #4a5160;
+  --ink: #f3f5f9;
+  --ink-muted: #aeb6c4;
+  --ink-faint: #949cab;
+  --accent: #4c9aff;
+  --accent-soft: #23314a;
+}

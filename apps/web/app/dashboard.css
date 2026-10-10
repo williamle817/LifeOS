@@ -1,14 +1,14 @@
 body:has([data-page="dashboard"]) {
-  --canvas: #effcf6;
-  --surface: #ffffff;
-  --surface-muted: #e3f8ee;
-  --line: #bdeed7;
-  --line-strong: #8de0bb;
-  --ink: #122019;
-  --ink-muted: #3d5a4c;
-  --ink-faint: #4c6b5c;
-  --accent: #08795a;
-  --accent-soft: #c8f5e1;
+  --canvas: #cdebdc;
+  --surface: #dcf2e6;
+  --surface-muted: #c3e5d4;
+  --line: #a9d9c1;
+  --line-strong: #7cc6a3;
+  --ink: #10201a;
+  --ink-muted: #34503f;
+  --ink-faint: #3e5a4b;
+  --accent: #05664b;
+  --accent-soft: #aee6cb;
 }
 
 :root[data-theme="night"] body:has([data-page="dashboard"]) {

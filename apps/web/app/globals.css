@@ -37,9 +37,9 @@
   --event-slate-line: #a8b4c8;
   --event-slate-ink: #2a3340;
   --event-slate-ink-muted: #45515f;
-  --alert: #c62828;
-  --money-in: #177643;
-  --money-out: #c23636;
+  --alert: #b61119;
+  --money-in: #076a39;
+  --money-out: #b02227;
 }
 
 :root[data-theme="night"] {
