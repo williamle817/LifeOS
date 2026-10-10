@@ -1,3 +1,29 @@
+body:has([data-page="schedule"]) {
+  --canvas: #f7f8fa;
+  --surface: #ffffff;
+  --surface-muted: #eef0f3;
+  --line: #dcdfe5;
+  --line-strong: #b9bec8;
+  --ink: #1c1f26;
+  --ink-muted: #4b505c;
+  --ink-faint: #5a606c;
+  --accent: #2f3440;
+  --accent-soft: #eceef1;
+}
+
+:root[data-theme="night"] body:has([data-page="schedule"]) {
+  --canvas: #101216;
+  --surface: #1b1e25;
+  --surface-muted: #262a33;
+  --line: #333844;
+  --line-strong: #4a5160;
+  --ink: #f3f5f9;
+  --ink-muted: #aeb6c4;
+  --ink-faint: #949cab;
+  --accent: #c9ced8;
+  --accent-soft: #2b2f38;
+}
+
 body:has([data-page="schedule"]) > div {
   height: 100dvh;
   overflow: hidden;
@@ -46,6 +72,7 @@ body:has([data-page="schedule"]) main {
   --fc-event-bg-color: var(--event-blue);
   --fc-event-border-color: var(--event-blue-line);
   --fc-event-text-color: var(--event-blue-ink);
+  --fc-button-text-color: var(--surface);
   --fc-button-bg-color: var(--accent);
   --fc-button-border-color: var(--accent);
   --fc-button-hover-bg-color: var(--accent);

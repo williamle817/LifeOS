@@ -98,7 +98,7 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
   }
 
   return (
-    <div className="grid gap-5">
+    <div data-page="finance" className="grid gap-5">
       {lastWriteError() ? (
         <p className="rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
           Could not save: {lastWriteError()}
