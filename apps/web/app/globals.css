@@ -276,10 +276,14 @@ body:has([data-page="schedule"]) main {
   border-bottom: 3px solid var(--surface-muted);
 }
 
-.fc .fc-scrollgrid-section-header .fc-timegrid-axis,
-.fc .fc-scrollgrid-section-header .fc-timegrid-axis ~ td,
-.fc .fc-scrollgrid-section-header .fc-timegrid-axis ~ th {
-  border-top: 3px solid var(--surface-muted);
+.fc .fc-scrollgrid-section-body > td:has(.fc-daygrid-body) {
+  border-bottom-width: 0;
+}
+
+.fc .fc-timegrid-divider {
+  padding: 0 0 3px;
+  border-bottom-width: 0;
+  background: var(--surface-muted);
 }
 
 .fc .fc-timegrid-now-indicator-line {
