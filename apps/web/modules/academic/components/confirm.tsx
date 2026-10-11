@@ -1,6 +1,7 @@
 "use client";
 
 import { Modal } from "@/components/modal";
+import { tint } from "@/components/styles";
 
 export function Confirm({
   title,
@@ -33,11 +34,7 @@ export function Confirm({
           <button
             type="button"
             onClick={onConfirm}
-            style={{
-              backgroundColor: "var(--event-red)",
-              borderColor: "var(--event-red-line)",
-              color: "var(--event-red-ink)",
-            }}
+            style={tint("red")}
             className="rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors hover:brightness-95"
           >
             {action}

@@ -2,36 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Category, Course } from "@lifeos/contracts";
-import { DEFAULT_SCALE } from "@lifeos/contracts";
 import { CourseForm } from "@/modules/academic/components/course-form";
+import { category, course } from "@/modules/academic/tests/factories";
 
 type Saved = { course: Course; categories: Category[] };
-
-function category(over: Partial<Category> = {}): Category {
-  return {
-    id: "cat-1",
-    userId: "u1",
-    courseId: "c1",
-    name: "Exams",
-    weight: 100,
-    dropLowest: 0,
-    extraCredit: false,
-    position: 0,
-    ...over,
-  };
-}
-
-function course(over: Partial<Course> = {}): Course {
-  return {
-    id: "c1",
-    userId: "u1",
-    semesterId: "sem-1",
-    title: "Data Structures",
-    code: "CS 201",
-    scale: DEFAULT_SCALE,
-    ...over,
-  };
-}
 
 function setup(
   props: Partial<React.ComponentProps<typeof CourseForm>> = {},

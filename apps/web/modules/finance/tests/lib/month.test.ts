@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { Flow } from "@lifeos/contracts";
 import {
   dateIn,
-  dayBefore,
-  daysUntil,
   daysInMonth,
   inMonth,
   monthLabel,
@@ -15,7 +13,6 @@ import {
   settled,
   shift,
   thisMonth,
-  todayIso,
   total,
   whenLabel,
 } from "@/modules/finance/lib/month";
@@ -190,16 +187,6 @@ describe("what has happened and what has not", () => {
   const TODAY = new Date(2026, 2, 10);
   const MARCH = { year: 2026, month: 2 };
 
-  it("writes today the way a date is stored", () => {
-    expect(todayIso(TODAY)).toBe("2026-03-10");
-  });
-
-  it("counts the days to a date", () => {
-    expect(daysUntil("2026-03-13", TODAY)).toBe(3);
-    expect(daysUntil("2026-03-10", TODAY)).toBe(0);
-    expect(daysUntil("2026-03-09", TODAY)).toBe(-1);
-  });
-
   it("says when in plain words", () => {
     expect(whenLabel("2026-03-10", TODAY)).toBe("today");
     expect(whenLabel("2026-03-11", TODAY)).toBe("tomorrow");
@@ -237,12 +224,6 @@ describe("what has happened and what has not", () => {
 
 describe("cutting a series short", () => {
   const MARCH = { year: 2026, month: 2 };
-
-  it("steps back a day, over the turn of a month", () => {
-    expect(dayBefore("2026-03-01")).toBe("2026-02-28");
-    expect(dayBefore("2026-01-01")).toBe("2025-12-31");
-    expect(dayBefore("2026-03-15")).toBe("2026-03-14");
-  });
 
   it("stops a series after the day it was ended on", () => {
     const one = flow({

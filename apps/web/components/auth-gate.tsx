@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { follow } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import "@/app/dashboard.css";
 
@@ -13,6 +14,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+      follow(next?.user.id ?? null);
       setSession(next);
     });
     return () => data.subscription.unsubscribe();

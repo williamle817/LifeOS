@@ -1,4 +1,5 @@
 import type { Flow } from "@lifeos/contracts";
+import { daysBetween, isoDay } from "@/lib/dates";
 
 export type Month = { year: number; month: number };
 
@@ -33,21 +34,10 @@ export function daysInMonth(month: Month): number {
   return new Date(month.year, month.month + 1, 0).getDate();
 }
 
-export function dayLabel(on: string): string {
-  const [y, m, d] = on.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function dayOf(month: Month, day: number): string {
-  return todayIso(new Date(month.year, month.month, day));
-}
-
-export function dayBefore(on: string): string {
-  const [y, m, d] = on.split("-").map(Number);
-  return todayIso(new Date(y, m - 1, d - 1));
+  return isoDay(
+    new Date(month.year, month.month, Math.min(day, daysInMonth(month))),
+  );
 }
 
 export function dateIn(flow: Flow, month: Month): string | null {
@@ -64,7 +54,7 @@ export function dateIn(flow: Flow, month: Month): string | null {
         : null
       : !started || (flow.repeat === "yearly" && from.month !== month.month)
         ? null
-        : dayOf(month, Math.min(day, daysInMonth(month)));
+        : dayOf(month, day);
 
   if (!on) return null;
   if (flow.until && on > flow.until) return null;
@@ -84,25 +74,8 @@ export function inMonth(flows: Flow[], month: Month): Dated[] {
   });
 }
 
-export function todayIso(today = new Date()): string {
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
-    today.getDate(),
-  ).padStart(2, "0")}`;
-}
-
-export function daysUntil(on: string, today = new Date()): number {
-  const [y, m, d] = on.split("-").map(Number);
-  const then = new Date(y, m - 1, d).getTime();
-  const now = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  ).getTime();
-  return Math.round((then - now) / 86400000);
-}
-
 export function whenLabel(on: string, today = new Date()): string {
-  const days = daysUntil(on, today);
+  const days = daysBetween(isoDay(today), on);
   if (days === 0) return "today";
   if (days === 1) return "tomorrow";
   return `in ${days} days`;
@@ -116,12 +89,12 @@ export function newestFirst(rows: Dated[]): Dated[] {
 }
 
 export function settled(rows: Dated[], today = new Date()): Dated[] {
-  const now = todayIso(today);
+  const now = isoDay(today);
   return rows.filter((one) => one.on <= now);
 }
 
 export function pending(rows: Dated[], today = new Date()): Dated[] {
-  const now = todayIso(today);
+  const now = isoDay(today);
   return rows.filter((one) => one.on > now);
 }
 

@@ -1,21 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 
-const loadedEvents = vi.fn(async () => {});
-const loadedAcademic = vi.fn(async () => {});
-const loadedFlows = vi.fn(async () => {});
+const refreshAll = vi.fn(async () => {});
 
-vi.mock("@/modules/schedule/lib/event-store", () => ({
-  loadEvents: loadedEvents,
-}));
-
-vi.mock("@/modules/academic/lib/course-store", () => ({
-  loadAcademic: loadedAcademic,
-}));
-
-vi.mock("@/modules/finance/lib/flow-store", () => ({
-  loadFlows: loadedFlows,
-}));
+vi.mock("@/lib/store", () => ({ refreshAll }));
 
 const { StayFresh } = await import("@/components/stay-fresh");
 
@@ -28,9 +16,7 @@ function setVisibility(state: "visible" | "hidden"): void {
 }
 
 beforeEach(() => {
-  loadedEvents.mockClear();
-  loadedAcademic.mockClear();
-  loadedFlows.mockClear();
+  refreshAll.mockClear();
 });
 
 describe("coming back to the tab", () => {
@@ -39,32 +25,30 @@ describe("coming back to the tab", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("reads every store again when the tab becomes visible", () => {
+  it("reads the stores again when the tab becomes visible", () => {
     render(<StayFresh />);
     setVisibility("visible");
-    expect(loadedEvents).toHaveBeenCalledOnce();
-    expect(loadedAcademic).toHaveBeenCalledOnce();
-    expect(loadedFlows).toHaveBeenCalledOnce();
+    expect(refreshAll).toHaveBeenCalledOnce();
   });
 
   it("does nothing while the tab is hidden", () => {
     render(<StayFresh />);
     setVisibility("hidden");
-    expect(loadedEvents).not.toHaveBeenCalled();
+    expect(refreshAll).not.toHaveBeenCalled();
   });
 
   it("reads again when the window is focused", () => {
     render(<StayFresh />);
     setVisibility("visible");
-    loadedEvents.mockClear();
+    refreshAll.mockClear();
     window.dispatchEvent(new Event("focus"));
-    expect(loadedEvents).toHaveBeenCalledOnce();
+    expect(refreshAll).toHaveBeenCalledOnce();
   });
 
   it("stops listening once it is gone", () => {
     const view = render(<StayFresh />);
     view.unmount();
     setVisibility("visible");
-    expect(loadedEvents).not.toHaveBeenCalled();
+    expect(refreshAll).not.toHaveBeenCalled();
   });
 });

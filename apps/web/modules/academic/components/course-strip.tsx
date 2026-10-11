@@ -4,6 +4,7 @@ import type { Course } from "@lifeos/contracts";
 import { show, type CourseGrade } from "@/modules/academic/lib/grade";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
 import { DragHandle, useDragList } from "@/components/reorder";
+import { tint } from "@/components/styles";
 
 export function CourseStrip({
   courses,
@@ -47,15 +48,7 @@ export function CourseStrip({
             type="button"
             onClick={() => onSelect(course.id)}
             aria-pressed={active}
-            style={
-              active
-                ? {
-                    backgroundColor: `var(--event-${color})`,
-                    borderColor: `var(--event-${color}-line)`,
-                    color: `var(--event-${color}-ink)`,
-                  }
-                : undefined
-            }
+            style={active ? tint(color) : undefined}
             className={`relative block min-w-52 overflow-hidden rounded-3xl border p-4 text-left transition-all hover:-translate-y-0.5 ${
               active
                 ? "shadow-md"

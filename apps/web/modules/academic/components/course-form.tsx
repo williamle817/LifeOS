@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   DEFAULT_SCALE,
-  EVENT_COLORS,
   LETTERS,
   type Category,
   type Course,
@@ -12,6 +11,8 @@ import {
   type ScaleStep,
 } from "@lifeos/contracts";
 import { extraTotal, weightTotal } from "@/modules/academic/lib/grade";
+import { ColorPicker } from "@/components/color-picker";
+import { input, primary, quiet } from "@/components/styles";
 
 type Draft = {
   title: string;
@@ -41,9 +42,6 @@ function starter(userId: string, courseId: string): Category[] {
     { ...blank(userId, courseId), name: "Quizzes", weight: 30, position: 2 },
   ];
 }
-
-const input =
-  "rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent";
 
 export function CourseForm({
   course,
@@ -145,27 +143,10 @@ export function CourseForm({
 
       <div className="mt-3">
         <span className="text-xs text-ink-muted">Colour</span>
-        <div className="mt-1 flex gap-2">
-          {EVENT_COLORS.map((color) => (
-            <button
-              key={color}
-              type="button"
-              onClick={() => set({ color })}
-              aria-label={color}
-              aria-pressed={draft.color === color}
-              style={{
-                backgroundColor: `var(--event-${color})`,
-                borderColor:
-                  draft.color === color
-                    ? `var(--event-${color}-ink)`
-                    : `var(--event-${color}-line)`,
-              }}
-              className={`size-6 rounded-full transition-all ${
-                draft.color === color ? "border-2" : "border"
-              }`}
-            />
-          ))}
-        </div>
+        <ColorPicker
+          value={draft.color}
+          onChange={(color) => set({ color })}
+        />
       </div>
 
       <div className="mt-5">
@@ -199,7 +180,9 @@ export function CourseForm({
                 step="0.5"
                 value={category.weight}
                 onChange={(e) =>
-                  editCategory(index, { weight: Number(e.target.value) || 0 })
+                  editCategory(index, {
+                    weight: Math.max(0, Number(e.target.value) || 0),
+                  })
                 }
                 className={input}
               />
@@ -294,14 +277,14 @@ export function CourseForm({
         <button
           type="submit"
           disabled={!balanced}
-          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110 disabled:opacity-50"
+          className={`${primary} disabled:opacity-50`}
         >
           Save
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+          className={quiet}
         >
           Cancel
         </button>
@@ -309,7 +292,7 @@ export function CourseForm({
           <button
             type="button"
             onClick={onDelete}
-            className="ml-auto rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+            className={`ml-auto ${quiet}`}
           >
             Delete course
           </button>

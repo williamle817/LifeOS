@@ -4,19 +4,18 @@ import { useState } from "react";
 import type { EditScope, Flow, FlowKind, FlowRepeat } from "@lifeos/contracts";
 import { EXPENSE_TYPES, FLOW_REPEATS, INCOME_TYPES } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
+import { Labeled } from "@/components/labeled";
+import { inputSmall as input, primary, quietOnMuted } from "@/components/styles";
 import { Modal } from "@/components/modal";
 import { ScopeAsk } from "@/components/scope-ask";
+import { shortDate } from "@/lib/dates";
 import {
-  dayLabel,
   dayOf,
   money,
   total,
   type Dated,
   type Month,
 } from "@/modules/finance/lib/month";
-
-const input =
-  "rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent";
 
 const REPEAT_LABEL: Record<FlowRepeat, string> = {
   once: "One off",
@@ -97,7 +96,7 @@ export function FlowPanel({
       ...(place.trim() ? { place: place.trim() } : { place: undefined }),
       ...(category ? { category } : { category: undefined }),
       on,
-      amount: Number(amount) || 0,
+      amount: Math.max(0, Number(amount) || 0),
       repeat,
       ...over,
     };
@@ -122,20 +121,10 @@ export function FlowPanel({
     else onRemove(row.flow, row.on, null);
   }
 
-  function field(caption: string, control: React.ReactNode) {
-    return (
-      <label className="flex flex-col gap-1">
-        <span className="text-[11px] text-ink-faint">{caption}</span>
-        {control}
-      </label>
-    );
-  }
-
   function fields(from?: "work" | "dining") {
     return (
       <>
-        {field(
-          "Name",
+        <Labeled caption="Name">
           <input
             aria-label={`${heading} name`}
             autoFocus
@@ -143,71 +132,74 @@ export function FlowPanel({
             placeholder={kind === "income" ? "Working shift" : "Groceries"}
             onChange={(e) => setTitle(e.target.value)}
             className={`min-w-32 ${input}`}
-          />,
-        )}
-        {field(
-          "Location",
+          />
+        </Labeled>
+        <Labeled caption="Location">
           <input
             aria-label={`${heading} location`}
             value={place}
             placeholder="optional"
             onChange={(e) => setPlace(e.target.value)}
             className={`min-w-28 ${input}`}
-          />,
+          />
+        </Labeled>
+        {from ? null : (
+          <>
+            <Labeled caption="Type">
+              <select
+                aria-label={`${heading} type`}
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className={input}
+              >
+                <option value="">Not set</option>
+                {types.map((one) => (
+                  <option key={one} value={one}>
+                    {one}
+                  </option>
+                ))}
+              </select>
+            </Labeled>
+            <Labeled caption="Date">
+              <input
+                aria-label={`${heading} date`}
+                type="date"
+                value={on}
+                onChange={(e) => setOn(e.target.value)}
+                className={input}
+              />
+            </Labeled>
+          </>
         )}
-        {from ? null : field(
-          "Type",
-          <select
-            aria-label={`${heading} type`}
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className={input}
-          >
-            <option value="">Not set</option>
-            {types.map((one) => (
-              <option key={one} value={one}>
-                {one}
-              </option>
-            ))}
-          </select>,
+        {from === "work" ? null : (
+          <Labeled caption="Amount">
+            <input
+              aria-label={`${heading} amount`}
+              type="number"
+              min="0"
+              step="0.01"
+              value={amount}
+              placeholder="0.00"
+              onChange={(e) => setAmount(e.target.value)}
+              className={`w-24 text-right ${input}`}
+            />
+          </Labeled>
         )}
-        {from ? null : field(
-          "Date",
-          <input
-            aria-label={`${heading} date`}
-            type="date"
-            value={on}
-            onChange={(e) => setOn(e.target.value)}
-            className={input}
-          />,
-        )}
-        {from === "work" ? null : field(
-          "Amount",
-          <input
-            aria-label={`${heading} amount`}
-            type="number"
-            min="0"
-            step="0.01"
-            value={amount}
-            placeholder="0.00"
-            onChange={(e) => setAmount(e.target.value)}
-            className={`w-24 text-right ${input}`}
-          />,
-        )}
-        {from ? null : field(
-          "Repeats",
-          <select
-            aria-label={`${heading} repeats`}
-            value={repeat}
-            onChange={(e) => setRepeat(e.target.value as FlowRepeat)}
-            className={input}
-          >
-            {FLOW_REPEATS.map((one) => (
-              <option key={one} value={one}>
-                {REPEAT_LABEL[one]}
-              </option>
-            ))}
-          </select>,
+        {from ? null : (
+          <Labeled caption="Repeats">
+            <select
+              aria-label={`${heading} repeats`}
+              value={repeat}
+              onChange={(e) => setRepeat(e.target.value as FlowRepeat)}
+              className={input}
+            >
+              {FLOW_REPEATS.map((one) => (
+                <option key={one} value={one}>
+                  {REPEAT_LABEL[one]}
+                </option>
+              ))}
+            </select>
+          </Labeled>
         )}
       </>
     );
@@ -246,8 +238,8 @@ export function FlowPanel({
                 <p className="text-[11px] text-ink-faint">
                   Editing{" "}
                   <span className="font-medium text-ink">{flow.title}</span>
-                  {flow.eventId
-                    ? ", the shift itself changes in Schedule"
+                  {row.from
+                    ? `, the ${row.from === "work" ? "shift" : "meal"} itself changes in Schedule`
                     : ""}
                 </p>
                 <div className="mt-2 flex flex-wrap items-end gap-2">
@@ -255,14 +247,14 @@ export function FlowPanel({
                   <button
                     type="button"
                     onClick={() => submitEdit(row)}
-                    className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                    className={primary}
                   >
                     Save
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditing(null)}
-                    className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                    className={quietOnMuted}
                   >
                     Cancel
                   </button>
@@ -277,7 +269,7 @@ export function FlowPanel({
                   <span className="block truncate">{flow.title}</span>
                   <span className="text-[11px] text-ink-faint">
                     {[
-                      dayLabel(when),
+                      shortDate(when),
                       flow.category,
                       flow.place,
                       flow.eventId ? "from Schedule" : null,
@@ -334,14 +326,14 @@ export function FlowPanel({
               <button
                 type="button"
                 onClick={submitNew}
-                className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                className={primary}
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={() => setAdding(false)}
-                className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                className={quietOnMuted}
               >
                 Done
               </button>

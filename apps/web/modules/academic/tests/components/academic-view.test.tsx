@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Category, Course, GradeItem, Semester } from "@lifeos/contracts";
-import { DEFAULT_SCALE } from "@lifeos/contracts";
 import { select } from "@/modules/academic/lib/selection";
+import { category, course, item, semester } from "@/modules/academic/tests/factories";
 
 type Data = {
   semesters: Semester[];
@@ -57,55 +57,6 @@ vi.mock("@/modules/academic/lib/course-store", () => ({
 const { AcademicView } = await import(
   "@/modules/academic/components/academic-view"
 );
-
-function semester(over: Partial<Semester> = {}): Semester {
-  return {
-    id: "sem-1",
-    userId: "u1",
-    name: "Fall 2026",
-    startsOn: "2020-08-20",
-    ...over,
-  };
-}
-
-function course(over: Partial<Course> = {}): Course {
-  return {
-    id: "c1",
-    userId: "u1",
-    semesterId: "sem-1",
-    title: "Data Structures",
-    code: "CS 201",
-    scale: DEFAULT_SCALE,
-    ...over,
-  };
-}
-
-function category(over: Partial<Category> = {}): Category {
-  return {
-    id: "exams",
-    userId: "u1",
-    courseId: "c1",
-    name: "Exams",
-    weight: 100,
-    dropLowest: 0,
-    extraCredit: false,
-    position: 0,
-    ...over,
-  };
-}
-
-function item(over: Partial<GradeItem> = {}): GradeItem {
-  return {
-    id: "i1",
-    userId: "u1",
-    courseId: "c1",
-    categoryId: "exams",
-    title: "Midterm",
-    score: null,
-    maxScore: 100,
-    ...over,
-  };
-}
 
 beforeEach(() => {
   data = { semesters: [], courses: [], categories: [], items: [] };
@@ -233,6 +184,7 @@ describe("the academic page, a course with grading set up", () => {
     const user = userEvent.setup();
     render(<AcademicView />);
     await user.type(screen.getByLabelText("Final score"), "9");
+    await user.tab();
     expect(scored).toEqual([["i2", 9]]);
   });
 

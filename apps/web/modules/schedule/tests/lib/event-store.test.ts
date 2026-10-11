@@ -10,6 +10,7 @@ import {
   storedEvents,
   type FakeRow,
 } from "@/tests/helpers/fake-supabase";
+import { local } from "@/modules/schedule/tests/factories";
 
 vi.mock("@/lib/supabase", async () => {
   const { client } = await import("@/tests/helpers/fake-supabase");
@@ -24,11 +25,6 @@ async function store(events: FakeRow[] = []): Promise<Store> {
   const loaded: Store = await import("@/modules/schedule/lib/event-store");
   await loaded.ensureLoaded();
   return loaded;
-}
-
-function local(day: string, hour = 9, minute = 0): string {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d, hour, minute).toISOString();
 }
 
 function hourOf(iso: string): number {
@@ -197,6 +193,16 @@ describe("writing", () => {
     failOn("insert events");
     await s.addEvent(plain());
     expect(s.lastWriteError()).toContain("refused");
+  });
+
+  it("clears the error once a later change goes through", async () => {
+    const s = await store([row()]);
+    failOn("update events");
+    await s.saveOccurrence(plain({ title: "Refused" }), "one");
+    expect(s.lastWriteError()).toContain("refused");
+    resetDb([row()]);
+    await s.saveOccurrence(plain({ title: "Fine" }), "one");
+    expect(s.lastWriteError()).toBeNull();
   });
 
   it("puts the cache back to what the database really holds after a refusal", async () => {
@@ -370,6 +376,14 @@ describe("saveOccurrence, this and following", () => {
     });
   });
 
+  it("replaces the old head when the split is at the very first occurrence", async () => {
+    const s = await store([headRow()]);
+    await s.saveOccurrence(occurrence("2026-03-02", { title: "Yoga" }), "following");
+    expect(storedEvent(HEAD)).toBeUndefined();
+    expect(storedEvents()).toHaveLength(1);
+    expect(storedEvents()[0].title).toBe("Yoga");
+  });
+
   it("gives the new head its own series id", async () => {
     const s = await store([headRow()]);
     await s.saveOccurrence(occurrence("2026-03-16"), "following");
@@ -472,6 +486,14 @@ describe("removeOccurrence", () => {
     expect(storedEvent(HEAD)?.recurrence).toMatchObject({
       until: "2026-03-15",
     });
+  });
+
+  it("says so when the database refuses to delete a whole series", async () => {
+    const s = await store([headRow()]);
+    failOn("delete events");
+    await s.removeOccurrence(occurrence("2026-03-16"), "all");
+    expect(s.lastWriteError()).toContain("refused");
+    expect(s.getSnapshot().map((e) => e.id)).toEqual([HEAD]);
   });
 
   it("removes the whole series when following starts at the first occurrence", async () => {

@@ -1,28 +1,9 @@
 "use client";
 
 import type { Category, GradeItem } from "@lifeos/contracts";
+import { daysBetween, isoDay, shortDate } from "@/lib/dates";
 
-const DAY = 24 * 60 * 60 * 1000;
-
-function dateOf(due: string): Date {
-  const [y, m, d] = due.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-export function dateLabel(due: string): string {
-  return dateOf(due).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function daysAway(due: string, today: Date): number {
-  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return Math.round((dateOf(due).getTime() - start.getTime()) / DAY);
-}
-
-function whenLabel(due: string, today: Date): string {
-  const days = daysAway(due, today);
+function whenLabel(days: number): string {
   if (days < 0) return days === -1 ? "1 day late" : `${-days} days late`;
   if (days === 0) return "today";
   if (days === 1) return "tomorrow";
@@ -45,7 +26,7 @@ export function Upcoming({
   items: GradeItem[];
   categories: Category[];
 }) {
-  const today = new Date();
+  const today = isoDay(new Date());
   const waiting = items
     .filter((item) => item.score === null && item.dueOn)
     .sort(dueOrder);
@@ -60,7 +41,8 @@ export function Upcoming({
       {waiting.length ? (
         <ul aria-label="Coming up" className="mt-3 grid gap-1.5">
           {waiting.map((item) => {
-            const soon = daysAway(item.dueOn!, today) <= 3;
+            const days = daysBetween(today, item.dueOn!);
+            const soon = days <= 3;
             return (
               <li
                 key={item.id}
@@ -76,7 +58,7 @@ export function Upcoming({
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block text-[13px] font-medium">
-                    {dateLabel(item.dueOn!)}
+                    {shortDate(item.dueOn!)}
                   </span>
                   <span
                     style={soon ? { color: "var(--alert)" } : undefined}
@@ -84,7 +66,7 @@ export function Upcoming({
                       soon ? "font-medium" : "text-ink-faint"
                     }`}
                   >
-                    {whenLabel(item.dueOn!, today)}
+                    {whenLabel(days)}
                   </span>
                 </span>
               </li>

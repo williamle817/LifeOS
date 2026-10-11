@@ -37,6 +37,8 @@ import { GradeTable } from "@/modules/academic/components/grade-table";
 import { Upcoming } from "@/modules/academic/components/upcoming";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
 import { move } from "@/components/reorder";
+import { SaveError } from "@/components/save-error";
+import { tint } from "@/components/styles";
 
 export function AcademicView() {
   const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -86,11 +88,7 @@ export function AcademicView() {
 
   return (
     <div data-page="academic" className="grid gap-5">
-      {lastWriteError() ? (
-        <p className="rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
-          Could not save: {lastWriteError()}
-        </p>
-      ) : null}
+      <SaveError message={lastWriteError()} />
 
       <SemesterBar
         semesters={data.semesters}
@@ -186,11 +184,7 @@ export function AcademicView() {
 
             <dl className="mt-3 grid gap-2.5 sm:grid-cols-3">
               <div
-                style={{
-                  backgroundColor: `var(--event-${course.color ?? "blue"})`,
-                  borderColor: `var(--event-${course.color ?? "blue"}-line)`,
-                  color: `var(--event-${course.color ?? "blue"}-ink)`,
-                }}
+                style={tint(course.color ?? "blue")}
                 className="rounded-xl border p-3"
               >
                 <dt className="text-xs">Current grade</dt>

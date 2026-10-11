@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Semester } from "@lifeos/contracts";
 import { SemesterBar } from "@/modules/academic/components/semester-bar";
+import { isoDay } from "@/lib/dates";
 
 function semester(id: string, name: string, startsOn: string): Semester {
   return { id, userId: "u1", name, startsOn };
@@ -98,7 +99,7 @@ describe("the semester bar", () => {
     const user = userEvent.setup();
     setup([]);
     await user.click(screen.getByRole("button", { name: "New semester" }));
-    const today = new Date().toISOString().slice(0, 10);
+    const today = isoDay(new Date());
     expect((screen.getByLabelText("Starts on") as HTMLInputElement).value).toBe(
       today,
     );

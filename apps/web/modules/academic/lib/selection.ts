@@ -1,4 +1,5 @@
 import type { Course, Semester } from "@lifeos/contracts";
+import { isoDay } from "@/lib/dates";
 
 const KEY = "lifeos.academic.selection";
 
@@ -53,7 +54,7 @@ export function select(patch: Partial<Selection>): void {
 
 export function defaultSemesterId(
   semesters: Semester[],
-  today = new Date().toISOString().slice(0, 10),
+  today = isoDay(new Date()),
 ): string | null {
   if (!semesters.length) return null;
   const byDate = [...semesters].sort((a, b) =>

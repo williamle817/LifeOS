@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  EVENT_COLORS,
   EVENT_TYPES,
   RECUR_FREQS,
   type EditScope,
@@ -12,7 +11,9 @@ import {
   type RecurFreq,
 } from "@lifeos/contracts";
 import { ScopeAsk } from "@/components/scope-ask";
-import { shiftDay } from "@/modules/schedule/lib/recurrence";
+import { ColorPicker } from "@/components/color-picker";
+import { input, inputSmall, primary, quiet } from "@/components/styles";
+import { isoDay, shiftDay } from "@/lib/dates";
 
 const TYPE_LABELS: Record<EventType, string> = {
   general: "General",
@@ -66,8 +67,7 @@ const EMPTY: Draft = {
 
 function toInput(iso: string): string {
   const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${isoDay(d)}T${d.toTimeString().slice(0, 5)}`;
 }
 
 function toIso(input: string): string {
@@ -215,8 +215,7 @@ function Field({
   min?: string;
   multiline?: boolean;
 }) {
-  const shared =
-    "mt-1 w-full rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent";
+  const shared = `mt-1 w-full ${input}`;
   return (
     <label className="block">
       <span className="text-xs text-ink-muted">{label}</span>
@@ -340,6 +339,7 @@ export function EventForm({
             <Field
               label="Calories"
               type="number"
+              min="0"
               value={draft.calories}
               onChange={(v) => set({ calories: v })}
             />
@@ -358,6 +358,7 @@ export function EventForm({
               label="Amount"
               type="number"
               step="0.01"
+              min="0"
               required
               value={draft.amount}
               onChange={(v) => set({ amount: v })}
@@ -442,7 +443,7 @@ export function EventForm({
             value={draft.until}
             min={draft.start.slice(0, 10)}
             onChange={(e) => set({ until: e.target.value })}
-            className="flex-1 rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent"
+            className={`flex-1 ${inputSmall}`}
           />
         </label>
 
@@ -453,14 +454,14 @@ export function EventForm({
               set({ freq: draft.byDay.length ? "weekly" : "none" });
               setCustom(false);
             }}
-            className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+            className={primary}
           >
             Done
           </button>
           <button
             type="button"
             onClick={() => setCustom(false)}
-            className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+            className={quiet}
           >
             Cancel
           </button>
@@ -500,7 +501,7 @@ export function EventForm({
           <select
             value={draft.type}
             onChange={(e) => set({ type: e.target.value as EventType })}
-            className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent"
+            className={`mt-1 w-full ${input}`}
           >
             {EVENT_TYPES.map((type) => (
               <option key={type} value={type}>
@@ -534,27 +535,10 @@ export function EventForm({
 
         <div className="block">
           <span className="text-xs text-ink-muted">Color</span>
-          <div className="mt-1 flex gap-2">
-            {EVENT_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => set({ color })}
-                aria-label={color}
-                aria-pressed={draft.color === color}
-                style={{
-                  backgroundColor: `var(--event-${color})`,
-                  borderColor:
-                    draft.color === color
-                      ? `var(--event-${color}-ink)`
-                      : `var(--event-${color}-line)`,
-                }}
-                className={`size-6 rounded-full transition-all ${
-                  draft.color === color ? "border-2" : "border"
-                }`}
-              />
-            ))}
-          </div>
+          <ColorPicker
+            value={draft.color}
+            onChange={(color) => set({ color })}
+          />
         </div>
 
         <label className="block">
@@ -568,7 +552,7 @@ export function EventForm({
               }
               set({ freq: e.target.value as RecurFreq | "none", byDay: [] });
             }}
-            className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent"
+            className={`mt-1 w-full ${input}`}
           >
             <option value="none">Does not repeat</option>
             {RECUR_FREQS.map((f) => (
@@ -616,14 +600,14 @@ export function EventForm({
       <div className="mt-4 flex items-center gap-2">
         <button
           type="submit"
-          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+          className={primary}
         >
           Save
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+          className={quiet}
         >
           Cancel
         </button>
@@ -633,7 +617,7 @@ export function EventForm({
             onClick={() =>
               inSeries ? setAsking("delete") : onDelete(editing, "one")
             }
-            className="ml-auto rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+            className={`ml-auto ${quiet}`}
           >
             Delete
           </button>

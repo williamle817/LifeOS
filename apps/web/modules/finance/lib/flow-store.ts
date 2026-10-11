@@ -4,15 +4,12 @@ import type {
   FlowKind,
   FlowRepeat,
 } from "@lifeos/contracts";
+import { shiftDay } from "@/lib/dates";
+import { createStore, currentUserId, owner } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
-import { dayBefore } from "@/modules/finance/lib/month";
+import { dayOf } from "@/modules/finance/lib/month";
 
-const NONE: Flow[] = [];
-
-let cache: Flow[] = NONE;
-let userId: string | null = null;
-let lastError: string | null = null;
-const listeners = new Set<() => void>();
+export { currentUserId };
 
 type FlowRow = {
   id: string;
@@ -26,17 +23,8 @@ type FlowRow = {
   recur: FlowRepeat;
   until_on: string | null;
   skips: string[];
-  event_id: string | null;
   position: number | null;
 };
-
-function emit(): void {
-  for (const listener of listeners) listener();
-}
-
-function owner(value?: string): string {
-  return value || (userId ?? "");
-}
 
 function toFlow(row: FlowRow): Flow {
   return {
@@ -51,7 +39,6 @@ function toFlow(row: FlowRow): Flow {
     repeat: row.recur,
     ...(row.until_on ? { until: row.until_on } : {}),
     ...(row.skips?.length ? { skips: row.skips } : {}),
-    ...(row.event_id ? { eventId: row.event_id } : {}),
     position: row.position ?? 0,
   };
 }
@@ -69,87 +56,53 @@ function flowRow(value: Flow): FlowRow {
     recur: value.repeat,
     until_on: value.until ?? null,
     skips: value.skips ?? [],
-    event_id: value.eventId ?? null,
     position: value.position ?? 0,
   };
 }
 
-export function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
+const NONE: Flow[] = [];
 
-export function getSnapshot(): Flow[] {
-  return cache;
-}
-
-export function getServerSnapshot(): Flow[] {
-  return NONE;
-}
-
-export function currentUserId(): string | null {
-  return userId;
-}
-
-export function lastWriteError(): string | null {
-  return lastError;
-}
-
-let loading: Promise<void> | null = null;
-
-export async function ensureLoaded(): Promise<void> {
-  if (userId) return;
-  loading ??= loadFlows().finally(() => {
-    loading = null;
-  });
-  await loading;
-}
-
-export async function loadFlows(): Promise<void> {
-  const { data: me } = await supabase.from("users").select("id").single();
-  if (!me) return;
-  userId = me.id;
-
+const store = createStore(NONE, async () => {
   const { data } = await supabase.from("flows").select("*");
-  cache = ((data ?? []) as FlowRow[]).map(toFlow);
-  emit();
-}
+  return ((data ?? []) as FlowRow[]).map(toFlow);
+});
 
-async function guard(
-  run: PromiseLike<{ error: { message: string } | null }>,
-): Promise<void> {
-  const { error } = await run;
-  if (!error) return;
-  lastError = error.message;
-  await loadFlows();
-  emit();
-}
+export const {
+  subscribe,
+  getSnapshot,
+  getServerSnapshot,
+  lastWriteError,
+  ensureLoaded,
+} = store;
 
 export async function saveFlow(flow: Flow): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-
-  const exists = cache.some((one) => one.id === flow.id);
+  await store.begin();
+  const flows = getSnapshot();
+  const exists = flows.some((one) => one.id === flow.id);
   const saved = {
     ...flow,
     userId: owner(flow.userId),
     position:
       flow.position ??
-      (exists ? 0 : cache.filter((one) => one.kind === flow.kind).length),
+      (exists ? 0 : flows.filter((one) => one.kind === flow.kind).length),
   };
 
-  cache = exists
-    ? cache.map((one) => (one.id === saved.id ? saved : one))
-    : [...cache, saved];
-  emit();
-
-  await guard(
+  store.set(
+    exists
+      ? flows.map((one) => (one.id === saved.id ? saved : one))
+      : [...flows, saved],
+  );
+  await store.write(
     exists
       ? supabase.from("flows").update(flowRow(saved)).eq("id", saved.id)
       : supabase.from("flows").insert(flowRow(saved)),
   );
+}
+
+export async function deleteFlow(id: string): Promise<void> {
+  await store.begin();
+  store.set(getSnapshot().filter((one) => one.id !== id));
+  await store.write(supabase.from("flows").delete().eq("id", id));
 }
 
 export async function deleteOccurrence(
@@ -158,12 +111,10 @@ export async function deleteOccurrence(
   scope: EditScope,
 ): Promise<void> {
   if (scope === "all") return deleteFlow(flow.id);
-
   if (scope === "one") {
     return saveFlow({ ...flow, skips: [...(flow.skips ?? []), on] });
   }
-
-  const until = dayBefore(on);
+  const until = shiftDay(on, -1);
   if (until < flow.on) return deleteFlow(flow.id);
   return saveFlow({ ...flow, until });
 }
@@ -175,42 +126,24 @@ export async function saveOccurrence(
   scope: EditScope,
 ): Promise<void> {
   if (scope === "all") {
-    const [, , day] = next.on.split("-");
-    const [year, month] = flow.on.split("-");
+    const [year, month] = flow.on.split("-").map(Number);
     return saveFlow({
       ...next,
       id: flow.id,
-      on: `${year}-${month}-${day}`,
+      on: dayOf({ year, month: month - 1 }, Number(next.on.split("-")[2])),
       until: flow.until,
       skips: flow.skips,
       position: flow.position,
     });
   }
 
-  const fresh = {
+  await deleteOccurrence(flow, on, scope);
+  await saveFlow({
     ...next,
     id: crypto.randomUUID(),
     position: undefined,
     skips: undefined,
     until: undefined,
     ...(scope === "one" ? { repeat: "once" as FlowRepeat } : {}),
-  };
-
-  if (scope === "one") {
-    await saveFlow({ ...flow, skips: [...(flow.skips ?? []), on] });
-    return saveFlow(fresh);
-  }
-
-  const until = dayBefore(on);
-  if (until < flow.on) await deleteFlow(flow.id);
-  else await saveFlow({ ...flow, until });
-  return saveFlow(fresh);
-}
-
-export async function deleteFlow(id: string): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  cache = cache.filter((one) => one.id !== id);
-  emit();
-  await guard(supabase.from("flows").delete().eq("id", id));
+  });
 }

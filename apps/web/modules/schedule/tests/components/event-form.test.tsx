@@ -3,11 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { EditScope, LifeEvent } from "@lifeos/contracts";
 import { EventForm } from "@/modules/schedule/components/event-form";
-
-function local(day: string, hour = 9, minute = 0): string {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d, hour, minute).toISOString();
-}
+import { local } from "@/modules/schedule/tests/factories";
 
 type Saved = { event: LifeEvent; scope: EditScope };
 

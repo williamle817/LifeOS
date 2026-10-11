@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  dayLabel,
-  daysUntil,
-  money,
-  whenLabel,
-  type Dated,
-} from "@/modules/finance/lib/month";
+import { daysBetween, isoDay, shortDate } from "@/lib/dates";
+import { money, whenLabel, type Dated } from "@/modules/finance/lib/month";
 
 export function ComingUp({
   rows,
@@ -26,7 +21,7 @@ export function ComingUp({
         className="mt-3 flex gap-2 overflow-x-auto pb-1"
       >
         {rows.map(({ flow, on }) => {
-          const soon = daysUntil(on, today) <= 3;
+          const soon = daysBetween(isoDay(today), on) <= 3;
           return (
             <li
               key={`${flow.id}-${on}`}
@@ -41,7 +36,7 @@ export function ComingUp({
                   {money(flow.amount)}
                 </span>
                 <span className="text-[11px] text-ink-faint">
-                  {dayLabel(on)}
+                  {shortDate(on)}
                 </span>
                 <span
                   style={soon ? { color: "var(--alert)" } : undefined}

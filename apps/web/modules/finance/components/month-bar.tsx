@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionIcon } from "@/components/icons";
+import { primary } from "@/components/styles";
 import {
   monthLabel,
   sameMonth,
@@ -51,7 +52,7 @@ export function MonthBar({
         <button
           type="button"
           onClick={() => onChange(now)}
-          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+          className={primary}
         >
           This month
         </button>

@@ -167,6 +167,8 @@ describe("the grade table, editing", () => {
     fireEvent.change(screen.getByLabelText("Midterm score"), {
       target: { value: "88" },
     });
+    expect(onScore).not.toHaveBeenCalled();
+    fireEvent.blur(screen.getByLabelText("Midterm score"));
     expect(onScore).toHaveBeenLastCalledWith("m1", 88);
   });
 
@@ -178,7 +180,28 @@ describe("the grade table, editing", () => {
     fireEvent.change(screen.getByLabelText("Midterm score"), {
       target: { value: "88.5" },
     });
+    fireEvent.blur(screen.getByLabelText("Midterm score"));
     expect(onScore).toHaveBeenLastCalledWith("m1", 88.5);
+  });
+
+  it("saves once when Enter is pressed, not on every key", async () => {
+    const user = userEvent.setup();
+    const { onScore } = setup(
+      [category({ id: "exams" })],
+      [item({ id: "m1", categoryId: "exams", title: "Midterm" })],
+    );
+    await user.type(screen.getByLabelText("Midterm score"), "100{Enter}");
+    expect(onScore).toHaveBeenCalledOnce();
+    expect(onScore).toHaveBeenLastCalledWith("m1", 100);
+  });
+
+  it("writes nothing when the score did not change", () => {
+    const { onScore } = setup(
+      [category({ id: "exams" })],
+      [item({ id: "m1", categoryId: "exams", title: "Midterm", score: 80 })],
+    );
+    fireEvent.blur(screen.getByLabelText("Midterm score"));
+    expect(onScore).not.toHaveBeenCalled();
   });
 
   it("reports an emptied box as unmarked, not as a zero", async () => {
@@ -188,6 +211,7 @@ describe("the grade table, editing", () => {
       [item({ id: "m1", categoryId: "exams", title: "Midterm", score: 80 })],
     );
     await user.clear(screen.getByLabelText("Midterm score"));
+    await user.tab();
     expect(onScore).toHaveBeenLastCalledWith("m1", null);
   });
 

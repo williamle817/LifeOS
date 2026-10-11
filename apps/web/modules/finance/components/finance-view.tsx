@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { EditScope, Flow } from "@lifeos/contracts";
 import {
   ensureEvents,
@@ -38,6 +38,7 @@ import { MonthBar } from "@/modules/finance/components/month-bar";
 import { SplitChart } from "@/modules/finance/components/split-chart";
 import { ComingUp } from "@/modules/finance/components/coming-up";
 import { FlowPanel } from "@/modules/finance/components/flow-panel";
+import { SaveError } from "@/components/save-error";
 
 export function FinanceView() {
   const flows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -55,13 +56,17 @@ export function FinanceView() {
 
   const userId = currentUserId() ?? "";
   const shown = inMonth(flows, month);
+  const fromCalendar = useMemo(
+    () => ({ shifts: shiftsIn(events, month), meals: mealsIn(events, month) }),
+    [events, month],
+  );
   const income = newestFirst([
     ...shown.filter((one) => one.flow.kind === "income"),
-    ...shiftsIn(events, month),
+    ...fromCalendar.shifts,
   ]);
   const spending = [
     ...shown.filter((one) => one.flow.kind === "expense"),
-    ...mealsIn(events, month),
+    ...fromCalendar.meals,
   ];
   const gone = newestFirst(settled(spending));
   const due = pending(spending);
@@ -99,11 +104,7 @@ export function FinanceView() {
 
   return (
     <div data-page="finance" className="grid gap-5">
-      {lastWriteError() ? (
-        <p className="rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
-          Could not save: {lastWriteError()}
-        </p>
-      ) : null}
+      <SaveError message={lastWriteError()} />
 
       <MonthBar month={month} onChange={setMonth} />
 

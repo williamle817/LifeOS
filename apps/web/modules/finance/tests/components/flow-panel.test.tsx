@@ -536,6 +536,7 @@ describe("a row that came from the calendar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Edit Dinner" }));
     expect(screen.getByLabelText("Expenses amount")).toBeTruthy();
     expect(screen.queryByLabelText("Expenses date")).toBeNull();
+    expect(screen.getByText(/the meal itself changes in Schedule/)).toBeTruthy();
 
     await userEvent.clear(screen.getByLabelText("Expenses amount"));
     await userEvent.type(screen.getByLabelText("Expenses amount"), "24.5");

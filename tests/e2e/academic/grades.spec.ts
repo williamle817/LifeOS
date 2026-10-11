@@ -26,6 +26,7 @@ test("types a score in and watches the grade appear", async ({ app, page }) => {
   await app.open("/academic");
 
   await page.getByLabel("Midterm score").fill("84");
+  await page.getByLabel("Midterm score").press("Enter");
 
   await expect(page.getByText("84%").first()).toBeVisible();
   await expect(page.getByText("B").first()).toBeVisible();

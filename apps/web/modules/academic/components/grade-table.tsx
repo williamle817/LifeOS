@@ -3,12 +3,11 @@
 import { useState } from "react";
 import type { Category, GradeItem } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
+import { Labeled } from "@/components/labeled";
+import { inputSmall as input, primary, quietOnMuted } from "@/components/styles";
 import type { CourseGrade } from "@/modules/academic/lib/grade";
 import { DragHandle, useDragList } from "@/components/reorder";
-import { dateLabel } from "@/modules/academic/components/upcoming";
-
-const input =
-  "rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent";
+import { shortDate } from "@/lib/dates";
 
 function scoreText(item: GradeItem): string {
   return item.score === null ? "" : String(item.score);
@@ -76,7 +75,7 @@ export function GradeTable({
     onSaveCategory({
       ...category,
       name: name.trim(),
-      weight: Number(weight) || 0,
+      weight: Math.max(0, Number(weight) || 0),
       dropLowest: Math.max(0, Number(drop) || 0),
     });
     setHeading(null);
@@ -97,7 +96,7 @@ export function GradeTable({
       categoryId,
       title: title.trim(),
       score: null,
-      maxScore: Number(maxScore) || 100,
+      maxScore: Number(maxScore) > 0 ? Number(maxScore) : 100,
       ...(dueOn ? { dueOn } : {}),
     });
     reset();
@@ -108,27 +107,17 @@ export function GradeTable({
     onSave({
       ...item,
       title: title.trim(),
-      maxScore: Number(maxScore) || 100,
+      maxScore: Number(maxScore) > 0 ? Number(maxScore) : 100,
       ...(dueOn ? { dueOn } : { dueOn: undefined }),
     });
     setEditing(null);
     reset();
   }
 
-  function field(caption: string, control: React.ReactNode) {
-    return (
-      <label className="flex flex-col gap-1">
-        <span className="text-[11px] text-ink-faint">{caption}</span>
-        {control}
-      </label>
-    );
-  }
-
   function fields() {
     return (
       <>
-        {field(
-          "Name",
+        <Labeled caption="Name">
           <input
             aria-label="Item name"
             autoFocus
@@ -136,10 +125,9 @@ export function GradeTable({
             placeholder="HW 3"
             onChange={(e) => setTitle(e.target.value)}
             className={`min-w-32 ${input}`}
-          />,
-        )}
-        {field(
-          "Out of",
+          />
+        </Labeled>
+        <Labeled caption="Out of">
           <input
             aria-label="Out of"
             type="number"
@@ -148,18 +136,17 @@ export function GradeTable({
             value={maxScore}
             onChange={(e) => setMaxScore(e.target.value)}
             className={`w-20 ${input}`}
-          />,
-        )}
-        {field(
-          "Due",
+          />
+        </Labeled>
+        <Labeled caption="Due">
           <input
             aria-label="Due date"
             type="date"
             value={dueOn}
             onChange={(e) => setDueOn(e.target.value)}
             className={input}
-          />,
-        )}
+          />
+        </Labeled>
       </>
     );
   }
@@ -184,18 +171,16 @@ export function GradeTable({
           >
             {heading === category.id ? (
               <header className="flex flex-wrap items-end gap-2 border-b border-line bg-accent-soft px-4 py-3">
-                {field(
-                  "Name",
+                <Labeled caption="Name">
                   <input
                     aria-label="Category name"
                     autoFocus
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className={`min-w-32 ${input}`}
-                  />,
-                )}
-                {field(
-                  "Worth %",
+                  />
+                </Labeled>
+                <Labeled caption="Worth %">
                   <input
                     aria-label="Category weight"
                     type="number"
@@ -204,10 +189,9 @@ export function GradeTable({
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     className={`w-20 ${input}`}
-                  />,
-                )}
-                {field(
-                  "Drop lowest",
+                  />
+                </Labeled>
+                <Labeled caption="Drop lowest">
                   <input
                     aria-label="Category drop lowest"
                     type="number"
@@ -216,8 +200,8 @@ export function GradeTable({
                     value={drop}
                     onChange={(e) => setDrop(e.target.value)}
                     className={`w-20 ${input}`}
-                  />,
-                )}
+                  />
+                </Labeled>
                 <button
                   type="button"
                   onClick={() => submitHeading(category)}
@@ -285,14 +269,14 @@ export function GradeTable({
                       <button
                         type="button"
                         onClick={() => submitEdit(item)}
-                        className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                        className={primary}
                       >
                         Save
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditing(null)}
-                        className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                        className={quietOnMuted}
                       >
                         Cancel
                       </button>
@@ -314,24 +298,29 @@ export function GradeTable({
                         {item.title}
                       </span>
                       <span className="ml-2 text-[11px] text-ink-faint">
-                        {item.dueOn ? dateLabel(item.dueOn) : ""}
+                        {item.dueOn ? shortDate(item.dueOn) : ""}
                         {dropped.has(item.id) ? " dropped" : ""}
                       </span>
                     </span>
 
                     <input
+                      key={scoreText(item)}
                       aria-label={`${item.title} score`}
                       type="number"
                       step="0.01"
                       min="0"
                       placeholder="--"
-                      value={scoreText(item)}
-                      onChange={(e) =>
-                        onScore(
-                          item.id,
-                          e.target.value === "" ? null : Number(e.target.value),
-                        )
-                      }
+                      defaultValue={scoreText(item)}
+                      onBlur={(e) => {
+                        const typed =
+                          e.target.value === ""
+                            ? null
+                            : Math.max(0, Number(e.target.value));
+                        if (typed !== item.score) onScore(item.id, typed);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                      }}
                       className={`w-16 text-right ${input}`}
                     />
                     <span className="w-10 text-[11px] text-ink-faint">
@@ -377,14 +366,14 @@ export function GradeTable({
                     <button
                       type="button"
                       onClick={() => submitNew(category.id)}
-                      className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                      className={primary}
                     >
                       Add
                     </button>
                     <button
                       type="button"
                       onClick={() => setAdding(null)}
-                      className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                      className={quietOnMuted}
                     >
                       Done
                     </button>

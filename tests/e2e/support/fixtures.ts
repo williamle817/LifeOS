@@ -163,7 +163,11 @@ async function installRoutes(page: BrowserContext, db: Db): Promise<void> {
     if (method === "POST") {
       const body = request.postDataJSON();
       const rows = Array.isArray(body) ? body : [body];
-      for (const row of rows) db[name].push({ ...row });
+      for (const row of rows) {
+        const found = db[name].find((one) => one.id === row.id);
+        if (found) Object.assign(found, row);
+        else db[name].push({ ...row });
+      }
       return route.fulfill({ status: 201, json: rows });
     }
 

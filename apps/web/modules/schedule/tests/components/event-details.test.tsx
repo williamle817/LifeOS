@@ -3,11 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { LifeEvent } from "@lifeos/contracts";
 import { EventDetails } from "@/modules/schedule/components/event-details";
-
-function local(day: string, hour = 9, minute = 0): string {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d, hour, minute).toISOString();
-}
+import { local } from "@/modules/schedule/tests/factories";
 
 function show(over: Partial<LifeEvent> = {}) {
   const onEdit = vi.fn();

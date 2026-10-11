@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
 import { expand } from "@/modules/schedule/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
@@ -24,6 +24,7 @@ import {
 } from "@/modules/schedule/lib/event-store";
 import { EventForm } from "@/modules/schedule/components/event-form";
 import { EventDetails } from "@/modules/schedule/components/event-details";
+import { SaveError } from "@/components/save-error";
 import { ScopeAsk } from "@/components/scope-ask";
 
 const FORM_W = 272;
@@ -83,7 +84,10 @@ export function ScheduleView() {
   const [popover, setPopover] = useState<Popover | null>(null);
   const [range, setRange] = useState<{ from: Date; to: Date } | null>(null);
 
-  const events = range ? expand(rows, range.from, range.to) : [];
+  const events = useMemo(
+    () => (range ? expand(rows, range.from, range.to) : []),
+    [rows, range],
+  );
 
   useEffect(() => {
     void ensureLoaded();
@@ -107,15 +111,17 @@ export function ScheduleView() {
   }
 
   function applyDrag(info: EventDropArg | EventResizeDoneArg) {
+    const { allDay, start, end, startStr, endStr } = info.event;
     const found = events.find((event) => event.id === info.event.id);
-    if (!found || !info.event.start || !info.event.end) {
+    if (!found || !start || !end) {
       info.revert();
       return;
     }
     const moved = {
       ...found,
-      start: info.event.start.toISOString(),
-      end: info.event.end.toISOString(),
+      allDay,
+      start: allDay ? startStr : start.toISOString(),
+      end: allDay ? endStr : end.toISOString(),
     } as LifeEvent;
 
     if (found.seriesId && found.occurrenceDate) {
@@ -137,37 +143,36 @@ export function ScheduleView() {
   }
 
   const preview = popover?.mode === "scope" ? popover.editing : null;
+  const pending = popover?.range;
 
-  const blocks: EventInput[] = events.map((event) => {
-    const shown = preview && preview.id === event.id ? preview : event;
-    return {
-      id: shown.id,
-      title: shown.title,
-      start: shown.start,
-      end: shown.end,
-      allDay: shown.allDay ?? false,
-      ...paint(shown.color ?? "blue"),
-    };
-  });
-
-  if (popover?.range) {
-    blocks.push({
-      id: "pending",
-      title: "",
-      start: popover.range.start,
-      end: popover.range.end,
-      allDay: popover.range.allDay,
-      ...paint("blue"),
+  const blocks = useMemo(() => {
+    const out: EventInput[] = events.map((event) => {
+      const shown = preview && preview.id === event.id ? preview : event;
+      return {
+        id: shown.id,
+        title: shown.title,
+        start: shown.start,
+        end: shown.end,
+        allDay: shown.allDay ?? false,
+        ...paint(shown.color ?? "blue"),
+      };
     });
-  }
+    if (pending) {
+      out.push({
+        id: "pending",
+        title: "",
+        start: pending.start,
+        end: pending.end,
+        allDay: pending.allDay,
+        ...paint("blue"),
+      });
+    }
+    return out;
+  }, [events, preview, pending]);
 
   return (
     <>
-      {lastWriteError() ? (
-        <p className="mx-5 mt-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
-          Could not save: {lastWriteError()}
-        </p>
-      ) : null}
+      <SaveError message={lastWriteError()} className="mx-5 mt-3" />
 
       <div
         data-page="schedule"

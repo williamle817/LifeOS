@@ -3,6 +3,7 @@
 import { Fragment } from "react";
 import type { LifeEvent } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
+import { parseDay } from "@/lib/dates";
 
 function dateLabel(event: LifeEvent): string {
   const opts: Intl.DateTimeFormatOptions = {
@@ -11,9 +12,9 @@ function dateLabel(event: LifeEvent): string {
     day: "numeric",
     year: "numeric",
   };
-  const from = new Date(
-    event.allDay ? `${event.start.slice(0, 10)}T00:00:00` : event.start,
-  );
+  const from = event.allDay
+    ? parseDay(event.start.slice(0, 10))
+    : new Date(event.start);
   return from.toLocaleDateString("en-US", opts);
 }
 

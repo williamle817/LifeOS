@@ -3,13 +3,13 @@
 import { useState } from "react";
 import type { Semester } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
+import { Labeled } from "@/components/labeled";
+import { input, primary, quiet } from "@/components/styles";
+import { isoDay } from "@/lib/dates";
 import { Confirm } from "@/modules/academic/components/confirm";
 
-const input =
-  "rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent";
-
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return isoDay(new Date());
 }
 
 export function SemesterBar({
@@ -70,8 +70,7 @@ export function SemesterBar({
         }}
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-ink-faint">Name</span>
+        <Labeled caption="Name">
           <input
             aria-label="Semester name"
             autoFocus
@@ -81,10 +80,9 @@ export function SemesterBar({
             onChange={(e) => setName(e.target.value)}
             className={input}
           />
-        </label>
+        </Labeled>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-ink-faint">Starts on</span>
+        <Labeled caption="Starts on">
           <input
             aria-label="Starts on"
             type="date"
@@ -93,18 +91,18 @@ export function SemesterBar({
             onChange={(e) => setStartsOn(e.target.value)}
             className={input}
           />
-        </label>
+        </Labeled>
 
         <button
           type="submit"
-          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+          className={primary}
         >
           {mode === "edit" ? "Save semester" : "Add semester"}
         </button>
         <button
           type="button"
           onClick={() => setMode(null)}
-          className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+          className={quiet}
         >
           Cancel
         </button>

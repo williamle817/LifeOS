@@ -70,7 +70,7 @@ describe("reading what is there", () => {
   });
 
   it("maps a stored row onto an entry", async () => {
-    const loaded = await store([row({ place: "Cinema", event_id: "e1" })]);
+    const loaded = await store([row({ place: "Cinema" })]);
     expect(loaded.getSnapshot()).toEqual([
       {
         id: "f1",
@@ -81,17 +81,15 @@ describe("reading what is there", () => {
         on: "2026-03-10",
         amount: 15,
         repeat: "monthly",
-        eventId: "e1",
         position: 0,
       },
     ]);
   });
 
-  it("leaves out a location and an event that are not there", async () => {
+  it("leaves out a location that is not there", async () => {
     const loaded = await store([row()]);
     const [one] = loaded.getSnapshot();
     expect("place" in one).toBe(false);
-    expect("eventId" in one).toBe(false);
   });
 
   it("hands back the same array until a write replaces it", async () => {
@@ -317,6 +315,17 @@ describe("changing one occurrence of a repeating entry", () => {
       "all",
     );
     expect(storedIn("flows", "rent")?.on_date).toBe("2026-01-12");
+  });
+
+  it("pulls a late day back to the end of the month the series started in", async () => {
+    const loaded = await store([{ ...rent, on_date: "2026-04-05" }]);
+    await loaded.saveOccurrence(
+      loaded.getSnapshot()[0],
+      "2026-05-05",
+      edited({ on: "2026-05-31" }),
+      "all",
+    );
+    expect(storedIn("flows", "rent")?.on_date).toBe("2026-04-30");
   });
 
   it("does not resurrect a date that was skipped before", async () => {
