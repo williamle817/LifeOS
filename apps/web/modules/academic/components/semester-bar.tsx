@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Semester } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
 import { Labeled } from "@/components/labeled";
-import { input, primary, quiet } from "@/components/styles";
+import { input, primary, quiet, soft } from "@/components/styles";
 import { isoDay } from "@/lib/dates";
 import { Confirm } from "@/modules/academic/components/confirm";
 
@@ -111,14 +111,14 @@ export function SemesterBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2.5">
       {semesters.length ? (
         <label className="flex items-center gap-2">
-          <span className="text-xs text-ink-muted">Semester</span>
+          <span className="text-[13px] font-medium text-ink-muted">Semester</span>
           <select
             value={selected ?? ""}
             onChange={(e) => onSelect(e.target.value)}
-            className={input}
+            className="min-h-11 rounded-full bg-surface px-4 text-[15px] font-semibold shadow-float outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {ordered.map((semester) => (
               <option key={semester.id} value={semester.id}>
@@ -134,7 +134,7 @@ export function SemesterBar({
           type="button"
           aria-label={`Edit ${open.name}`}
           onClick={startEdit}
-          className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+          className="grid size-11 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface hover:text-ink"
         >
           <ActionIcon name="edit" />
         </button>
@@ -143,7 +143,7 @@ export function SemesterBar({
       <button
         type="button"
         onClick={startAdd}
-        className="rounded-full border border-line px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+        className={soft}
       >
         New semester
       </button>
@@ -152,7 +152,7 @@ export function SemesterBar({
         <button
           type="button"
           onClick={() => setAsking(true)}
-          className="rounded-full px-3 py-1.5 text-[13px] text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+          className={quiet}
         >
           Delete semester
         </button>

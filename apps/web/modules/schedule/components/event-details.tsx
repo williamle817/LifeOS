@@ -65,38 +65,42 @@ export function EventDetails({
   const color = event.color ?? "blue";
 
   return (
-    <div className="p-4">
+    <div className="p-5">
       <div className="flex items-start gap-3">
         <span
-          style={{ backgroundColor: `var(--event-${color})` }}
-          className="mt-1 size-3 shrink-0 rounded-full"
+          style={{ backgroundColor: `var(--event-${color}-line)` }}
+          className="mt-2.5 size-3 shrink-0 rounded-full"
         />
-        <h2 className="flex-1 text-sm font-medium break-words">
+        <h2 className="flex-1 font-display text-2xl leading-tight font-medium break-words">
           {event.title}
         </h2>
-        <div className="flex shrink-0 items-center gap-1">
-          {(
-            [
-              ["Edit", "edit", onEdit],
-              ["Duplicate", "copy", onDuplicate],
-              ["Delete", "trash", onDelete],
-              ["Close", "close", onClose],
-            ] as const
-          ).map(([label, icon, onClick]) => (
-            <button
-              key={label}
-              type="button"
-              onClick={onClick}
-              aria-label={label}
-              className="rounded-full p-1.5 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
-            >
-              <ActionIcon name={icon} />
-            </button>
-          ))}
-        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-1.5">
+        {(
+          [
+            ["Edit", "edit", onEdit],
+            ["Duplicate", "copy", onDuplicate],
+            ["Delete", "trash", onDelete],
+            ["Close", "close", onClose],
+          ] as const
+        ).map(([label, icon, onClick]) => (
+          <button
+            key={label}
+            type="button"
+            onClick={onClick}
+            aria-label={label}
+            className={`grid size-10 place-items-center rounded-full transition-colors ${
+              label === "Close"
+                ? "ml-auto text-ink-muted hover:bg-surface-muted hover:text-ink"
+                : "bg-surface-muted text-ink hover:brightness-95"
+            }`}
+          >
+            <ActionIcon name={icon} />
+          </button>
+        ))}
       </div>
 
-      <dl className="mt-3 grid grid-cols-[4rem_1fr] gap-x-3 gap-y-1.5 text-[13px]">
+      <dl className="mt-4 grid grid-cols-[4rem_1fr] gap-x-3 gap-y-2 text-sm">
         <dt className="text-ink-faint">Date</dt>
         <dd>{dateLabel(event)}</dd>
         <dt className="text-ink-faint">Time</dt>

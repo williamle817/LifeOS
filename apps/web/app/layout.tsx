@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { TopBar } from "@/components/topbar";
 import { AuthGate } from "@/components/auth-gate";
@@ -8,6 +8,12 @@ import { StayFresh } from "@/components/stay-fresh";
 const sans = Plus_Jakarta_Sans({
   variable: "--font-app",
   subsets: ["latin", "vietnamese"],
+});
+
+const display = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin", "vietnamese"],
+  axes: ["SOFT", "opsz"],
 });
 
 export const metadata: Metadata = {
@@ -24,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${sans.variable} h-full antialiased`}
+      className={`${sans.variable} ${display.variable} h-full antialiased`}
     >
       <head>
         <script
@@ -36,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full font-sans">
         <div className="flex min-h-dvh flex-col">
           <TopBar />
-          <main className="flex flex-1 flex-col px-5 py-6 md:px-10 md:py-8">
+          <main className="flex flex-1 flex-col px-4 pt-8 pb-12 md:px-6 md:pt-10">
             <AuthGate>
               <StayFresh />
               {children}

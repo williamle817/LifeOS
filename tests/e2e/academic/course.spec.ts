@@ -78,7 +78,7 @@ test("edits a course and its categories", async ({ app, page }) => {
   await page.getByLabel("Category 1 drop lowest").fill("2");
   await page.getByRole("button", { name: "Save" }).click();
 
-  await expect(page.getByText(/Algorithms/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Algorithms" })).toBeVisible();
   await expect.poll(() => app.db.courses[0].title).toBe("Algorithms");
   await expect.poll(() => app.db.categories[0].drop_lowest).toBe(2);
 });

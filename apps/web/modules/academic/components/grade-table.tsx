@@ -152,7 +152,7 @@ export function GradeTable({
   }
 
   return (
-    <div className="rounded-3xl border border-line-strong bg-surface p-4 shadow-md">
+    <div className="rounded-panel bg-surface p-1.5 shadow-soft sm:p-4">
       <div className="grid gap-3">
       {grade.categories.map((entry, slot) => {
         const category = entry.category;
@@ -167,10 +167,10 @@ export function GradeTable({
             data-drag="category"
             style={drag.style("category", slot)}
             aria-label={category.name}
-            className="overflow-hidden rounded-2xl border border-line"
+            className="rounded-[1.375rem] bg-surface-muted p-1.5"
           >
             {heading === category.id ? (
-              <header className="flex flex-wrap items-end gap-2 border-b border-line bg-accent-soft px-4 py-3">
+              <header className="flex flex-wrap items-end gap-2 px-3 py-3">
                 <Labeled caption="Name">
                   <input
                     aria-label="Category name"
@@ -205,31 +205,31 @@ export function GradeTable({
                 <button
                   type="button"
                   onClick={() => submitHeading(category)}
-                  className="rounded-full bg-accent px-4 py-1 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                  className={primary}
                 >
                   Save
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeading(null)}
-                  className="rounded-full px-3 py-1 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                  className={quietOnMuted}
                 >
                   Cancel
                 </button>
               </header>
             ) : (
-              <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line bg-accent-soft px-4 py-2.5">
-                <h3 className="text-sm font-medium">{category.name}</h3>
-                <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] text-ink-muted">
+              <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 px-3 py-2.5">
+                <h3 className="text-[15px] font-bold">{category.name}</h3>
+                <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-ink-muted">
                   {category.weight}%
                 </span>
                 {category.extraCredit ? (
-                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] text-accent">
+                  <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">
                     extra credit
                   </span>
                 ) : null}
                 {category.dropLowest ? (
-                  <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] text-ink-faint">
+                  <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-ink-faint">
                     drops {category.dropLowest} lowest
                   </span>
                 ) : null}
@@ -237,7 +237,7 @@ export function GradeTable({
                   type="button"
                   aria-label={`Edit ${category.name}`}
                   onClick={() => startHeading(category)}
-                  className="rounded-lg p-1 text-ink-faint transition-colors hover:bg-surface hover:text-ink"
+                  className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface hover:text-ink"
                 >
                   <ActionIcon name="edit" />
                 </button>
@@ -245,7 +245,7 @@ export function GradeTable({
                   {entry.pct === null ? (
                     <span className="text-ink-muted">nothing marked yet</span>
                   ) : (
-                    <span className="font-medium">{entry.pct}%</span>
+                    <span className="font-display text-2xl font-medium tabular-nums">{entry.pct}%</span>
                   )}
                   <DragHandle
                     list="category"
@@ -257,10 +257,10 @@ export function GradeTable({
               </header>
             )}
 
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-surface-muted overflow-hidden rounded-2xl bg-surface">
               {rows.map((item, seat) =>
                 editing === item.id ? (
-                  <li key={item.id} className="bg-surface-muted px-4 py-3">
+                  <li key={item.id} className="bg-canvas px-4 py-3">
                     <p className="text-[11px] text-ink-faint">
                       Editing <span className="font-medium text-ink">{item.title}</span>
                     </p>
@@ -287,7 +287,7 @@ export function GradeTable({
                     key={item.id}
                     data-drag={`item-${category.id}`}
                     style={drag.style(`item-${category.id}`, seat)}
-                    className="flex items-center gap-2 bg-surface px-4 py-2.5 text-[13px] transition-colors hover:bg-surface-muted"
+                    className="flex items-center gap-1 bg-surface py-2 pr-1 pl-3 text-sm transition-colors hover:bg-canvas sm:gap-2 sm:pr-2 sm:pl-4"
                   >
                     <span className="min-w-0 flex-1">
                       <span
@@ -321,9 +321,9 @@ export function GradeTable({
                       onKeyDown={(e) => {
                         if (e.key === "Enter") e.currentTarget.blur();
                       }}
-                      className={`w-16 text-right ${input}`}
+                      className={`w-16 text-right font-semibold sm:w-[4.5rem] ${input}`}
                     />
-                    <span className="w-10 text-[11px] text-ink-faint">
+                    <span className="w-11 text-xs text-ink-faint">
                       / {item.maxScore}
                     </span>
 
@@ -331,7 +331,7 @@ export function GradeTable({
                       type="button"
                       aria-label={`Edit ${item.title}`}
                       onClick={() => startEdit(item)}
-                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                      className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
                     >
                       <ActionIcon name="edit" />
                     </button>
@@ -339,7 +339,7 @@ export function GradeTable({
                       type="button"
                       aria-label={`Remove ${item.title}`}
                       onClick={() => onRemove(item.id)}
-                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                      className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
                     >
                       <ActionIcon name="trash" />
                     </button>
@@ -354,7 +354,7 @@ export function GradeTable({
               )}
             </ul>
 
-            <div className="border-t border-line bg-surface-muted px-4 py-3">
+            <div className="px-1.5 pt-2.5 pb-1">
               {adding === category.id ? (
                 <div>
                   <p className="text-[11px] text-ink-faint">
@@ -383,7 +383,7 @@ export function GradeTable({
                 <button
                   type="button"
                   onClick={() => startAdd(category.id)}
-                  className="flex items-center gap-1.5 rounded-full border border-dashed border-line bg-surface px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:border-accent hover:text-accent"
+                  className="flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-line-strong px-4 text-[13px] font-medium text-ink-muted transition-colors hover:border-accent hover:text-accent"
                 >
                   <span aria-hidden="true" className="text-base leading-none">
                     +

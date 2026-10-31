@@ -1,4 +1,5 @@
-body:has([data-page="schedule"]) {
+body:has([data-page="schedule"]),
+:root:not([data-theme="night"]) [data-tone="schedule"] {
   --canvas: #e0e3e7;
   --surface: #f3f4f6;
   --surface-muted: #d9dbe1;
@@ -9,6 +10,7 @@ body:has([data-page="schedule"]) {
   --ink-faint: #515357;
   --accent: #2f3440;
   --accent-soft: #d3d7e0;
+  --shade: var(--ink);
 }
 
 :root[data-theme="night"] body:has([data-page="schedule"]) {
@@ -27,9 +29,89 @@ body:has([data-page="schedule"]) main {
 }
 
 [data-page="schedule"] .fc .fc-header-toolbar.fc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
   margin: 0;
-  padding: 0.5rem 1.25rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--line);
+}
+
+[data-page="schedule"] .fc .fc-toolbar-chunk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+[data-page="schedule"] .fc-direction-ltr .fc-toolbar-chunk > :not(:first-child) {
+  margin-left: 0;
+}
+
+[data-page="schedule"] .fc .fc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+[data-page="schedule"] .fc .fc-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+[data-page="schedule"] .fc .fc-prev-button,
+[data-page="schedule"] .fc .fc-next-button {
+  width: 2.5rem;
+  padding: 0;
+}
+
+[data-page="schedule"] .fc .fc-today-button.fc-button {
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+[data-page="schedule"] .fc .fc-today-button.fc-button:disabled {
+  opacity: 0.55;
+}
+
+[data-page="schedule"] .fc .fc-button-group {
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+}
+
+[data-page="schedule"] .fc .fc-button-group > .fc-button.fc-button {
+  flex: none;
+  min-height: 2.25rem;
+  margin-left: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted);
+}
+
+[data-page="schedule"] .fc .fc-button-group > .fc-button.fc-button-active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--shade) 18%, transparent);
+}
+
+[data-page="schedule"] .fc .fc-newEvent-button.fc-button {
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-float);
+}
+
+[data-page="schedule"] .fc .fc-newEvent-button.fc-button:hover {
+  filter: brightness(1.1);
 }
 
 [data-page="schedule"] .fc .fc-scrollgrid {
@@ -49,10 +131,15 @@ body:has([data-page="schedule"]) main {
   }
 
   [data-page="schedule"] .fc .fc-toolbar-chunk {
-    display: flex;
-    align-items: center;
     justify-content: center;
     gap: 0.5rem;
+  }
+
+  [data-page="schedule"] .fc .fc-toolbar-title {
+    flex-basis: 100%;
+    margin-right: 0;
+    font-size: 1.5rem;
+    text-align: center;
   }
 }
 
@@ -64,34 +151,42 @@ body:has([data-page="schedule"]) main {
   --fc-event-bg-color: var(--event-blue);
   --fc-event-border-color: var(--event-blue-line);
   --fc-event-text-color: var(--event-blue-ink);
-  --fc-button-text-color: var(--surface);
-  --fc-button-bg-color: var(--accent);
-  --fc-button-border-color: var(--accent);
-  --fc-button-hover-bg-color: var(--accent);
-  --fc-button-hover-border-color: var(--accent);
-  --fc-button-active-bg-color: var(--accent);
-  --fc-button-active-border-color: var(--accent);
+  --fc-button-text-color: var(--ink);
+  --fc-button-bg-color: var(--surface-muted);
+  --fc-button-border-color: transparent;
+  --fc-button-hover-bg-color: var(--line);
+  --fc-button-hover-border-color: transparent;
+  --fc-button-active-bg-color: var(--surface);
+  --fc-button-active-border-color: transparent;
   --fc-now-indicator-color: var(--alert);
   font-size: 0.875rem;
 }
 
 .fc .fc-toolbar-title {
-  font-size: 0.9375rem;
-  font-weight: 700;
+  margin-right: 0.5rem;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-variation-settings: "SOFT" 100;
+  font-size: 2rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .fc .fc-button {
   font-size: 0.8125rem;
   font-weight: 500;
-  border-radius: 0.75rem;
   transition:
     background-color 150ms,
-    border-color 150ms;
+    box-shadow 150ms;
 }
 
 .fc .fc-timegrid-event,
 .fc .fc-daygrid-event {
-  border-radius: 0.625rem;
+  border-radius: 0.75rem;
+}
+
+.fc .fc-timegrid-slot {
+  border-top-color: color-mix(in srgb, var(--line) 60%, transparent);
 }
 
 .fc .fc-timegrid-event {

@@ -208,9 +208,9 @@ export function FlowPanel({
   return (
     <section
       aria-label={heading}
-      className="overflow-hidden rounded-3xl border border-line-strong bg-surface shadow-md"
+      className="overflow-hidden rounded-panel bg-surface shadow-soft"
     >
-      <header className="flex items-center gap-2.5 border-b border-line bg-surface-muted px-4 py-3">
+      <header className="flex items-center gap-2.5 bg-surface-muted px-5 py-4">
         <span
           aria-hidden="true"
           style={{
@@ -220,22 +220,22 @@ export function FlowPanel({
           }}
           className="size-2.5 shrink-0 rounded-full"
         />
-        <h3 className="text-[15px] font-bold">{heading}</h3>
+        <h3 className="font-display text-2xl font-medium">{heading}</h3>
         <span
           style={{ color: ink }}
-          className="ml-auto text-sm font-semibold tabular-nums"
+          className="ml-auto text-base font-bold tabular-nums"
         >
           {money(sum)}
         </span>
       </header>
 
       {rows.length ? (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-surface-muted">
           {rows.map((row) => {
             const { flow, on: when } = row;
             return editing === flow.id ? (
-              <li key={flow.id} className="bg-surface-muted px-4 py-3">
-                <p className="text-[11px] text-ink-faint">
+              <li key={flow.id} className="bg-canvas px-5 py-4">
+                <p className="text-xs text-ink-faint">
                   Editing{" "}
                   <span className="font-medium text-ink">{flow.title}</span>
                   {row.from
@@ -263,11 +263,11 @@ export function FlowPanel({
             ) : (
               <li
                 key={flow.id}
-                className="flex items-center gap-2 bg-surface px-4 py-2.5 text-[13px] transition-colors hover:bg-surface-muted"
+                className="flex items-center gap-2 bg-surface py-3 pr-3 pl-5 text-sm transition-colors hover:bg-canvas"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate">{flow.title}</span>
-                  <span className="text-[11px] text-ink-faint">
+                  <span className="block truncate font-semibold">{flow.title}</span>
+                  <span className="text-xs text-ink-faint">
                     {[
                       shortDate(when),
                       flow.category,
@@ -282,7 +282,7 @@ export function FlowPanel({
 
                 <span
                   style={{ color: ink }}
-                  className="shrink-0 font-medium tabular-nums"
+                  className="shrink-0 font-bold tabular-nums"
                 >
                   {kind === "income" ? "+" : "-"}
                   {money(flow.amount)}
@@ -292,7 +292,7 @@ export function FlowPanel({
                   type="button"
                   aria-label={`Edit ${flow.title}`}
                   onClick={() => startEdit(flow, when)}
-                  className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                  className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
                 >
                   <ActionIcon name="edit" />
                 </button>
@@ -300,7 +300,7 @@ export function FlowPanel({
                   type="button"
                   aria-label={`Remove ${flow.title}`}
                   onClick={() => remove(row)}
-                  className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                  className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
                 >
                   <ActionIcon name="trash" />
                 </button>
@@ -309,15 +309,15 @@ export function FlowPanel({
           })}
         </ul>
       ) : (
-        <p className="px-4 py-5 text-[13px] text-ink-muted">
+        <p className="px-5 py-6 text-sm text-ink-muted">
           Nothing in {heading.toLowerCase()} this month.
         </p>
       )}
 
-      <div className="border-t border-line bg-surface-muted px-4 py-3">
+      <div className="bg-surface-muted px-5 py-4">
         {adding ? (
           <div>
-            <p className="text-[11px] text-ink-faint">
+            <p className="text-xs text-ink-faint">
               New entry in{" "}
               <span className="font-medium text-ink">{heading}</span>
             </p>
@@ -343,7 +343,7 @@ export function FlowPanel({
           <button
             type="button"
             onClick={startAdd}
-            className="flex items-center gap-1.5 rounded-full border border-dashed border-line bg-surface px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:border-accent hover:text-accent"
+            className="flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-line-strong bg-surface px-4 text-[13px] font-medium text-ink-muted transition-colors hover:border-accent hover:text-accent"
           >
             <span aria-hidden="true" className="text-base leading-none">
               +

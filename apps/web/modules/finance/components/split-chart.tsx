@@ -10,15 +10,25 @@ function Figure({
   value,
   tint,
   ink,
+  last = false,
 }: {
   caption: string;
   value: number;
   tint?: string;
   ink?: string;
+  last?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-canvas px-4 py-3 text-center">
-      <p className="flex items-center justify-center gap-1.5 text-xs text-ink-muted">
+    <div
+      className={`flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-4 ${
+        last ? "" : "border-b border-line"
+      }`}
+    >
+      <p
+        className={`flex items-center gap-2.5 text-[15px] ${
+          tint ? "font-medium text-ink-muted" : "pl-5 font-bold"
+        }`}
+      >
         {tint ? (
           <span
             aria-hidden="true"
@@ -30,7 +40,7 @@ function Figure({
       </p>
       <p
         style={ink ? { color: ink } : undefined}
-        className="mt-0.5 text-2xl font-semibold"
+        className="font-display text-4xl font-medium tabular-nums"
       >
         {money(value)}
       </p>
@@ -52,12 +62,12 @@ export function SplitChart({
     net > 0 ? "var(--money-in)" : net < 0 ? "var(--money-out)" : "var(--ink)";
 
   return (
-    <div className="grid justify-items-center gap-5 rounded-3xl border border-line-strong bg-surface p-6 shadow-md">
+    <div className="flex flex-wrap items-center gap-x-12 gap-y-6 rounded-panel bg-surface p-6 shadow-soft sm:p-8">
       <svg
         viewBox="0 0 128 128"
         role="img"
         aria-label={`Income ${money(income)}, expenses ${money(expense)}`}
-        className="size-60"
+        className="mx-auto size-56 shrink-0 sm:size-60"
       >
         <circle
           cx="64"
@@ -65,7 +75,7 @@ export function SplitChart({
           r={R}
           fill="none"
           stroke="var(--surface-muted)"
-          strokeWidth="16"
+          strokeWidth="12"
         />
         {sum > 0 ? (
           <g transform="rotate(-90 64 64)">
@@ -75,7 +85,7 @@ export function SplitChart({
               r={R}
               fill="none"
               stroke="var(--event-green-line)"
-              strokeWidth="16"
+              strokeWidth="12"
               strokeDasharray={`${share} ${RING - share}`}
             />
             <circle
@@ -84,7 +94,7 @@ export function SplitChart({
               r={R}
               fill="none"
               stroke="var(--event-red-line)"
-              strokeWidth="16"
+              strokeWidth="12"
               strokeDasharray={`${RING - share} ${share}`}
               strokeDashoffset={-share}
             />
@@ -92,7 +102,7 @@ export function SplitChart({
         ) : null}
         <text
           x="64"
-          y="59"
+          y="56"
           textAnchor="middle"
           fill="var(--ink-muted)"
           className="text-[9px]"
@@ -101,17 +111,16 @@ export function SplitChart({
         </text>
         <text
           x="64"
-          y="74"
+          y="75"
           textAnchor="middle"
           fill={netInk}
-          fontWeight="600"
-          className="text-[13px]"
+          className="font-display text-[17px] font-medium"
         >
           {money(net)}
         </text>
       </svg>
 
-      <div className="grid w-full gap-2.5 sm:grid-cols-3">
+      <div className="min-w-0 flex-[1_1_22rem]">
         <Figure
           caption="Income"
           value={income}
@@ -124,7 +133,7 @@ export function SplitChart({
           tint="red"
           ink="var(--money-out)"
         />
-        <Figure caption="Left over" value={net} ink={netInk} />
+        <Figure caption="Left over" value={net} ink={netInk} last />
       </div>
     </div>
   );

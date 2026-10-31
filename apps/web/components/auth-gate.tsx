@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { Brand } from "@/components/brand";
+import { input, primary } from "@/components/styles";
 import { follow } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import "@/app/dashboard.css";
@@ -34,41 +36,47 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div data-page="login" className="flex flex-1 items-center justify-center">
+    <div data-page="login" className="flex flex-1 items-center justify-center py-8">
       <form
         onSubmit={signIn}
-        className="w-full max-w-xs rounded-xl border border-line bg-surface p-5"
+        className="flex w-full max-w-sm flex-col gap-5 rounded-panel bg-surface p-8 shadow-pop sm:p-9"
       >
-        <h1 className="text-sm font-medium">Sign in to LifeOS</h1>
+        <Brand size="large" />
+        <h1 className="font-display text-3xl font-medium tracking-tight">
+          Sign in to LifeOS
+        </h1>
 
-        <label className="mt-4 block">
-          <span className="text-xs text-ink-muted">Email</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-medium text-ink-muted">Email</span>
           <input
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+            className={input}
           />
         </label>
 
-        <label className="mt-3 block">
-          <span className="text-xs text-ink-muted">Password</span>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-medium text-ink-muted">Password</span>
           <input
             type="password"
             required
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+            className={input}
           />
         </label>
 
-        {note ? <p className="mt-3 text-xs text-ink-muted">{note}</p> : null}
+        {note ? (
+          <p role="alert" className="text-[13px] text-ink-muted">
+            {note}
+          </p>
+        ) : null}
 
-        <button
-          type="submit"
-          className="mt-4 w-full rounded-lg bg-accent px-3 py-1.5 text-[13px] font-medium text-surface"
-        >
+        <button type="submit" className={`${primary} min-h-12 w-full text-[15px]`}>
           Sign in
         </button>
       </form>

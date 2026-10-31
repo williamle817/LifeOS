@@ -11,7 +11,7 @@ import {
 } from "@/modules/finance/lib/month";
 
 const step =
-  "rounded-full border border-line-strong bg-surface p-1.5 text-ink shadow-sm transition-colors hover:bg-surface-muted";
+  "grid size-11 place-items-center rounded-full bg-surface text-ink shadow-float transition-colors hover:bg-surface-muted";
 
 export function MonthBar({
   month,
@@ -25,7 +25,7 @@ export function MonthBar({
   const now = thisMonth(today);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-full border border-line-strong bg-surface px-2 py-2 shadow-sm md:w-fit">
+    <div className="flex flex-wrap items-center justify-center gap-3 pt-2 sm:gap-4">
       <button
         type="button"
         aria-label="Previous month"
@@ -35,7 +35,7 @@ export function MonthBar({
         <ActionIcon name="back" />
       </button>
 
-      <h2 className="min-w-44 text-center text-sm font-medium">
+      <h2 className="min-w-60 text-center font-display text-4xl font-medium tracking-tight sm:min-w-72 sm:text-[2.75rem]">
         {monthLabel(month)}
       </h2>
 

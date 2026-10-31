@@ -36,9 +36,10 @@ import { CourseForm } from "@/modules/academic/components/course-form";
 import { GradeTable } from "@/modules/academic/components/grade-table";
 import { Upcoming } from "@/modules/academic/components/upcoming";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
+import { GradeTrack } from "@/modules/academic/components/grade-track";
 import { move } from "@/components/reorder";
 import { SaveError } from "@/components/save-error";
-import { tint } from "@/components/styles";
+import { soft, tint } from "@/components/styles";
 
 export function AcademicView() {
   const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -87,7 +88,7 @@ export function AcademicView() {
   }
 
   return (
-    <div data-page="academic" className="grid gap-5">
+    <div data-page="academic" className="mx-auto grid w-full max-w-6xl gap-6">
       <SaveError message={lastWriteError()} />
 
       <SemesterBar
@@ -146,50 +147,66 @@ export function AcademicView() {
       ) : null}
 
       {!editing && !semesterId ? (
-        <p className="text-[13px] text-ink-muted">
+        <p className="text-[15px] text-ink-muted">
           Add a semester to start. Courses live inside a semester, so each term
           keeps its own subjects.
         </p>
       ) : null}
 
       {!editing && semesterId && !course ? (
-        <p className="text-[13px] text-ink-muted">
+        <p className="text-[15px] text-ink-muted">
           No courses in this semester yet. Add one, say how it is graded, then
           type in the assignments from the syllabus.
         </p>
       ) : null}
 
       {!editing && course && grade ? (
-        <div className="grid gap-5">
-          <div className="rounded-3xl border border-line-strong bg-surface p-5 shadow-md">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                style={{
-                  backgroundColor: `var(--event-${course.color ?? "blue"}-line)`,
-                }}
-                className="size-3 rounded-full"
-              />
-              <h2 className="text-sm font-medium">
-                {course.code ? `${course.code}, ` : ""}
-                {course.title}
-              </h2>
+        <div className="grid gap-6">
+          <section
+            aria-labelledby="course-title"
+            className="flex flex-col gap-7 rounded-panel bg-surface p-6 shadow-soft sm:p-8"
+          >
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <span className="flex items-center gap-2 text-[13px] font-semibold text-ink-muted">
+                  <span
+                    style={{
+                      backgroundColor: `var(--event-${course.color ?? "blue"}-line)`,
+                    }}
+                    className="size-3 rounded-full"
+                  />
+                  {course.code}
+                </span>
+                <h2
+                  id="course-title"
+                  className="font-display text-4xl leading-tight font-medium tracking-tight break-words"
+                >
+                  {course.title}
+                </h2>
+              </div>
               <button
                 type="button"
                 onClick={() => setEditing("edit")}
-                className="rounded-full px-3 py-1 text-[13px] text-ink-muted transition-colors hover:bg-surface hover:text-ink"
+                className={soft}
               >
                 Edit
               </button>
             </div>
 
-            <dl className="mt-3 grid gap-2.5 sm:grid-cols-3">
+            <GradeTrack
+              course={course}
+              banked={grade.banked}
+              ceiling={grade.ceiling}
+            />
+
+            <dl className="grid gap-3.5 sm:grid-cols-3">
               <div
                 style={tint(course.color ?? "blue")}
-                className="rounded-xl border p-3"
+                className="rounded-card border p-5"
               >
-                <dt className="text-xs">Current grade</dt>
-                <dd className="mt-0.5 flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold">
+                <dt className="text-[13px] font-medium">Current grade</dt>
+                <dd className="mt-2 flex items-baseline gap-2.5">
+                  <span className="font-display text-5xl leading-none font-medium tabular-nums">
                     {grade.currentGrade === null
                       ? "--"
                       : `${show(grade.currentGrade)}%`}
@@ -198,14 +215,14 @@ export function AcademicView() {
                 </dd>
               </div>
 
-              <div className="rounded-xl border border-line bg-canvas p-3">
-                <dt className="text-xs text-ink-muted">Earned</dt>
-                <dd className="mt-0.5 flex items-baseline gap-2">
-                  <span className="flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold">
+              <div className="rounded-card bg-canvas p-5">
+                <dt className="text-[13px] font-medium text-ink-muted">Earned</dt>
+                <dd className="mt-2 flex items-baseline gap-2.5">
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="font-display text-5xl leading-none font-medium tabular-nums">
                       {show(grade.banked)}
                     </span>
-                    <span className="text-sm text-ink-faint">/ 100</span>
+                    <span className="text-[15px] text-ink-faint">/ 100</span>
                   </span>
                   {grade.bankedLetter === "F" ? null : (
                     <LetterPill letter={grade.bankedLetter} />
@@ -213,10 +230,12 @@ export function AcademicView() {
                 </dd>
               </div>
 
-              <div className="rounded-xl border border-line bg-canvas p-3">
-                <dt className="text-xs text-ink-muted">Maximum attainable</dt>
-                <dd className="mt-0.5 flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold">
+              <div className="rounded-card bg-canvas p-5">
+                <dt className="text-[13px] font-medium text-ink-muted">
+                  Maximum attainable
+                </dt>
+                <dd className="mt-2 flex items-baseline gap-2.5">
+                  <span className="font-display text-5xl leading-none font-medium tabular-nums">
                     {show(grade.ceiling)}%
                   </span>
                   {grade.ceilingLetter === "F" ? null : (
@@ -225,9 +244,9 @@ export function AcademicView() {
                 </dd>
               </div>
             </dl>
-          </div>
+          </section>
 
-          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
             <GradeTable
               grade={grade}
               userId={userId}
@@ -248,7 +267,7 @@ export function AcademicView() {
               }}
             />
 
-            <div className="rounded-3xl border border-line-strong bg-surface p-5 shadow-md lg:sticky lg:top-24">
+            <div className="rounded-panel bg-surface p-6 shadow-soft lg:sticky lg:top-28">
               <Upcoming
                 items={data.items.filter(
                   (item) => item.courseId === course.id,

@@ -218,7 +218,7 @@ function Field({
   const shared = `mt-1 w-full ${input}`;
   return (
     <label className="block">
-      <span className="text-xs text-ink-muted">{label}</span>
+      <span className="text-[13px] font-medium text-ink-muted">{label}</span>
       {multiline ? (
         <textarea
           rows={2}
@@ -389,10 +389,10 @@ export function EventForm({
     ] as const;
 
     return (
-      <div className="p-3">
-        <h2 className="text-sm font-medium">Custom repeat</h2>
+      <div className="p-5">
+        <h2 className="font-display text-xl font-medium">Custom repeat</h2>
 
-        <p className="mt-3 text-xs text-ink-muted">Repeat on</p>
+        <p className="mt-4 text-[13px] font-medium text-ink-muted">Repeat on</p>
         <div className="mt-1.5 flex gap-1">
           {labels.map(([text, day], i) => {
             const on = draft.byDay.includes(day);
@@ -408,7 +408,7 @@ export function EventForm({
                       : [...draft.byDay, day],
                   })
                 }
-                className={`size-7 rounded-full border text-[11px] transition-colors ${
+                className={`size-8 rounded-full border text-xs transition-colors ${
                   on
                     ? "border-accent bg-accent-soft font-medium text-accent"
                     : "border-line text-ink-muted hover:bg-surface-muted"
@@ -420,7 +420,7 @@ export function EventForm({
           })}
         </div>
 
-        <p className="mt-4 text-xs text-ink-muted">Ends</p>
+        <p className="mt-4 text-[13px] font-medium text-ink-muted">Ends</p>
         <label className="mt-1.5 flex items-center gap-2 text-[13px]">
           <input
             type="radio"
@@ -447,7 +447,7 @@ export function EventForm({
           />
         </label>
 
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-5 flex items-center gap-2">
           <button
             type="button"
             onClick={() => {
@@ -489,15 +489,15 @@ export function EventForm({
       onKeyDown={(e) => {
         if (e.key === "Escape") onCancel();
       }}
-      className="p-3"
+      className="p-5"
     >
-      <h2 className="text-sm font-medium">
+      <h2 className="font-display text-xl font-medium">
         {editing ? "Edit event" : "New event"}
       </h2>
 
-      <div className="mt-3 grid gap-2">
+      <div className="mt-4 grid gap-3">
         <label className="block">
-          <span className="text-xs text-ink-muted">Type</span>
+          <span className="text-[13px] font-medium text-ink-muted">Type</span>
           <select
             value={draft.type}
             onChange={(e) => set({ type: e.target.value as EventType })}
@@ -534,7 +534,7 @@ export function EventForm({
         />
 
         <div className="block">
-          <span className="text-xs text-ink-muted">Color</span>
+          <span className="text-[13px] font-medium text-ink-muted">Color</span>
           <ColorPicker
             value={draft.color}
             onChange={(color) => set({ color })}
@@ -542,7 +542,7 @@ export function EventForm({
         </div>
 
         <label className="block">
-          <span className="text-xs text-ink-muted">Repeat</span>
+          <span className="text-[13px] font-medium text-ink-muted">Repeat</span>
           <select
             value={draft.byDay.length ? "custom" : draft.freq}
             onChange={(e) => {
@@ -597,7 +597,7 @@ export function EventForm({
         />
       </div>
 
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-5 flex items-center gap-2">
         <button
           type="submit"
           className={primary}

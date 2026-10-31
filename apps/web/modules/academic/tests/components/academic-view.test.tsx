@@ -281,7 +281,9 @@ describe("the academic page, several courses and semesters", () => {
     render(<AcademicView />);
     await user.click(screen.getByRole("button", { name: /MATH 241/ }));
     await waitFor(() =>
-      expect(screen.getByText(/Linear Algebra/)).toBeDefined(),
+      expect(
+        screen.getByRole("heading", { name: /Linear Algebra/ }),
+      ).toBeDefined(),
     );
   });
 

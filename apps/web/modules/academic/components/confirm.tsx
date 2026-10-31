@@ -1,7 +1,7 @@
 "use client";
 
 import { Modal } from "@/components/modal";
-import { tint } from "@/components/styles";
+import { quiet, tint } from "@/components/styles";
 
 export function Confirm({
   title,
@@ -18,16 +18,16 @@ export function Confirm({
 }) {
   return (
     <Modal label={title} onClose={onCancel}>
-      <div className="p-5">
-        <h2 className="text-sm font-medium">{title}</h2>
-        <p className="mt-2 text-[13px] text-ink-muted">{body}</p>
+      <div className="p-6">
+        <h2 className="font-display text-2xl font-medium">{title}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-ink-muted">{body}</p>
 
-        <div className="mt-5 flex items-center justify-end gap-2">
+        <div className="mt-6 flex items-center justify-end gap-2">
           <button
             type="button"
             autoFocus
             onClick={onCancel}
-            className="rounded-full px-4 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+            className={quiet}
           >
             Cancel
           </button>
@@ -35,7 +35,7 @@ export function Confirm({
             type="button"
             onClick={onConfirm}
             style={tint("red")}
-            className="rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors hover:brightness-95"
+            className="min-h-10 rounded-full border px-5 text-sm font-semibold transition hover:brightness-95"
           >
             {action}
           </button>

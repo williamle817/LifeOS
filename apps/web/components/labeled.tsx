@@ -7,7 +7,7 @@ export function Labeled({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[11px] text-ink-faint">{caption}</span>
+      <span className="text-xs font-medium text-ink-muted">{caption}</span>
       {children}
     </label>
   );

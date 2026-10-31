@@ -12,7 +12,7 @@ import {
 } from "@lifeos/contracts";
 import { extraTotal, weightTotal } from "@/modules/academic/lib/grade";
 import { ColorPicker } from "@/components/color-picker";
-import { input, primary, quiet } from "@/components/styles";
+import { input, primary, quiet, soft } from "@/components/styles";
 
 type Draft = {
   title: string;
@@ -115,15 +115,15 @@ export function CourseForm({
           })),
         );
       }}
-      className="rounded-3xl border border-line bg-surface p-5 shadow-sm"
+      className="rounded-panel bg-surface p-6 shadow-soft sm:p-8"
     >
-      <h2 className="text-sm font-medium">
+      <h2 className="font-display text-2xl font-medium">
         {course ? "Edit course" : "New course"}
       </h2>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs text-ink-muted">Course name</span>
+          <span className="text-[13px] font-medium text-ink-muted">Course name</span>
           <input
             required
             value={draft.title}
@@ -132,7 +132,7 @@ export function CourseForm({
           />
         </label>
         <label className="block">
-          <span className="text-xs text-ink-muted">Code</span>
+          <span className="text-[13px] font-medium text-ink-muted">Code</span>
           <input
             value={draft.code}
             onChange={(e) => set({ code: e.target.value })}
@@ -141,8 +141,8 @@ export function CourseForm({
         </label>
       </div>
 
-      <div className="mt-3">
-        <span className="text-xs text-ink-muted">Colour</span>
+      <div className="mt-4">
+        <span className="text-[13px] font-medium text-ink-muted">Colour</span>
         <ColorPicker
           value={draft.color}
           onChange={(color) => set({ color })}
@@ -151,7 +151,7 @@ export function CourseForm({
 
       <div className="mt-5">
         <div className="flex items-baseline justify-between">
-          <span className="text-xs text-ink-muted">How it is graded</span>
+          <span className="text-[13px] font-medium text-ink-muted">How it is graded</span>
           <span
             className={`text-xs ${balanced ? "text-ink-faint" : "text-accent"}`}
           >
@@ -218,7 +218,7 @@ export function CourseForm({
                     categories: draft.categories.filter((_, i) => i !== index),
                   })
                 }
-                className="rounded-lg px-2 py-1 text-[13px] text-ink-faint hover:bg-surface-muted hover:text-ink"
+                className="grid size-10 place-items-center rounded-full text-sm text-ink-faint hover:bg-surface-muted hover:text-ink"
               >
                 x
               </button>
@@ -239,14 +239,14 @@ export function CourseForm({
           onClick={() =>
             set({ categories: [...draft.categories, blank(userId, id)] })
           }
-          className="mt-2 rounded-full border border-line px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+          className={`mt-3 ${soft}`}
         >
           Add category
         </button>
       </div>
 
       <div className="mt-5">
-        <span className="text-xs text-ink-muted">Letter cutoffs</span>
+        <span className="text-[13px] font-medium text-ink-muted">Letter cutoffs</span>
         <div className="mt-2 flex flex-wrap gap-2">
           {LETTERS.filter((letter) => letter !== "F").map((letter) => (
             <label key={letter} className="flex items-center gap-1.5">

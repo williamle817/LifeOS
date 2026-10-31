@@ -8,7 +8,7 @@ export function SaveError({
   if (!message) return null;
   return (
     <p
-      className={`rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted ${className}`}
+      className={`rounded-card bg-surface px-5 py-3 text-sm text-ink-muted shadow-soft ${className}`}
     >
       Could not save: {message}
     </p>

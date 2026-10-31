@@ -26,7 +26,7 @@ test("dragging an empty slot opens the form", async ({ calendar, page }) => {
   await dragSlots(page, today(), "10:00:00", "11:00:00");
 
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByText("New event")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("New event")).toBeVisible();
 });
 
 test("shows a placeholder block while the form is open", async ({

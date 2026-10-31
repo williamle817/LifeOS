@@ -13,39 +13,44 @@ export function ComingUp({
   if (!rows.length) return null;
 
   return (
-    <div className="rounded-3xl border border-line-strong bg-surface p-4 shadow-md">
-      <h3 className="text-[15px] font-bold">Coming up</h3>
+    <div className="flex flex-col gap-3.5">
+      <h3 className="font-display text-[1.75rem] font-medium">Coming up</h3>
 
-      <ul
-        aria-label="Coming up"
-        className="mt-3 flex gap-2 overflow-x-auto pb-1"
-      >
+      <ul aria-label="Coming up" className="flex flex-wrap gap-3">
         {rows.map(({ flow, on }) => {
           const soon = daysBetween(isoDay(today), on) <= 3;
+          const [month, day] = shortDate(on).split(" ");
           return (
             <li
               key={`${flow.id}-${on}`}
-              className="shrink-0 rounded-2xl bg-surface-muted px-3.5 py-2"
+              className="flex min-w-0 flex-[1_1_16rem] items-center gap-3.5 rounded-card bg-surface p-3 shadow-soft"
             >
-              <span className="block text-[13px]">{flow.title}</span>
-              <span className="mt-0.5 flex items-baseline gap-1.5">
+              <span className="flex h-14 w-[3.25rem] shrink-0 flex-col items-center justify-center rounded-2xl bg-surface-muted">
+                <span className="text-[11px] font-semibold text-ink-faint">
+                  {month}
+                </span>{" "}
+                <span className="font-display text-[1.375rem] leading-none font-semibold">
+                  {day}
+                </span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">
+                  {flow.title}
+                </span>{" "}
                 <span
                   style={{ color: "var(--money-out)" }}
-                  className="text-[13px] font-medium"
+                  className="text-[13px] font-semibold tabular-nums"
                 >
                   {money(flow.amount)}
                 </span>
-                <span className="text-[11px] text-ink-faint">
-                  {shortDate(on)}
-                </span>
-                <span
-                  style={soon ? { color: "var(--alert)" } : undefined}
-                  className={`text-[11px] ${
-                    soon ? "font-medium" : "text-ink-faint"
-                  }`}
-                >
-                  {whenLabel(on, today)}
-                </span>
+              </span>{" "}
+              <span
+                style={soon ? { color: "var(--alert)" } : undefined}
+                className={`shrink-0 text-xs ${
+                  soon ? "font-bold" : "font-medium text-ink-faint"
+                }`}
+              >
+                {whenLabel(on, today)}
               </span>
             </li>
           );

@@ -22,13 +22,13 @@ export function TodayHeading() {
   const date = key ? new Date(year, month, day) : null;
 
   return (
-    <header className="min-h-16">
+    <header className="min-h-24 px-1 pt-2 sm:min-h-32">
       {date ? (
         <>
-          <p className="text-sm text-ink-faint">
+          <p className="text-base font-medium text-ink-muted">
             {date.toLocaleDateString("en-US", { weekday: "long" })}
           </p>
-          <h1 className="text-4xl font-extrabold tracking-tight">
+          <h1 className="mt-1 font-display text-6xl leading-[0.98] font-medium tracking-tight sm:text-8xl">
             {date.toLocaleDateString("en-US", {
               month: "long",
               day: "numeric",

@@ -1,4 +1,5 @@
-body:has([data-page="academic"]) {
+body:has([data-page="academic"]),
+:root:not([data-theme="night"]) [data-tone="academic"] {
   --canvas: #d3e4fc;
   --surface: #e0edff;
   --surface-muted: #caddf8;
@@ -9,4 +10,5 @@ body:has([data-page="academic"]) {
   --ink-faint: #44546a;
   --accent: #0059bd;
   --accent-soft: #bfd9fe;
+  --shade: var(--ink);
 }

@@ -103,7 +103,7 @@ export function FinanceView() {
   }
 
   return (
-    <div data-page="finance" className="grid gap-5">
+    <div data-page="finance" className="mx-auto grid w-full max-w-6xl gap-7">
       <SaveError message={lastWriteError()} />
 
       <MonthBar month={month} onChange={setMonth} />
@@ -112,7 +112,7 @@ export function FinanceView() {
 
       <ComingUp rows={due} />
 
-      <div className="grid items-start gap-5 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <FlowPanel
           kind="income"
           rows={income}
