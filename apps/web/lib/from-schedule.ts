@@ -4,6 +4,8 @@ import { saveOccurrence } from "@/modules/schedule/lib/event-store";
 import {
   dayOf,
   daysInMonth,
+  inMonth,
+  newestFirst,
   round,
   type Dated,
   type Month,
@@ -96,6 +98,17 @@ export function mealsIn(events: LifeEvent[], month: Month): Dated[] {
   return eventsIn(events, month, "dining")
     .map((one) => line(one, "dining"))
     .sort(byDay);
+}
+
+export function incomeIn(
+  flows: Flow[],
+  events: LifeEvent[],
+  month: Month,
+): Dated[] {
+  return newestFirst([
+    ...inMonth(flows, month).filter((one) => one.flow.kind === "income"),
+    ...shiftsIn(events, month),
+  ]);
 }
 
 export function eventFor(

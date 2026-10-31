@@ -56,7 +56,8 @@ apps/web/
 
 A module has the same three folders every time: `components/` for what it
 renders, `lib/` for what it computes and stores, `tests/` mirroring both.
-`dashboard/` has only `components/` because it has nothing to compute yet.
+`dashboard/` has no `tests/` of its own: what it computes lives in the bridge
+`lib/for-dashboard.ts`, tested in `tests/lib`.
 Folders are created when they are first needed, not ahead of time.
 
 ---
@@ -72,9 +73,11 @@ Folders are created when they are first needed, not ahead of time.
    and `flow-store.ts` read and write their tables, and `lib/store.ts` asks who
    you are. Nothing else calls Supabase except signing in and out. When the
    NestJS backend arrives, only the inside of those files changes.
-4. **`lib/from-schedule.ts` is the one bridge between modules.** Finance reads
-   work shifts and meals out of the calendar through it, and writes back
-   through it. Neither module knows the other exists.
+4. **Two files in `lib/` are the only bridges between modules.**
+   `from-schedule.ts`: Finance reads work shifts and meals out of the calendar
+   through it, and writes back through it. `for-dashboard.ts`: the Dashboard
+   reads Schedule, Academic and Finance through it, and never writes. No module
+   knows another exists.
 5. **Every type that crosses a boundary comes from `packages/contracts`.**
    `LifeEvent`, `Course`, `Flow` and the lists of types and colours are
    defined once and imported everywhere.
@@ -85,7 +88,7 @@ Folders are created when they are first needed, not ahead of time.
 
 | Route | Page file | Styles and icon | View | Store | Tables |
 | --- | --- | --- | --- | --- | --- |
-| `/` | `app/page.tsx` | `dashboard.css`, `icon.svg` | in the page, plus `today-heading.tsx` | none yet | none yet |
+| `/` | `app/page.tsx` | `dashboard.css`, `icon.svg` | the panels in `modules/dashboard` | the other three stores, through `lib/for-dashboard.ts` | read only: `events`, `semesters`, `courses`, `grade_items`, `flows` |
 | `/schedule` | `app/schedule/page.tsx` | `schedule.css`, `icon.svg` | `schedule-view.tsx` | `event-store.ts` | `users`, `events` |
 | `/academic` | `app/academic/page.tsx` | `academic.css`, `icon.svg` | `academic-view.tsx` | `course-store.ts`, `selection.ts` | `semesters`, `courses`, `categories`, `grade_items` |
 | `/finance` | `app/finance/page.tsx` | `finance.css`, `icon.svg` | `finance-view.tsx` | `flow-store.ts`, plus `lib/from-schedule.ts` | `flows`, and `events` read through the bridge |
@@ -113,16 +116,25 @@ The details of each live in `dashboard.md`, `calendar.md`, `academic.md`,
   every layer   ->   packages/contracts
 ```
 
-The one sideways path, and the only file allowed to take it:
+The two sideways paths, and the only files allowed to take them:
 
 ```
   modules/finance/components/finance-view.tsx
         |
         v
-  lib/from-schedule.ts     shiftsIn, mealsIn, saveFromSchedule, removeFromSchedule
-        |                  also re-exports the event store's subscribe and snapshot
+  lib/from-schedule.ts     shiftsIn, mealsIn, incomeIn, saveFromSchedule,
+        |                  removeFromSchedule; also re-exports the event
+        |                  store's subscribe and snapshot
         v
   modules/schedule/lib/event-store.ts
+
+  modules/dashboard/components/*
+        |
+        v
+  lib/for-dashboard.ts     eventsOn, deadlines; re-exports the three stores
+        |                  and incomeIn, read only
+        v
+  event-store.ts   course-store.ts   flow-store.ts
 ```
 
 ### How a store reaches the screen
@@ -201,8 +213,9 @@ user never sees a white flash.
 | `supabase.ts` | the single Supabase client |
 | `theme.ts` | the light and dark switch, saved as `lifeos.theme` in the browser |
 | `store.ts` | what every store shares, see above, plus who is signed in |
-| `dates.ts` | dates as `2026-03-10` strings: today, moving by days, counting days, `Mar 10` |
+| `dates.ts` | dates as `2026-03-10` strings: today, moving by days, counting days, `Mar 10`, and `dueLabel` for "in 3 days" or "2 days late" |
 | `from-schedule.ts` | the Schedule to Finance bridge |
+| `for-dashboard.ts` | the bridge the Dashboard reads the other three modules through |
 
 ---
 

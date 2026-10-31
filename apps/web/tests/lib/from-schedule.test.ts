@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LifeEvent } from "@lifeos/contracts";
+import type { Flow, LifeEvent } from "@lifeos/contracts";
 
 vi.mock("@/lib/supabase", async () => {
   const { client } = await import("@/tests/helpers/fake-supabase");
   return { supabase: client };
 });
 
-const { costOf, hoursOf, mealsIn, payFor, shiftsIn } = await import(
+const { costOf, hoursOf, incomeIn, mealsIn, payFor, shiftsIn } = await import(
   "@/lib/from-schedule"
 );
 
@@ -279,5 +279,44 @@ describe("pulling the month's meals out of the calendar", () => {
       "2026-03-24",
       "2026-03-31",
     ]);
+  });
+});
+
+describe("the month's income", () => {
+  function flow(over: Partial<Flow> = {}): Flow {
+    seq += 1;
+    return {
+      id: `f-${seq}`,
+      userId: "u1",
+      kind: "income",
+      title: "Paycheck",
+      on: "2026-03-01",
+      amount: 2100,
+      repeat: "once",
+      ...over,
+    } as Flow;
+  }
+
+  it("adds the typed income to the shifts, newest first", () => {
+    const rows = incomeIn(
+      [
+        flow({ title: "Paycheck", on: "2026-03-01" }),
+        flow({ title: "Groceries", kind: "expense", on: "2026-03-08" }),
+        flow({ title: "February", on: "2026-02-27" }),
+      ],
+      [shift({ title: "Cafe", start: at(4, 9), end: at(4, 14), wage: 20 })],
+      MARCH,
+    );
+    expect(rows.map((one) => one.flow.title)).toEqual(["Cafe", "Paycheck"]);
+    expect(rows.map((one) => one.flow.amount)).toEqual([100, 2100]);
+  });
+
+  it("counts a monthly income in every month after it starts", () => {
+    const rows = incomeIn(
+      [flow({ title: "Salary", on: "2026-01-15", repeat: "monthly" })],
+      [],
+      MARCH,
+    );
+    expect(rows.map((one) => one.on)).toEqual(["2026-03-15"]);
   });
 });

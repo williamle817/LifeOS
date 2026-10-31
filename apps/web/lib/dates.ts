@@ -29,3 +29,12 @@ export function shortDate(day: string): string {
     day: "numeric",
   });
 }
+
+export function dueLabel(days: number): string {
+  if (days < 0) return days === -1 ? "1 day late" : `${-days} days late`;
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days < 14) return `in ${days} days`;
+  if (days < 60) return `in ${Math.round(days / 7)} weeks`;
+  return `in ${Math.round(days / 30)} months`;
+}

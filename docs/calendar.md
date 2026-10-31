@@ -33,8 +33,10 @@ Everything above the contract lives in `apps/web/modules/schedule`, components
 in `components/`, the other two in `lib/`, and the tests that cover them in
 `tests/`. The **Apply to** panel, `scope-ask.tsx`, is shared with Finance and so
 lives in `apps/web/components`. Nothing outside the module imports from inside
-it except the route at `app/schedule/page.tsx` and the one bridge,
-`apps/web/lib/from-schedule.ts`, through which Finance reads shifts and meals.
+it except the route at `app/schedule/page.tsx` and two bridges in
+`apps/web/lib`: `from-schedule.ts`, through which Finance reads shifts and
+meals, and `for-dashboard.ts`, through which the Dashboard reads today's
+events.
 `structure.md` shows how the whole app fits around it.
 
 Two things this buys:

@@ -3,6 +3,7 @@ import {
   daysBetween,
   isoDay,
   parseDay,
+  dueLabel,
   shiftDay,
   shortDate,
 } from "@/lib/dates";
@@ -61,5 +62,23 @@ describe("daysBetween", () => {
 describe("shortDate", () => {
   it("reads as month and day", () => {
     expect(shortDate("2026-03-05")).toBe("Mar 5");
+  });
+});
+
+describe("dueLabel", () => {
+  it("counts late work back in days", () => {
+    expect(dueLabel(-1)).toBe("1 day late");
+    expect(dueLabel(-4)).toBe("4 days late");
+  });
+
+  it("names today and tomorrow", () => {
+    expect(dueLabel(0)).toBe("today");
+    expect(dueLabel(1)).toBe("tomorrow");
+  });
+
+  it("moves to weeks after two weeks and months after two months", () => {
+    expect(dueLabel(13)).toBe("in 13 days");
+    expect(dueLabel(21)).toBe("in 3 weeks");
+    expect(dueLabel(90)).toBe("in 3 months");
   });
 });

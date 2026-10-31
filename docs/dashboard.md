@@ -1,11 +1,11 @@
 # Dashboard
 
 The home page at `/`. It is meant to answer one question when you open LifeOS:
-what does today look like. For now it is the design only: four panels that say
-what they will hold and link to the page that already holds it. Nothing is
-wired to data yet, on purpose, so the layout could be settled first.
+what does today look like. Four panels each give a short read of one page and
+link to it: today's events, the work that is due or late, this month's income.
+Fitness is not built yet, so its panel only says what will live there.
 
-Written 2026-10-10.
+Written 2026-10-10, wired to data 2026-10-31.
 
 ---
 
@@ -17,16 +17,16 @@ Written 2026-10-10.
 
   +----------------------------+  +----------------------------+
   | Today                      |  | Academic                   |
-  | Today's events will show   |  | Your courses and grades    |
-  | here.                      |  | will show here.            |
-  |                            |  |                            |
+  | All day   Birthday         |  | Oct 29  Essay  2 days late |
+  | 9:00 AM   Morning gym      |  | Nov 1   Quiz 2   tomorrow  |
+  | 2:00 PM   Lecture          |  | Nov 6   HW 4    in 6 days  |
   | Open Schedule              |  | Open Academic              |
   +----------------------------+  +----------------------------+
   +----------------------------+  +----------------------------+
   | Finance                    |  | Fitness                    |
-  | This month's income will   |  | Your workouts will show    |
-  | show here.                 |  | here.                      |
-  |                            |  |                            |
+  | Income in October 2026     |  | Your workouts will show    |
+  | $2,197.00                  |  | here.                      |
+  | Cafe shift  Oct 31  $97.00 |  |                            |
   | Open Finance               |  | Open Fitness               |
   +----------------------------+  +----------------------------+
 ```
@@ -52,9 +52,36 @@ block, so the colours come from one place. That is why `app/page.tsx` imports
 all four page stylesheets. At night every panel takes the Dashboard's night
 colours instead.
 
-**The panels say "will show here", not "nothing today".** They are not
-connected to anything yet, so saying there is nothing on your calendar would be
-a false statement about your calendar.
+### Today
+
+Every event that touches today, repeating ones included: all day events first,
+then the rest by start time, each as a small block in its own event colour with
+the start and end time beside it. An event that started last night and runs
+past midnight counts, one that ends exactly at midnight does not.
+
+### Academic
+
+Every item **with a due date and no score yet** across all the courses of the
+current semester, which is the one Academic opens on by default: the most
+recent semester that has started. Late work is included and comes first,
+because the list runs by due date. Each row shows the date, the item, the
+course code with its colour dot, and how far off it is, in red from three days
+out and once it is late. Older semesters are left out on purpose, so a score
+never entered last year does not sit here as late forever.
+
+### Finance
+
+This month's income total, large, in the income green, and the lines behind it,
+newest first. It is the same sum the Finance page shows: typed income plus the
+pay for every work shift on the calendar, including income dated later in the
+month, since Finance does not split income at today either.
+
+### Fitness
+
+Unchanged: it says what will live there and links to the page.
+
+**Each list shows five rows at most**, then "and N more"; the page behind it
+has the rest. With nothing to show, a panel says so in one line.
 
 ---
 
@@ -99,7 +126,7 @@ the same treatment, built from this palette; see `structure.md`.
 
 **The brightness is in the large areas, the text stays dark enough to read.**
 The mint shows in the page, the panels, the nav pill and the borders. Links and
-the brand dot use a deeper mint, because a bright mint cannot be read as text.
+the brand mark use a deeper mint, because a bright mint cannot be read as text.
 At night the bright mint is used directly, since there it is light text on a
 dark surface.
 
@@ -110,29 +137,43 @@ The tab icon is `app/icon.svg`, a white L on `#05664b`.
 ## Files
 
 ```
-app/page.tsx                                   the page and the four panels;
-                                               imports every page's CSS for the panel colours
-app/dashboard.css                              its colours
-app/icon.svg                                   its tab icon
-modules/dashboard/components/today-heading.tsx the date
+app/page.tsx                                      the page and the four panels;
+                                                  imports every page's CSS for the panel colours
+app/dashboard.css                                 its colours
+app/icon.svg                                      its tab icon
+modules/dashboard/components/panel.tsx            the panel shell, and the five row cap
+modules/dashboard/components/today-heading.tsx    the date
+modules/dashboard/components/today-events.tsx     the Today list
+modules/dashboard/components/deadlines.tsx        the Academic list
+modules/dashboard/components/month-income.tsx     the Finance total and list
+modules/dashboard/lib/today.ts                    today's date as a store, ticking every minute
+lib/for-dashboard.ts                              the bridge to the other three modules
+tests/lib/for-dashboard.test.ts                   what counts as today and as due
+tests/e2e/dashboard/dashboard.spec.ts             the three panels against seeded data
 ```
 
-The panel list is a small array at the top of `app/page.tsx`: title, the line
-of text, the page it opens. Adding or reordering a panel is an edit there.
+The four panels are written out in `app/page.tsx`, each a `Panel` with its
+content inside. Adding or reordering a panel is an edit there.
 
 ---
 
-## What comes next
+## Where the data comes from
 
-Each panel will show real data from the page it links to. None of it needs a
-new table, because every module already stores what the Dashboard would show:
+No new table. The Dashboard reads the stores the other pages already load, so
+opening it and then a page costs nothing extra, and the stay fresh refresh on
+tab focus covers it too.
 
-| Panel | Would read | From |
-| --- | --- | --- |
-| Today | the events that fall today | `event-store.ts`, expanded with `recurrence.ts` |
-| Academic | the current grade of each course | `course-store.ts` and `grade.ts` |
-| Finance | this month's income total | `flow-store.ts` and `lib/from-schedule.ts`, the same sum the Finance page shows |
-| Fitness | this week's workouts | nothing yet; Fitness is not built |
+A module may not import another module, so `modules/dashboard` reaches the
+other three through `lib/for-dashboard.ts`, a bridge beside `from-schedule.ts`.
+It re-exports what each store offers (`subscribe`, the snapshots,
+`ensureLoaded`) and holds the two pieces of logic only the Dashboard needs:
 
-The Dashboard would read those stores without importing a module's view, the
-same rule every page follows: anything shared moves up to `lib/`.
+| Function | What it decides |
+| --- | --- |
+| `eventsOn(events, day)` | the events that touch a day, expanded from their repeat rules, sorted |
+| `deadlines(academic, day)` | unmarked, dated items in the current semester's courses, by due date |
+
+The income comes from `incomeIn` in `lib/from-schedule.ts`, which the Finance
+page now uses as well, so the two figures cannot drift apart. The "in 3 days",
+"2 days late" wording is `dueLabel` in `lib/dates.ts`, moved up from Academic's
+Coming up so both say it the same way.

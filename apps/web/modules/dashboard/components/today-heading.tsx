@@ -1,25 +1,16 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-
-function subscribe(onChange: () => void) {
-  const id = setInterval(onChange, 60_000);
-  return () => clearInterval(id);
-}
-
-function getSnapshot(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
-}
-
-function getServerSnapshot(): string {
-  return "";
-}
+import { parseDay } from "@/lib/dates";
+import {
+  getServerSnapshot,
+  getSnapshot,
+  subscribe,
+} from "@/modules/dashboard/lib/today";
 
 export function TodayHeading() {
-  const key = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const [year, month, day] = key.split("-").map(Number);
-  const date = key ? new Date(year, month, day) : null;
+  const day = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const date = day ? parseDay(day) : null;
 
   return (
     <header className="min-h-24 px-1 pt-2 sm:min-h-32">

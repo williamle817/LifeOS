@@ -1,16 +1,7 @@
 "use client";
 
 import type { Category, GradeItem } from "@lifeos/contracts";
-import { daysBetween, isoDay, shortDate } from "@/lib/dates";
-
-function whenLabel(days: number): string {
-  if (days < 0) return days === -1 ? "1 day late" : `${-days} days late`;
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  if (days < 14) return `in ${days} days`;
-  if (days < 60) return `in ${Math.round(days / 7)} weeks`;
-  return `in ${Math.round(days / 30)} months`;
-}
+import { daysBetween, dueLabel, isoDay, shortDate } from "@/lib/dates";
 
 function dueOrder(a: GradeItem, b: GradeItem): number {
   const left = a.dueOn ?? "";
@@ -71,7 +62,7 @@ export function Upcoming({
                     soon ? "font-bold" : "font-medium text-ink-faint"
                   }`}
                 >
-                  {whenLabel(days)}
+                  {dueLabel(days)}
                 </span>
               </li>
             );

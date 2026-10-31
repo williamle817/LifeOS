@@ -7,10 +7,10 @@ import {
   eventFor,
   eventsServer,
   eventsSnapshot,
+  incomeIn,
   mealsIn,
   removeFromSchedule,
   saveFromSchedule,
-  shiftsIn,
   subscribeEvents,
 } from "@/lib/from-schedule";
 import {
@@ -55,18 +55,14 @@ export function FinanceView() {
   }, []);
 
   const userId = currentUserId() ?? "";
-  const shown = inMonth(flows, month);
-  const fromCalendar = useMemo(
-    () => ({ shifts: shiftsIn(events, month), meals: mealsIn(events, month) }),
-    [events, month],
+  const income = useMemo(
+    () => incomeIn(flows, events, month),
+    [flows, events, month],
   );
-  const income = newestFirst([
-    ...shown.filter((one) => one.flow.kind === "income"),
-    ...fromCalendar.shifts,
-  ]);
+  const meals = useMemo(() => mealsIn(events, month), [events, month]);
   const spending = [
-    ...shown.filter((one) => one.flow.kind === "expense"),
-    ...fromCalendar.meals,
+    ...inMonth(flows, month).filter((one) => one.flow.kind === "expense"),
+    ...meals,
   ];
   const gone = newestFirst(settled(spending));
   const due = pending(spending);
