@@ -3,9 +3,14 @@
 import { useState } from "react";
 import type { EditScope, Flow, FlowKind, FlowRepeat } from "@lifeos/contracts";
 import { EXPENSE_TYPES, FLOW_REPEATS, INCOME_TYPES } from "@lifeos/contracts";
-import { ActionIcon } from "@/components/icons";
+import { ActionIcon, NavIcon } from "@/components/icons";
 import { Labeled } from "@/components/labeled";
-import { inputSmall as input, primary, quietOnMuted } from "@/components/styles";
+import {
+  inputSmall as input,
+  primary,
+  quiet,
+  quietOnMuted,
+} from "@/components/styles";
 import { Modal } from "@/components/modal";
 import { ScopeAsk } from "@/components/scope-ask";
 import { shortDate } from "@/lib/dates";
@@ -23,6 +28,8 @@ const REPEAT_LABEL: Record<FlowRepeat, string> = {
   yearly: "Every year",
 };
 
+const SHOWN = 10;
+
 type Asking = { flow: Flow; on: string; next: Flow | null };
 
 function repeats(row: Dated): boolean {
@@ -37,6 +44,7 @@ export function FlowPanel({
   onAdd,
   onSave,
   onRemove,
+  switcher,
 }: {
   kind: FlowKind;
   rows: Dated[];
@@ -45,6 +53,7 @@ export function FlowPanel({
   onAdd: (flow: Flow) => void;
   onSave: (flow: Flow, on: string, next: Flow, scope: EditScope | null) => void;
   onRemove: (flow: Flow, on: string, scope: EditScope | null) => void;
+  switcher?: React.ReactNode;
 }) {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
@@ -55,11 +64,13 @@ export function FlowPanel({
   const [on, setOn] = useState(() => dayOf(month, 1));
   const [amount, setAmount] = useState("");
   const [repeat, setRepeat] = useState<FlowRepeat>("once");
+  const [all, setAll] = useState(false);
 
   const heading = kind === "income" ? "Income" : "Expenses";
   const ink = kind === "income" ? "var(--money-in)" : "var(--money-out)";
   const types = kind === "income" ? INCOME_TYPES : EXPENSE_TYPES;
   const sum = total(rows);
+  const shown = all ? rows : rows.slice(0, SHOWN);
 
   function reset(startOn: string) {
     setTitle("");
@@ -210,17 +221,21 @@ export function FlowPanel({
       aria-label={heading}
       className="overflow-hidden rounded-panel bg-surface shadow-soft"
     >
-      <header className="flex items-center gap-2.5 bg-surface-muted px-5 py-4">
-        <span
-          aria-hidden="true"
-          style={{
-            backgroundColor: `var(--event-${
-              kind === "income" ? "green" : "red"
-            }-line)`,
-          }}
-          className="size-2.5 shrink-0 rounded-full"
-        />
-        <h3 className="font-display text-2xl font-medium">{heading}</h3>
+      <header className="flex flex-wrap items-center gap-2.5 bg-surface-muted px-5 py-4">
+        {switcher ?? (
+          <>
+            <span
+              aria-hidden="true"
+              style={{
+                backgroundColor: `var(--event-${
+                  kind === "income" ? "green" : "red"
+                }-line)`,
+              }}
+              className="size-2.5 shrink-0 rounded-full"
+            />
+            <h3 className="font-display text-2xl font-medium">{heading}</h3>
+          </>
+        )}
         <span
           style={{ color: ink }}
           className="ml-auto text-base font-bold tabular-nums"
@@ -231,7 +246,7 @@ export function FlowPanel({
 
       {rows.length ? (
         <ul className="divide-y divide-surface-muted">
-          {rows.map((row) => {
+          {shown.map((row) => {
             const { flow, on: when } = row;
             return editing === flow.id ? (
               <li key={flow.id} className="bg-canvas px-5 py-4">
@@ -267,16 +282,24 @@ export function FlowPanel({
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{flow.title}</span>
-                  <span className="text-xs text-ink-faint">
-                    {[
-                      shortDate(when),
-                      flow.category,
-                      flow.place,
-                      flow.eventId ? "from Schedule" : null,
-                      flow.repeat === "once" ? null : REPEAT_LABEL[flow.repeat],
-                    ]
+                  <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-ink-faint [&_svg]:size-3.5">
+                    {[shortDate(when), flow.category, flow.place]
                       .filter(Boolean)
                       .join(" · ")}
+                    {flow.eventId ? (
+                      <span title="From Schedule" className="inline-flex">
+                        <NavIcon name="schedule" />
+                        <span className="sr-only">from Schedule</span>
+                      </span>
+                    ) : null}
+                    {flow.repeat === "once" ? null : (
+                      <span title={REPEAT_LABEL[flow.repeat]} className="inline-flex">
+                        <ActionIcon name="repeat" />
+                        <span className="sr-only">
+                          {REPEAT_LABEL[flow.repeat]}
+                        </span>
+                      </span>
+                    )}
                   </span>
                 </span>
 
@@ -313,6 +336,19 @@ export function FlowPanel({
           Nothing in {heading.toLowerCase()} this month.
         </p>
       )}
+
+      {rows.length > SHOWN ? (
+        <div className="flex justify-center border-t border-surface-muted p-2">
+          <button
+            type="button"
+            aria-expanded={all}
+            onClick={() => setAll(!all)}
+            className={quiet}
+          >
+            {all ? "Show less" : `View ${rows.length - SHOWN} more`}
+          </button>
+        </div>
+      ) : null}
 
       <div className="bg-surface-muted px-5 py-4">
         {adding ? (

@@ -6,7 +6,8 @@ vi.mock("@/lib/supabase", async () => {
   return { supabase: client };
 });
 
-const { costOf, hoursOf, incomeIn, mealsIn, payFor, shiftsIn } = await import(
+const { costOf, hoursOf, incomeIn, mealsIn, payFor, shiftsIn, spendingIn } =
+  await import(
   "@/lib/from-schedule"
 );
 
@@ -30,6 +31,20 @@ function shift(over: Partial<LifeEvent> = {}): LifeEvent {
     wage: 20,
     ...over,
   } as LifeEvent;
+}
+
+function flow(over: Partial<Flow> = {}): Flow {
+  seq += 1;
+  return {
+    id: `f-${seq}`,
+    userId: "u1",
+    kind: "income",
+    title: "Paycheck",
+    on: "2026-03-01",
+    amount: 2100,
+    repeat: "once",
+    ...over,
+  } as Flow;
 }
 
 describe("how long a shift ran", () => {
@@ -283,20 +298,6 @@ describe("pulling the month's meals out of the calendar", () => {
 });
 
 describe("the month's income", () => {
-  function flow(over: Partial<Flow> = {}): Flow {
-    seq += 1;
-    return {
-      id: `f-${seq}`,
-      userId: "u1",
-      kind: "income",
-      title: "Paycheck",
-      on: "2026-03-01",
-      amount: 2100,
-      repeat: "once",
-      ...over,
-    } as Flow;
-  }
-
   it("adds the typed income to the shifts, newest first", () => {
     const rows = incomeIn(
       [
@@ -318,5 +319,19 @@ describe("the month's income", () => {
       MARCH,
     );
     expect(rows.map((one) => one.on)).toEqual(["2026-03-15"]);
+  });
+});
+
+describe("the month's spending", () => {
+  it("adds the meals to the typed expenses and leaves income out", () => {
+    const rows = spendingIn(
+      [
+        flow({ title: "Rent", kind: "expense", on: "2026-03-01", amount: 900 }),
+        flow({ title: "Paycheck", on: "2026-03-01" }),
+      ],
+      [meal({ title: "Pho", start: at(6, 19), end: at(6, 20), amount: 14 })],
+      MARCH,
+    );
+    expect(rows.map((one) => one.flow.title)).toEqual(["Rent", "Pho"]);
   });
 });

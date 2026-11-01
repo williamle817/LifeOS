@@ -58,6 +58,7 @@ export function SplitChart({
   const sum = income + expense;
   const share = sum > 0 ? (income / sum) * RING : 0;
   const net = round(income - expense);
+  const spent = income > 0 ? Math.round((expense / income) * 100) : null;
   const netInk =
     net > 0 ? "var(--money-in)" : net < 0 ? "var(--money-out)" : "var(--ink)";
 
@@ -102,21 +103,21 @@ export function SplitChart({
         ) : null}
         <text
           x="64"
-          y="56"
+          y="66"
           textAnchor="middle"
-          fill="var(--ink-muted)"
-          className="text-[9px]"
+          fill="var(--ink)"
+          className="font-display text-[26px] font-medium"
         >
-          Net
+          {spent === null ? "--" : `${spent}%`}
         </text>
         <text
           x="64"
-          y="75"
+          y="81"
           textAnchor="middle"
-          fill={netInk}
-          className="font-display text-[17px] font-medium"
+          fill="var(--ink-muted)"
+          className="text-[8.5px]"
         >
-          {money(net)}
+          of income spent
         </text>
       </svg>
 

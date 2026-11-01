@@ -13,7 +13,8 @@ body:has([data-page="schedule"]),
   --shade: var(--ink);
 }
 
-:root[data-theme="night"] body:has([data-page="schedule"]) {
+:root[data-theme="night"] body:has([data-page="schedule"]),
+:root[data-theme="night"] [data-tone="schedule"] {
   --accent: #c9ced8;
   --accent-soft: #2b2f38;
 }
@@ -74,7 +75,7 @@ body:has([data-page="schedule"]) main {
 }
 
 [data-page="schedule"] .fc .fc-today-button.fc-button:disabled {
-  opacity: 0.55;
+  visibility: hidden;
 }
 
 [data-page="schedule"] .fc .fc-button-group {
@@ -123,6 +124,12 @@ body:has([data-page="schedule"]) main {
   border-bottom-width: 0;
 }
 
+@media (width < 48rem) {
+  body:has([data-page="schedule"]) main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
 @media (width < 40rem) {
   [data-page="schedule"] .fc .fc-header-toolbar.fc-toolbar {
     flex-direction: column;
@@ -147,7 +154,7 @@ body:has([data-page="schedule"]) main {
   --fc-border-color: var(--line);
   --fc-page-bg-color: var(--surface);
   --fc-neutral-bg-color: var(--surface-muted);
-  --fc-today-bg-color: transparent;
+  --fc-today-bg-color: color-mix(in srgb, var(--accent-soft) 45%, transparent);
   --fc-event-bg-color: var(--event-blue);
   --fc-event-border-color: var(--event-blue-line);
   --fc-event-text-color: var(--event-blue-ink);
@@ -244,4 +251,8 @@ body:has([data-page="schedule"]) main {
 
 .fc .fc-timeGridWeek-view .fc-timegrid-col-events {
   margin-right: 12%;
+}
+
+[data-page="schedule"] .fc .fc-col-header-cell.fc-day-today {
+  background: var(--fc-today-bg-color);
 }

@@ -10,14 +10,17 @@ Written 2026-10-10.
 
 ## What is there now
 
-An empty state: the Fitness icon, a large heading, a line saying what will
-live here, three small chips naming what each session will record (workout
-type, duration, calories burned), and a **Log a workout in Schedule** button,
-because a workout is entered on the calendar as a gym event today.
+**This week, read from the calendar**, since 2026-11-01. Every gym event from
+Monday to Sunday, repeating ones expanded, gives three numbers (sessions, time,
+calories) and a list: the day, the event, its workout, calories, duration.
+Nothing new is stored: `lib/for-fitness.ts` reads the event store the way
+`from-schedule.ts` does for Finance, and editing still happens on the event in
+Schedule. Tests in `tests/lib/for-fitness.test.ts`.
 
-That is `components/empty-state.tsx`, the same shared piece any unbuilt page can
-use, wrapped in a `div` that carries `data-page="fitness"` so the page's colours
-apply.
+A week with no gym event shows the empty state: "No workouts this week", a line
+saying a gym event in Schedule shows up here, the three chips, and **Log a
+workout in Schedule**. The old line about waiting for the backend was removed,
+because Supabase is the backend now.
 
 ---
 

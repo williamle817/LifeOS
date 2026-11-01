@@ -12,3 +12,8 @@ body:has([data-page="academic"]),
   --accent-soft: #bfd9fe;
   --shade: var(--ink);
 }
+
+:root[data-theme="night"] [data-tone="academic"] {
+  --accent: #4c9aff;
+  --accent-soft: #23314a;
+}

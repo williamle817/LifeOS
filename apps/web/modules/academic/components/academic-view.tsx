@@ -39,7 +39,7 @@ import { LetterPill } from "@/modules/academic/components/letter-pill";
 import { GradeTrack } from "@/modules/academic/components/grade-track";
 import { move } from "@/components/reorder";
 import { SaveError } from "@/components/save-error";
-import { soft, tint } from "@/components/styles";
+import { soft } from "@/components/styles";
 
 export function AcademicView() {
   const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -193,57 +193,61 @@ export function AcademicView() {
               </button>
             </div>
 
-            <GradeTrack
-              course={course}
-              banked={grade.banked}
-              ceiling={grade.ceiling}
-            />
+            <div className="flex flex-col gap-4">
+              <dl className="flex flex-wrap items-start gap-x-10 gap-y-4">
+                <div>
+                  <dt className="text-[13px] font-medium text-ink-muted">
+                    Current grade
+                  </dt>
+                  <dd className="mt-1 flex h-12 items-end gap-2.5">
+                    <span
+                      style={{
+                        color: `var(--event-${course.color ?? "blue"}-ink)`,
+                      }}
+                      className="font-display text-5xl leading-none font-medium tabular-nums"
+                    >
+                      {grade.currentGrade === null
+                        ? "--"
+                        : `${show(grade.currentGrade)}%`}
+                    </span>
+                    {grade.letter ? <LetterPill letter={grade.letter} /> : null}
+                  </dd>
+                </div>
 
-            <dl className="grid gap-3.5 sm:grid-cols-3">
-              <div
-                style={tint(course.color ?? "blue")}
-                className="rounded-card border p-5"
-              >
-                <dt className="text-[13px] font-medium">Current grade</dt>
-                <dd className="mt-2 flex items-baseline gap-2.5">
-                  <span className="font-display text-5xl leading-none font-medium tabular-nums">
-                    {grade.currentGrade === null
-                      ? "--"
-                      : `${show(grade.currentGrade)}%`}
-                  </span>
-                  {grade.letter ? <LetterPill letter={grade.letter} /> : null}
-                </dd>
-              </div>
-
-              <div className="rounded-card bg-canvas p-5">
-                <dt className="text-[13px] font-medium text-ink-muted">Earned</dt>
-                <dd className="mt-2 flex items-baseline gap-2.5">
-                  <span className="flex items-baseline gap-1.5">
-                    <span className="font-display text-5xl leading-none font-medium tabular-nums">
+                <div>
+                  <dt className="text-[13px] font-medium text-ink-muted">Earned</dt>
+                  <dd className="mt-1 flex h-12 items-end gap-2">
+                    <span className="font-display text-3xl leading-none font-medium tabular-nums">
                       {show(grade.banked)}
                     </span>
-                    <span className="text-[15px] text-ink-faint">/ 100</span>
-                  </span>
-                  {grade.bankedLetter === "F" ? null : (
-                    <LetterPill letter={grade.bankedLetter} />
-                  )}
-                </dd>
-              </div>
+                    <span className="text-sm text-ink-faint">/ 100</span>
+                    {grade.bankedLetter === "F" ? null : (
+                      <LetterPill letter={grade.bankedLetter} />
+                    )}
+                  </dd>
+                </div>
 
-              <div className="rounded-card bg-canvas p-5">
-                <dt className="text-[13px] font-medium text-ink-muted">
-                  Maximum attainable
-                </dt>
-                <dd className="mt-2 flex items-baseline gap-2.5">
-                  <span className="font-display text-5xl leading-none font-medium tabular-nums">
-                    {show(grade.ceiling)}%
-                  </span>
-                  {grade.ceilingLetter === "F" ? null : (
-                    <LetterPill letter={grade.ceilingLetter} />
-                  )}
-                </dd>
-              </div>
-            </dl>
+                <div>
+                  <dt className="text-[13px] font-medium text-ink-muted">
+                    Maximum attainable
+                  </dt>
+                  <dd className="mt-1 flex h-12 items-end gap-2">
+                    <span className="font-display text-3xl leading-none font-medium tabular-nums">
+                      {show(grade.ceiling)}%
+                    </span>
+                    {grade.ceilingLetter === "F" ? null : (
+                      <LetterPill letter={grade.ceilingLetter} />
+                    )}
+                  </dd>
+                </div>
+              </dl>
+
+              <GradeTrack
+                course={course}
+                banked={grade.banked}
+                ceiling={grade.ceiling}
+              />
+            </div>
           </section>
 
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
@@ -267,12 +271,13 @@ export function AcademicView() {
               }}
             />
 
-            <div className="rounded-panel bg-surface p-6 shadow-soft lg:sticky lg:top-28">
+            <div className="order-first rounded-panel bg-surface p-6 shadow-soft lg:sticky lg:top-28 lg:order-none">
               <Upcoming
-                items={data.items.filter(
-                  (item) => item.courseId === course.id,
+                items={data.items.filter((item) =>
+                  courses.some((one) => one.id === item.courseId),
                 )}
-                categories={mine}
+                courses={courses}
+                categories={data.categories}
               />
             </div>
           </div>

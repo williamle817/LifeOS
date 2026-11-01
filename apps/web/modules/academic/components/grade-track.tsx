@@ -59,16 +59,6 @@ export function GradeTrack({
         ))}
         <span className="absolute right-0">100</span>
       </div>
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-ink-muted">
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="h-2.5 w-5 rounded-full" style={solid} />
-          Earned {show(earned)}
-        </span>
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="h-2.5 w-5 rounded-full" style={open} />
-          Still possible, up to {show(reach)}
-        </span>
-      </div>
     </div>
   );
 }

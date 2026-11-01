@@ -182,6 +182,28 @@ That was asked for on the expense side only; it is a decision, not an oversight.
 
 ---
 
+## The page, since 2026-11-01
+
+- **The month bar** keeps both arrows on one row on a phone, with the month
+  between them at a smaller size. **This month** appears in its own grid column
+  to the right, so the arrows do not shift when it shows up.
+- **The ring's centre says how much of the income went out**, "45% of income
+  spent", rounded; "--" when there is no income. It used to repeat the Left
+  over figure.
+- **Income and Expenses share one panel** with a switch in its header,
+  `side-switch.tsx`: two tabs, each with its count, arrow keys move between
+  them, Expenses first. Income is usually a few lines and Expenses a few dozen,
+  so two columns left a large empty space. The panel keeps the region name of
+  the side on show, "Income" or "Expenses".
+- **Each list shows its ten newest lines**, then **View N more** opens the rest
+  and **Show less** folds them back. The total in the header is always the
+  whole month.
+- **The line under each entry** is the date, the type and the place.
+  "from Schedule" is a small calendar icon and a repeat is a small repeat icon,
+  each with the words in a `title` and a screen reader only label.
+
+---
+
 ## Editing and deleting a series
 
 A monthly or yearly entry raises the same **Apply to** panel the calendar

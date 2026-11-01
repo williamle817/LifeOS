@@ -73,11 +73,12 @@ Folders are created when they are first needed, not ahead of time.
    and `flow-store.ts` read and write their tables, and `lib/store.ts` asks who
    you are. Nothing else calls Supabase except signing in and out. When the
    NestJS backend arrives, only the inside of those files changes.
-4. **Two files in `lib/` are the only bridges between modules.**
+4. **Three files in `lib/` are the only bridges between modules.**
    `from-schedule.ts`: Finance reads work shifts and meals out of the calendar
    through it, and writes back through it. `for-dashboard.ts`: the Dashboard
-   reads Schedule, Academic and Finance through it, and never writes. No module
-   knows another exists.
+   reads Schedule, Academic and Finance through it, and never writes.
+   `for-fitness.ts`: Fitness reads gym events out of the calendar, and never
+   writes. No module knows another exists.
 5. **Every type that crosses a boundary comes from `packages/contracts`.**
    `LifeEvent`, `Course`, `Flow` and the lists of types and colours are
    defined once and imported everywhere.
@@ -188,9 +189,9 @@ user never sees a white flash.
 
 | File | What it is |
 | --- | --- |
-| `topbar.tsx` | the floating bar across the top; on a phone the nav drops to a scrolling row of its own |
+| `topbar.tsx` | the floating bar across the top: brand, nav, theme toggle, sign out |
 | `brand.tsx` | the two ring mark and the LifeOS name, used by the top bar and the sign in card |
-| `nav.tsx` | the page links, built from `lib/nav.ts` |
+| `nav.tsx` | the page links, built from `lib/nav.ts`; in the top bar on a computer, a tab bar fixed to the bottom of the screen on a phone; hidden until you are signed in |
 | `icons.tsx` | every icon as an inline SVG path; there is no icon library |
 | `auth-gate.tsx` | the sign in form, shown until there is a session, in the Dashboard's mint |
 | `stay-fresh.tsx` | reloads the open stores when a tab regains focus |

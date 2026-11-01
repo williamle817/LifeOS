@@ -305,7 +305,16 @@ How that is built, all in `app/schedule/schedule.css` and `schedule-view.tsx`:
   full hour, one hour long. It is a FullCalendar custom button, so it sits in
   the toolbar FullCalendar draws.
 * Each day name has its date under it in a circle, filled with the accent on
-  today.
+  today, and **today's whole column carries a pale wash**,
+  `--fc-today-bg-color` at 45 percent of `accent-soft`.
+* **Today hides while today is on screen.** FullCalendar disables it then, and
+  a disabled grey button read as broken; it is `visibility: hidden`, so the
+  arrows never move when it comes back.
+* **A phone opens on 3 Days**, yesterday to tomorrow, because seven columns at
+  390px cut every title to a few letters. It is a FullCalendar view,
+  `timeGridThreeDay`, also offered on the switch everywhere; the switch to it
+  happens in an effect on mount, through the calendar's ref, when
+  `matchMedia("(width < 48rem)")` matches.
 
 The columns are wider than they were inside a card, so a Vietnamese title like
 "Ca sáng quán cà phê" now fits in a week view block instead of being cut short.

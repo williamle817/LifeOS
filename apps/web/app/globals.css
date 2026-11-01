@@ -90,6 +90,10 @@
     0 30px 60px -24px color-mix(in srgb, var(--shade) 45%, transparent);
 }
 
+html {
+  scrollbar-gutter: stable both-edges;
+}
+
 body {
   --shade: var(--ink);
   background: var(--canvas);

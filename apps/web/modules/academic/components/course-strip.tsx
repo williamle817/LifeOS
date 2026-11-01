@@ -119,9 +119,21 @@ export function CourseStrip({
       <button
         type="button"
         onClick={onNew}
-        className="flex min-h-40 w-44 items-center justify-center gap-2 rounded-panel border-2 border-dashed border-line-strong px-4 text-sm font-semibold text-ink-muted transition-colors hover:border-accent hover:text-accent"
+        aria-label="New course"
+        title="New course"
+        className="grid size-12 shrink-0 place-items-center self-center rounded-full bg-accent text-surface shadow-float transition hover:brightness-110 active:scale-[0.97]"
       >
-        New course
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          className="size-5"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
       </button>
     </div>
   );

@@ -13,7 +13,7 @@ import {
   getServerSnapshot,
   getSnapshot,
   subscribe,
-} from "@/modules/dashboard/lib/today";
+} from "@/lib/today";
 import { More, SHOWN } from "@/modules/dashboard/components/panel";
 
 export function Deadlines() {

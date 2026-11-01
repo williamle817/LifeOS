@@ -127,6 +127,7 @@ describe("the academic page, a semester with no courses", () => {
   it("deletes the semester once the question is answered", async () => {
     const user = userEvent.setup();
     render(<AcademicView />);
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
     await user.click(screen.getByRole("button", { name: "Delete semester" }));
     expect(deletedSemesters).toEqual([]);
 

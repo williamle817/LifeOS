@@ -111,6 +111,17 @@ export function incomeIn(
   ]);
 }
 
+export function spendingIn(
+  flows: Flow[],
+  events: LifeEvent[],
+  month: Month,
+): Dated[] {
+  return [
+    ...inMonth(flows, month).filter((one) => one.flow.kind === "expense"),
+    ...mealsIn(events, month),
+  ];
+}
+
 export function eventFor(
   events: LifeEvent[],
   month: Month,

@@ -25,3 +25,8 @@ body:has([data-page="fitness"]),
   --accent: #ff8f57;
   --accent-soft: #40200f;
 }
+
+:root[data-theme="night"] [data-tone="fitness"] {
+  --accent: #ff8f57;
+  --accent-soft: #40200f;
+}

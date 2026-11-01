@@ -42,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full font-sans">
         <div className="flex min-h-dvh flex-col">
           <TopBar />
-          <main className="flex flex-1 flex-col px-4 pt-8 pb-12 md:px-6 md:pt-10">
+          <main className="flex flex-1 flex-col px-4 pt-8 pb-28 md:px-6 md:pt-10 md:pb-12">
             <AuthGate>
               <StayFresh />
               {children}

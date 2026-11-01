@@ -94,9 +94,8 @@ describe("the panel of entries", () => {
     setup([
       flow({ place: "The market", repeat: "monthly", on: "2026-03-04" }),
     ]);
-    expect(
-      screen.getByText("Mar 4 · The market · Every month"),
-    ).toBeTruthy();
+    expect(screen.getByText("Mar 4 · The market")).toBeTruthy();
+    expect(screen.getByTitle("Every month")).toBeTruthy();
   });
 
   it("says nothing about a repeat on a one off", () => {
@@ -429,7 +428,8 @@ describe("a row that came from the calendar", () => {
 
   it("says where it came from, filed under Work", () => {
     setupRows([row()], "income");
-    expect(screen.getByText(/Work \u00b7 The cafe \u00b7 from Schedule/)).toBeTruthy();
+    expect(screen.getByText(/Work \u00b7 The cafe/)).toBeTruthy();
+    expect(screen.getByTitle("From Schedule")).toBeTruthy();
   });
 
   it("counts toward the total like any other income", () => {
@@ -547,5 +547,38 @@ describe("a row that came from the calendar", () => {
   it("leaves an entry typed in here alone", () => {
     setup([flow({ kind: "income", title: "Tutoring" })], "income");
     expect(screen.getByRole("button", { name: "Edit Tutoring" })).toBeTruthy();
+  });
+});
+
+describe("a long month", () => {
+  function many(count: number): Flow[] {
+    return Array.from({ length: count }, (_, i) =>
+      flow({ title: `Entry ${i + 1}`, on: `2026-03-${String(i + 1).padStart(2, "0")}` }),
+    );
+  }
+
+  it("shows the first ten and says how many more there are", () => {
+    setup(many(13));
+    expect(screen.getAllByRole("listitem")).toHaveLength(10);
+    expect(screen.getByRole("button", { name: "View 3 more" })).toBeTruthy();
+  });
+
+  it("opens to every entry and folds back to ten", async () => {
+    const user = userEvent.setup();
+    setup(many(13));
+    await user.click(screen.getByRole("button", { name: "View 3 more" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(13);
+    await user.click(screen.getByRole("button", { name: "Show less" }));
+    expect(screen.getAllByRole("listitem")).toHaveLength(10);
+  });
+
+  it("keeps the total for the whole month while folded", () => {
+    setup(many(13));
+    expect(screen.getByText("$520.00")).toBeTruthy();
+  });
+
+  it("offers no toggle when ten or fewer entries fit", () => {
+    setup(many(10));
+    expect(screen.queryByRole("button", { name: /more|less/ })).toBeNull();
   });
 });

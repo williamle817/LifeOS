@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { NavIcon } from "@/components/icons";
-import { primary } from "@/components/styles";
+import { ActionIcon, NavIcon } from "@/components/icons";
 import type { IconName } from "@/lib/nav";
 
 export const SHOWN = 5;
@@ -27,7 +26,7 @@ export function Panel({
     <section
       data-tone={tone}
       aria-labelledby={title}
-      className="flex min-h-60 flex-col gap-4 rounded-panel bg-surface p-7 text-ink shadow-soft"
+      className="relative flex min-h-60 flex-col gap-4 rounded-panel bg-surface p-7 text-ink shadow-soft transition-shadow hover:shadow-pop"
     >
       <div className="flex items-center gap-3.5">
         <span className="grid size-12 shrink-0 place-items-center rounded-full bg-accent-soft text-accent [&_svg]:size-[22px]">
@@ -35,15 +34,20 @@ export function Panel({
         </span>
         <h2
           id={title}
-          className="font-display text-[1.75rem] leading-tight font-medium"
+          className="min-w-0 font-display text-[1.75rem] leading-tight font-medium break-words"
         >
           {title}
         </h2>
+        <Link
+          href={href}
+          aria-label={`Open ${page}`}
+          className="ml-auto flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded-full bg-accent-soft text-sm font-semibold text-accent transition hover:brightness-95 after:absolute after:inset-0 after:rounded-panel sm:pr-3 sm:pl-4"
+        >
+          <span className="hidden sm:inline">{page}</span>
+          <ActionIcon name="forward" />
+        </Link>
       </div>
       {children}
-      <Link href={href} className={`${primary} mt-auto min-h-11 self-start`}>
-        Open {page}
-      </Link>
     </section>
   );
 }

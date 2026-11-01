@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import type { EditScope, Flow } from "@lifeos/contracts";
+import type { EditScope, Flow, FlowKind } from "@lifeos/contracts";
 import {
   ensureEvents,
   eventFor,
   eventsServer,
   eventsSnapshot,
   incomeIn,
-  mealsIn,
   removeFromSchedule,
   saveFromSchedule,
+  spendingIn,
   subscribeEvents,
 } from "@/lib/from-schedule";
 import {
@@ -26,7 +26,6 @@ import {
   subscribe,
 } from "@/modules/finance/lib/flow-store";
 import {
-  inMonth,
   newestFirst,
   pending,
   settled,
@@ -38,6 +37,7 @@ import { MonthBar } from "@/modules/finance/components/month-bar";
 import { SplitChart } from "@/modules/finance/components/split-chart";
 import { ComingUp } from "@/modules/finance/components/coming-up";
 import { FlowPanel } from "@/modules/finance/components/flow-panel";
+import { SideSwitch } from "@/modules/finance/components/side-switch";
 import { SaveError } from "@/components/save-error";
 
 export function FinanceView() {
@@ -48,6 +48,7 @@ export function FinanceView() {
     eventsServer,
   );
   const [month, setMonth] = useState<Month>(() => thisMonth());
+  const [side, setSide] = useState<FlowKind>("expense");
 
   useEffect(() => {
     void ensureLoaded();
@@ -59,11 +60,10 @@ export function FinanceView() {
     () => incomeIn(flows, events, month),
     [flows, events, month],
   );
-  const meals = useMemo(() => mealsIn(events, month), [events, month]);
-  const spending = [
-    ...inMonth(flows, month).filter((one) => one.flow.kind === "expense"),
-    ...meals,
-  ];
+  const spending = useMemo(
+    () => spendingIn(flows, events, month),
+    [flows, events, month],
+  );
   const gone = newestFirst(settled(spending));
   const due = pending(spending);
 
@@ -108,26 +108,23 @@ export function FinanceView() {
 
       <ComingUp rows={due} />
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <FlowPanel
-          kind="income"
-          rows={income}
-          userId={userId}
-          month={month}
-          onAdd={(flow: Flow) => void saveFlow(flow)}
-          onSave={onSave}
-          onRemove={onRemove}
-        />
-        <FlowPanel
-          kind="expense"
-          rows={gone}
-          userId={userId}
-          month={month}
-          onAdd={(flow: Flow) => void saveFlow(flow)}
-          onSave={onSave}
-          onRemove={onRemove}
-        />
-      </div>
+      <FlowPanel
+        key={side}
+        kind={side}
+        rows={side === "income" ? income : gone}
+        userId={userId}
+        month={month}
+        onAdd={(flow: Flow) => void saveFlow(flow)}
+        onSave={onSave}
+        onRemove={onRemove}
+        switcher={
+          <SideSwitch
+            side={side}
+            counts={{ income: income.length, expense: gone.length }}
+            onChange={setSide}
+          />
+        }
+      />
     </div>
   );
 }

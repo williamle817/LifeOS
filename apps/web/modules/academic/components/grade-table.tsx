@@ -287,7 +287,7 @@ export function GradeTable({
                     key={item.id}
                     data-drag={`item-${category.id}`}
                     style={drag.style(`item-${category.id}`, seat)}
-                    className="flex items-center gap-1 bg-surface py-2 pr-1 pl-3 text-sm transition-colors hover:bg-canvas sm:gap-2 sm:pr-2 sm:pl-4"
+                    className="group flex items-center gap-1 bg-surface py-2 pr-1 pl-3 text-sm transition-colors hover:bg-canvas sm:gap-2 sm:pr-2 sm:pl-4"
                   >
                     <span className="min-w-0 flex-1">
                       <span
@@ -327,28 +327,30 @@ export function GradeTable({
                       / {item.maxScore}
                     </span>
 
-                    <button
-                      type="button"
-                      aria-label={`Edit ${item.title}`}
-                      onClick={() => startEdit(item)}
-                      className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                    >
-                      <ActionIcon name="edit" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${item.title}`}
-                      onClick={() => onRemove(item.id)}
-                      className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                    >
-                      <ActionIcon name="trash" />
-                    </button>
-                    <DragHandle
-                      list={`item-${category.id}`}
-                      index={seat}
-                      drag={drag}
-                      label={item.title}
-                    />
+                    <span className="flex items-center transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0">
+                      <button
+                        type="button"
+                        aria-label={`Edit ${item.title}`}
+                        onClick={() => startEdit(item)}
+                        className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                      >
+                        <ActionIcon name="edit" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${item.title}`}
+                        onClick={() => onRemove(item.id)}
+                        className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                      >
+                        <ActionIcon name="trash" />
+                      </button>
+                      <DragHandle
+                        list={`item-${category.id}`}
+                        index={seat}
+                        drag={drag}
+                        label={item.title}
+                      />
+                    </span>
                   </li>
                 ),
               )}

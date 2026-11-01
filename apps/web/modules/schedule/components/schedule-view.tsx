@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
 import { expand } from "@/modules/schedule/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
@@ -83,6 +89,7 @@ export function ScheduleView() {
   const rows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [popover, setPopover] = useState<Popover | null>(null);
   const [range, setRange] = useState<{ from: Date; to: Date } | null>(null);
+  const calendar = useRef<FullCalendar>(null);
 
   const events = useMemo(
     () => (range ? expand(rows, range.from, range.to) : []),
@@ -91,6 +98,13 @@ export function ScheduleView() {
 
   useEffect(() => {
     void ensureLoaded();
+  }, []);
+
+  useEffect(() => {
+    if (!window.matchMedia("(width < 48rem)").matches) return;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    calendar.current?.getApi().changeView("timeGridThreeDay", yesterday);
   }, []);
 
   useEffect(() => {
@@ -180,10 +194,18 @@ export function ScheduleView() {
       >
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          ref={calendar}
           initialView="timeGridWeek"
+          views={{
+            timeGridThreeDay: {
+              type: "timeGrid",
+              duration: { days: 3 },
+              buttonText: "3 Days",
+            },
+          }}
           headerToolbar={{
             left: "title prev next today",
-            right: "newEvent timeGridDay,timeGridWeek,dayGridMonth",
+            right: "newEvent timeGridDay,timeGridThreeDay,timeGridWeek,dayGridMonth",
           }}
           titleFormat={{ month: "long", year: "numeric" }}
           customButtons={{

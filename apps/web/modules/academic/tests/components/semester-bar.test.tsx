@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Semester } from "@lifeos/contracts";
 import { SemesterBar } from "@/modules/academic/components/semester-bar";
@@ -139,6 +139,7 @@ describe("the semester bar", () => {
       [semester("fall", "Fall 2026", "2026-08-20")],
       "fall",
     );
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
     await user.click(screen.getByRole("button", { name: "Delete semester" }));
     expect(screen.getByRole("dialog")).toBeDefined();
     expect(screen.getByText("Delete Fall 2026?")).toBeDefined();
@@ -151,6 +152,7 @@ describe("the semester bar", () => {
       [semester("fall", "Fall 2026", "2026-08-20")],
       "fall",
     );
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
     await user.click(screen.getByRole("button", { name: "Delete semester" }));
     const dialog = screen.getByRole("dialog");
     const go = [...dialog.querySelectorAll("button")].find(
@@ -166,8 +168,11 @@ describe("the semester bar", () => {
       [semester("fall", "Fall 2026", "2026-08-20")],
       "fall",
     );
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
     await user.click(screen.getByRole("button", { name: "Delete semester" }));
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }),
+    );
     expect(onDelete).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -175,8 +180,14 @@ describe("the semester bar", () => {
   it("warns that everything under it goes too", async () => {
     const user = userEvent.setup();
     setup([semester("fall", "Fall 2026", "2026-08-20")], "fall");
+    await user.click(screen.getByRole("button", { name: "Edit Fall 2026" }));
     await user.click(screen.getByRole("button", { name: "Delete semester" }));
     expect(screen.getByText(/cannot be undone/)).toBeDefined();
+  });
+
+  it("keeps delete out of the bar until the semester is being edited", () => {
+    setup([semester("fall", "Fall 2026", "2026-08-20")], "fall");
+    expect(screen.queryByRole("button", { name: "Delete semester" })).toBeNull();
   });
 
   it("offers no delete when nothing is open", () => {

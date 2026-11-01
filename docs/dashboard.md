@@ -49,8 +49,19 @@ graphite, Academic blue, Finance honey gold, Fitness orange, on the mint page.
 A panel carries `data-tone="<page>"`, and each page file lists
 `:root:not([data-theme="night"]) [data-tone="<page>"]` beside its own light
 block, so the colours come from one place. That is why `app/page.tsx` imports
-all four page stylesheets. At night every panel takes the Dashboard's night
-colours instead.
+all four page stylesheets. At night every panel takes the Dashboard's dark
+surfaces but keeps its page's night accent on the icon and the link, from a
+`:root[data-theme="night"] [data-tone="<page>"]` rule in each page file, so the
+four still read apart.
+
+**The page name sits in the top right of each panel as a small link**, and the
+whole panel is a link to that page through the link's `::after` stretched over
+it. On a phone the name hides and only the arrow shows, because the title and
+the name did not fit on one row at 390px.
+
+**Under the date runs one line of chips**: how many events today, how many
+assignments are late (in red) or due within three days, and the next charge if
+it falls within a week. Each chip opens its page. `today-summary.tsx`.
 
 ### Today
 
@@ -58,6 +69,14 @@ Every event that touches today, repeating ones included: all day events first,
 then the rest by start time, each as a small block in its own event colour with
 the start and end time beside it. An event that started last night and runs
 past midnight counts, one that ends exactly at midnight does not.
+
+It reads as a timeline. A red **Now** line sits after everything that has
+started; finished events turn into an outline in muted ink and are struck
+through; the one in progress carries a **Now** tag; the next one says how far
+off it is ("in 48 min"). When the list is over five, finished events are the
+first to go. The order and the cutting live in
+`modules/dashboard/lib/timeline.ts`, with tests beside it. The clock ticks
+through a minute snapshot in `lib/today.ts`, so the line moves on its own.
 
 ### Academic
 
@@ -71,10 +90,14 @@ never entered last year does not sit here as late forever.
 
 ### Finance
 
-This month's income total, large, in the income green, and the lines behind it,
-newest first. It is the same sum the Finance page shows: typed income plus the
-pay for every work shift on the calendar, including income dated later in the
-month, since Finance does not split income at today either.
+This month's income total, large, in the income green. It is the same sum the
+Finance page shows: typed income plus the pay for every work shift on the
+calendar, including income dated later in the month, since Finance does not
+split income at today either. Where it came from is left to the Finance page.
+
+Under it, **the next three charges**: expenses and planned meals dated after
+today, looking through the end of next month so the last days of a month are
+not empty. `upcomingCharges` in `lib/for-dashboard.ts`.
 
 ### Fitness
 

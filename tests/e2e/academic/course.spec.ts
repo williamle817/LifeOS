@@ -153,6 +153,7 @@ test("deletes a semester and everything under it", async ({ app, page }) => {
   app.db.grade_items.push(gradeItemRow());
   await app.open("/academic");
 
+  await page.getByRole("button", { name: "Edit Fall 2026" }).click();
   await page.getByRole("button", { name: "Delete semester" }).click();
 
   const dialog = page.getByRole("dialog");
@@ -172,8 +173,9 @@ test("backs out of deleting a semester", async ({ app, page }) => {
   app.db.categories.push(categoryRow());
   await app.open("/academic");
 
+  await page.getByRole("button", { name: "Edit Fall 2026" }).click();
   await page.getByRole("button", { name: "Delete semester" }).click();
-  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
 
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(app.db.semesters).toHaveLength(1);

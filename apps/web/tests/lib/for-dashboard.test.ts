@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type {
   Course,
+  Flow,
   GradeItem,
   LifeEvent,
   Semester,
@@ -11,7 +12,9 @@ vi.mock("@/lib/supabase", async () => {
   return { supabase: client };
 });
 
-const { deadlines, eventsOn } = await import("@/lib/for-dashboard");
+const { deadlines, eventsOn, upcomingCharges } = await import(
+  "@/lib/for-dashboard"
+);
 
 const TODAY = "2026-03-10";
 
@@ -252,5 +255,79 @@ describe("what is due", () => {
       TODAY,
     );
     expect(due.map((one) => one.item.title)).toEqual(["This term"]);
+  });
+});
+
+describe("charges coming up", () => {
+  function charge(over: Partial<Flow> = {}): Flow {
+    seq += 1;
+    return {
+      id: `f-${seq}`,
+      userId: "u1",
+      kind: "expense",
+      title: `Charge ${seq}`,
+      on: "2026-03-20",
+      amount: 10,
+      repeat: "once",
+      ...over,
+    };
+  }
+
+  function names(flows: Flow[], events: LifeEvent[] = []): string[] {
+    return upcomingCharges(flows, events, TODAY).map((one) => one.flow.title);
+  }
+
+  it("lists what is still to go out, soonest first", () => {
+    expect(
+      names([
+        charge({ title: "Later", on: "2026-03-25" }),
+        charge({ title: "Sooner", on: "2026-03-12" }),
+      ]),
+    ).toEqual(["Sooner", "Later"]);
+  });
+
+  it("leaves out today, the past and income", () => {
+    expect(
+      names([
+        charge({ title: "Today", on: TODAY }),
+        charge({ title: "Gone", on: "2026-03-02" }),
+        charge({ title: "Pay", kind: "income", on: "2026-03-20" }),
+      ]),
+    ).toEqual([]);
+  });
+
+  it("looks into next month, so the end of a month is not empty", () => {
+    expect(
+      names([charge({ title: "Rent", on: "2026-02-01", repeat: "monthly" })]),
+    ).toEqual(["Rent"]);
+    expect(
+      upcomingCharges(
+        [charge({ on: "2026-02-01", repeat: "monthly" })],
+        [],
+        TODAY,
+      )[0].on,
+    ).toBe("2026-04-01");
+  });
+
+  it("stops at the end of next month", () => {
+    expect(names([charge({ on: "2026-05-02" })])).toEqual([]);
+  });
+
+  it("counts a planned meal as a charge", () => {
+    expect(
+      names(
+        [],
+        [
+          event({
+            type: "dining",
+            title: "Dinner out",
+            start: at(14, 19),
+            end: at(14, 21),
+            amount: 40,
+            place: "Pho 24",
+          } as Partial<LifeEvent>),
+        ],
+      ),
+    ).toEqual(["Dinner out"]);
   });
 });

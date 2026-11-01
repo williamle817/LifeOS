@@ -25,3 +25,8 @@ body:has([data-page="finance"]),
   --accent: #f6c453;
   --accent-soft: #3a2e10;
 }
+
+:root[data-theme="night"] [data-tone="finance"] {
+  --accent: #f6c453;
+  --accent-soft: #3a2e10;
+}

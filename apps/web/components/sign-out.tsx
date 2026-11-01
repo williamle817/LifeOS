@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSignedIn } from "@/lib/signed-in";
 import { supabase } from "@/lib/supabase";
 
 export function SignOut() {
-  const [signedIn, setSignedIn] = useState(false);
-
-  useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSignedIn(session !== null);
-    });
-    return () => data.subscription.unsubscribe();
-  }, []);
+  const signedIn = useSignedIn();
 
   if (!signedIn) return null;
 

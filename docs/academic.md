@@ -127,15 +127,21 @@ finished, so all 40 count.
 
 ## Coming up
 
-Beside the grade table is a list of everything still waiting on a score, soonest
-first. Each row shows the item, which bucket it belongs to, what it is out of,
-and how far away the date is.
+Beside the grade table is a list of everything still waiting on a score in
+**every course of the semester**, soonest first, so nothing is missed by not
+opening the right course. Each row shows the date, the item, then one line
+under it: the course code with its colour dot, the bucket, and how far away it
+is.
 
 ```
-  Quiz 2      Quizzes · out of 10       Sep 24    2 days late
-  Quiz 3      Quizzes · out of 10       Oct 2     in 6 days
-  Final       Exams · out of 100        Dec 12    in 3 months
+  Sep 24   Quiz 2
+           MATH 221 · Quizzes · 2 days late
+  Oct 2    Essay draft
+           ENGL 102 · Essays · in 6 days
 ```
+
+On a phone the list sits above the grade table, on a tablet it runs in two
+columns, on a computer it stays beside the table.
 
 Anything already marked drops off the list, so what is left is exactly what you
 still owe. **Anything due within three days, or already late, is written in
@@ -218,14 +224,26 @@ page colour. The tab icon is `app/academic/icon.svg`, a white L on `#0059bd`.
 
 **Your course colour shows on every course card** in the strip, as a dot
 beside the code and as the progress bar, and fills the whole card of the course
-you have open. It also fills the Current grade box and the dot beside the course
-name. The dot uses the deeper tone of the colour, because the pale one
+you have open. It also colours the current grade figure and the dot beside the
+course name. The dot uses the deeper tone of the colour, because the pale one
 disappeared against the blue page.
 
-**The grade track** sits under the course name: one bar from 0 to 100 with
-what you have earned solid, what is still possible striped, and a tick for each
-letter cutoff from the course's scale. It is the three numbers below it, drawn
-as one picture. `components/grade-track.tsx`.
+**Each number shows once.** Under the course name sits one row: Current grade,
+large, then Earned out of 100 and Maximum attainable, each with its letter.
+Under that, **the grade track**: one bar from 0 to 100 with what you have
+earned solid, what is still possible striped, and a tick for each letter cutoff
+from the course's scale. The three big boxes and the track's own legend were
+removed on 2026-11-01 because they repeated the same figures.
+`components/grade-track.tsx`.
+
+**New course is a round plus button** at the end of the course strip; it used
+to be a dashed card the size of a course, which wrapped onto a row of its own on
+a tablet. **Delete semester lives inside the semester's edit form**, opened by
+the pencil beside its name, in red, and still asks before it deletes anything.
+
+**A row's pencil, bin and grip show when the pointer is over the row**, or when
+the keyboard reaches one of them. On a touch screen, which has no hover, they
+are always there.
 
 **Letter grades always have the same colours**: A green, B blue, C yellow,
 D pink, F red, the same pastels the calendar uses for events.

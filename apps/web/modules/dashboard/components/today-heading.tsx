@@ -6,7 +6,7 @@ import {
   getServerSnapshot,
   getSnapshot,
   subscribe,
-} from "@/modules/dashboard/lib/today";
+} from "@/lib/today";
 
 export function TodayHeading() {
   const day = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

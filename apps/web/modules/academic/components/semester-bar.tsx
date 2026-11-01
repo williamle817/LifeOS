@@ -106,6 +106,31 @@ export function SemesterBar({
         >
           Cancel
         </button>
+
+        {mode === "edit" && open ? (
+          <button
+            type="button"
+            onClick={() => setAsking(true)}
+            style={{ color: "var(--alert)", borderColor: "var(--alert)" }}
+            className="min-h-10 rounded-full border px-5 text-sm font-semibold transition-colors hover:bg-surface"
+          >
+            Delete semester
+          </button>
+        ) : null}
+
+        {asking && open ? (
+          <Confirm
+            title={`Delete ${open.name}?`}
+            body="Its courses, their grading and every score in them go with it. This cannot be undone."
+            action="Delete semester"
+            onConfirm={() => {
+              setAsking(false);
+              setMode(null);
+              onDelete(open.id);
+            }}
+            onCancel={() => setAsking(false)}
+          />
+        ) : null}
       </form>
     );
   }
@@ -147,29 +172,6 @@ export function SemesterBar({
       >
         New semester
       </button>
-
-      {selected ? (
-        <button
-          type="button"
-          onClick={() => setAsking(true)}
-          className={quiet}
-        >
-          Delete semester
-        </button>
-      ) : null}
-
-      {asking && open ? (
-        <Confirm
-          title={`Delete ${open.name}?`}
-          body="Its courses, their grading and every score in them go with it. This cannot be undone."
-          action="Delete semester"
-          onConfirm={() => {
-            setAsking(false);
-            onDelete(open.id);
-          }}
-          onCancel={() => setAsking(false)}
-        />
-      ) : null}
     </div>
   );
 }

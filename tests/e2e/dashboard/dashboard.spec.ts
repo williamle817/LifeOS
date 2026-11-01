@@ -78,12 +78,19 @@ test("lists late and upcoming work across courses", async ({ app, page }) => {
   expect(rows[1]).toContain("in 5 days");
 });
 
-test("shows this month's income with the shifts", async ({ app, page }) => {
+test("shows this month's income and the next three charges", async ({
+  app,
+  page,
+}) => {
   const now = fromToday(0);
   const first = new Date(now.getFullYear(), now.getMonth(), 1);
   app.db.flows = [
     flowRow({ id: "p", kind: "income", title: "Paycheck", amount: 2100, on_date: dayOf(first) }),
-    flowRow({ id: "g", title: "Groceries", amount: 40, on_date: dayOf(first) }),
+    flowRow({ id: "g", title: "Groceries", amount: 40, on_date: dayOf(fromToday(-1)) }),
+    flowRow({ id: "a", title: "Phone bill", amount: 30, on_date: dayOf(fromToday(2)) }),
+    flowRow({ id: "b", title: "Netflix", amount: 15.49, on_date: dayOf(fromToday(1)) }),
+    flowRow({ id: "c", title: "Gym", amount: 25, on_date: dayOf(fromToday(3)) }),
+    flowRow({ id: "d", title: "Insurance", amount: 80, on_date: dayOf(fromToday(4)) }),
   ];
   app.db.events.push(
     eventRow({
@@ -99,11 +106,14 @@ test("shows this month's income with the shifts", async ({ app, page }) => {
 
   const panel = page.getByRole("region", { name: "Finance" });
   await expect(panel.getByText("$2,172.00")).toBeVisible();
-  const rows = await panel
-    .getByRole("list", { name: "This month's income" })
-    .getByRole("listitem")
-    .allTextContents();
-  expect(rows).toHaveLength(2);
-  expect(rows.join(" ")).toContain("Cafe shift");
-  expect(rows.join(" ")).toContain("Paycheck");
+  await expect(panel.getByText("Paycheck")).toHaveCount(0);
+
+  const charges = panel.getByRole("list", { name: "Charges coming up" });
+  await expect(charges.getByText("Netflix")).toBeVisible();
+  const rows = await charges.getByRole("listitem").allTextContents();
+  expect(rows).toHaveLength(3);
+  expect(rows[0]).toContain("Netflix");
+  expect(rows[0]).toContain("tomorrow");
+  expect(rows[1]).toContain("Phone bill");
+  expect(rows[2]).toContain("Gym");
 });

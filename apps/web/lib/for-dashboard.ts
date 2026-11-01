@@ -1,7 +1,19 @@
-import type { Course, GradeItem, LifeEvent, Semester } from "@lifeos/contracts";
+import type {
+  Course,
+  Flow,
+  GradeItem,
+  LifeEvent,
+  Semester,
+} from "@lifeos/contracts";
 import { daysBetween, parseDay, shiftDay } from "@/lib/dates";
+import { spendingIn } from "@/lib/from-schedule";
 import { dayKey, expand } from "@/modules/schedule/lib/recurrence";
 import { defaultSemesterId } from "@/modules/academic/lib/selection";
+import {
+  shift,
+  thisMonth,
+  type Dated,
+} from "@/modules/finance/lib/month";
 
 export {
   subscribeEvents,
@@ -30,6 +42,7 @@ export {
   monthLabel,
   thisMonth,
   total,
+  whenLabel,
 } from "@/modules/finance/lib/month";
 
 export type Deadline = {
@@ -82,5 +95,21 @@ export function deadlines(
     .sort(
       (a, b) =>
         a.due.localeCompare(b.due) || a.item.title.localeCompare(b.item.title),
+    );
+}
+
+export function upcomingCharges(
+  flows: Flow[],
+  events: LifeEvent[],
+  today: string,
+): Dated[] {
+  const month = thisMonth(parseDay(today));
+
+  return [month, shift(month, 1)]
+    .flatMap((one) => spendingIn(flows, events, one))
+    .filter((one) => one.on > today)
+    .sort(
+      (a, b) =>
+        a.on.localeCompare(b.on) || a.flow.title.localeCompare(b.flow.title),
     );
 }
