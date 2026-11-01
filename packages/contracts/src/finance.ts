@@ -1,8 +1,6 @@
 import type { Money } from "./event";
 
-export const FLOW_KINDS = ["income", "expense"] as const;
-
-export type FlowKind = (typeof FLOW_KINDS)[number];
+export type FlowKind = "income" | "expense";
 
 export const FLOW_REPEATS = ["once", "monthly", "yearly"] as const;
 
@@ -20,8 +18,6 @@ export const EXPENSE_TYPES = [
   "Other",
 ] as const;
 
-export type ExpenseType = (typeof EXPENSE_TYPES)[number];
-
 export const INCOME_TYPES = [
   "Work",
   "Paycheck",
@@ -31,8 +27,6 @@ export const INCOME_TYPES = [
   "Refund",
   "Other",
 ] as const;
-
-export type IncomeType = (typeof INCOME_TYPES)[number];
 
 export type Flow = {
   id: string;

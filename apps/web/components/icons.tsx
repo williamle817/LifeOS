@@ -8,7 +8,7 @@ const PATHS: Record<IconName, string> = {
   fitness: "M6.5 6.5v11M3.5 9v6M17.5 6.5v11M20.5 9v6M6.5 12h11",
 };
 
-export function NavIcon({ name }: { name: IconName }) {
+function Glyph({ d }: { d: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -20,9 +20,13 @@ export function NavIcon({ name }: { name: IconName }) {
       aria-hidden="true"
       className="size-4 shrink-0"
     >
-      <path d={PATHS[name]} />
+      <path d={d} />
     </svg>
   );
+}
+
+export function NavIcon({ name }: { name: IconName }) {
+  return <Glyph d={PATHS[name]} />;
 }
 
 const ACTIONS = {
@@ -35,21 +39,9 @@ const ACTIONS = {
   forward: "M9 5l7 7-7 7",
   sun: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",
   moon: "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z",
+  repeat: "M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4",
 };
 
 export function ActionIcon({ name }: { name: keyof typeof ACTIONS }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="size-4 shrink-0"
-    >
-      <path d={ACTIONS[name]} />
-    </svg>
-  );
+  return <Glyph d={ACTIONS[name]} />;
 }

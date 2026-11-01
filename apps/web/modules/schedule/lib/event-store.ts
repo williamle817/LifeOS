@@ -5,16 +5,12 @@ import type {
   LifeEvent,
   Recurrence,
 } from "@lifeos/contracts";
-import { dayKey, shiftDay } from "@/modules/schedule/lib/recurrence";
+import { shiftDay } from "@/lib/dates";
+import { createStore, currentUserId, owner } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
+import { dayKey } from "@/modules/schedule/lib/recurrence";
 
-const NONE: LifeEvent[] = [];
-
-let cache: LifeEvent[] = NONE;
-let userId: string | null = null;
-let lastError: string | null = null;
-let undoTo: LifeEvent[] | null = null;
-const listeners = new Set<() => void>();
+export { currentUserId };
 
 type Row = {
   id: string;
@@ -32,10 +28,6 @@ type Row = {
   cancelled: boolean;
   data: Record<string, unknown>;
 };
-
-function emit(): void {
-  for (const listener of listeners) listener();
-}
 
 function toEvent(row: Row): LifeEvent {
   return {
@@ -59,7 +51,7 @@ function toEvent(row: Row): LifeEvent {
 function toRow(event: LifeEvent): Row {
   const {
     id,
-    userId: owner,
+    userId,
     type,
     title,
     start,
@@ -75,7 +67,7 @@ function toRow(event: LifeEvent): Row {
   } = event as LifeEvent & Record<string, unknown>;
   return {
     id,
-    user_id: owner || (userId ?? ""),
+    user_id: owner(userId),
     type,
     title,
     start_at: start,
@@ -91,28 +83,22 @@ function toRow(event: LifeEvent): Row {
   };
 }
 
-export function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
+const NONE: LifeEvent[] = [];
 
-export function getSnapshot(): LifeEvent[] {
-  return cache;
-}
+const store = createStore(NONE, async () => {
+  const { data } = await supabase.from("events").select("*");
+  return data ? (data as Row[]).map(toEvent) : NONE;
+});
 
-export function getServerSnapshot(): LifeEvent[] {
-  return NONE;
-}
+export const {
+  subscribe,
+  getSnapshot,
+  getServerSnapshot,
+  lastWriteError,
+  ensureLoaded,
+} = store;
 
-export function currentUserId(): string | null {
-  return userId;
-}
-
-export function lastWriteError(): string | null {
-  return lastError;
-}
+let undoTo: LifeEvent[] | null = null;
 
 export function canUndo(): boolean {
   return undoTo !== null;
@@ -122,78 +108,48 @@ export async function undo(): Promise<void> {
   if (!undoTo) return;
   const target = undoTo;
   undoTo = null;
-  const before = new Map(cache.map((e) => [e.id, e]));
-  const after = new Map(target.map((e) => [e.id, e]));
+  const before = new Map(getSnapshot().map((e) => [e.id, e]));
+  const after = new Set(target.map((e) => e.id));
 
   const gone = [...before.keys()].filter((id) => !after.has(id));
-  const back = target.filter((e) => !before.has(e.id));
-  const fixed = target.filter(
-    (e) =>
-      before.has(e.id) &&
-      JSON.stringify(before.get(e.id)) !== JSON.stringify(e),
+  const back = target.filter(
+    (e) => JSON.stringify(before.get(e.id)) !== JSON.stringify(e),
   );
 
-  cache = target;
-  emit();
-
+  store.set(target);
   if (gone.length) {
-    await guard(supabase.from("events").delete().in("id", gone));
+    await store.write(supabase.from("events").delete().in("id", gone));
   }
   if (back.length) {
-    await guard(supabase.from("events").insert(back.map(toRow)));
+    await store.write(supabase.from("events").upsert(back.map(toRow)));
   }
-  for (const e of fixed) {
-    await guard(supabase.from("events").update(toRow(e)).eq("id", e.id));
-  }
-}
-
-let loading: Promise<void> | null = null;
-
-export async function ensureLoaded(): Promise<void> {
-  if (userId) return;
-  loading ??= loadEvents().finally(() => {
-    loading = null;
-  });
-  await loading;
-}
-
-export async function loadEvents(): Promise<void> {
-  const { data: me } = await supabase.from("users").select("id").single();
-  if (!me) return;
-  userId = me.id;
-
-  const { data } = await supabase.from("events").select("*");
-  cache = data ? (data as Row[]).map(toEvent) : NONE;
-  emit();
-}
-
-async function guard(
-  run: PromiseLike<{ error: { message: string } | null }>,
-): Promise<void> {
-  const { error } = await run;
-  if (!error) return;
-  lastError = error.message;
-  await loadEvents();
-  emit();
 }
 
 export async function addEvent(event: LifeEvent): Promise<void> {
-  lastError = null;
-  cache = [...cache, event];
-  emit();
-  await guard(supabase.from("events").insert(toRow(event)));
+  store.set([...getSnapshot(), event]);
+  await store.write(supabase.from("events").insert(toRow(event)));
 }
 
 export async function updateEvent(event: LifeEvent): Promise<void> {
-  cache = cache.map((e) => (e.id === event.id ? event : e));
-  emit();
-  await guard(supabase.from("events").update(toRow(event)).eq("id", event.id));
+  store.set(getSnapshot().map((e) => (e.id === event.id ? event : e)));
+  await store.write(
+    supabase.from("events").update(toRow(event)).eq("id", event.id),
+  );
 }
 
 export async function deleteEvent(id: string): Promise<void> {
-  cache = cache.filter((e) => e.id !== id);
-  emit();
-  await guard(supabase.from("events").delete().eq("id", id));
+  await deleteMany([id]);
+}
+
+async function deleteMany(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  store.set(getSnapshot().filter((e) => !ids.includes(e.id)));
+  await store.write(supabase.from("events").delete().in("id", ids));
+}
+
+async function begin(): Promise<void> {
+  await store.begin();
+  undoTo = getSnapshot();
 }
 
 function withTime(dateFrom: string, timeFrom: string): string {
@@ -209,42 +165,67 @@ function withTime(dateFrom: string, timeFrom: string): string {
 }
 
 function master(seriesId: string): LifeEvent | undefined {
-  return cache.find((e) => e.recurrence && (e.seriesId ?? e.id) === seriesId);
+  return getSnapshot().find(
+    (e) => e.recurrence && (e.seriesId ?? e.id) === seriesId,
+  );
+}
+
+async function patch(event: LifeEvent, cancelled: boolean): Promise<void> {
+  const existing = getSnapshot().find(
+    (e) =>
+      e.seriesId === event.seriesId &&
+      e.occurrenceDate === event.occurrenceDate,
+  );
+  await (existing ? updateEvent : addEvent)({
+    ...event,
+    id: existing?.id ?? crypto.randomUUID(),
+    recurrence: undefined,
+    cancelled,
+  } as LifeEvent);
+}
+
+async function cut(head: LifeEvent, seriesId: string, from: string): Promise<void> {
+  await deleteMany(
+    getSnapshot()
+      .filter(
+        (e) =>
+          e.seriesId === seriesId &&
+          e.occurrenceDate !== undefined &&
+          e.occurrenceDate >= from,
+      )
+      .map((e) => e.id),
+  );
+  if (dayKey(head.start) >= from) {
+    await deleteEvent(head.id);
+    return;
+  }
+  await updateEvent({
+    ...head,
+    recurrence: { ...head.recurrence!, until: shiftDay(from, -1) },
+  } as LifeEvent);
 }
 
 export async function saveOccurrence(
   event: LifeEvent,
   scope: EditScope,
 ): Promise<void> {
-  await ensureLoaded();
-  undoTo = cache;
+  await begin();
   const seriesId = event.seriesId;
   if (!seriesId || !event.occurrenceDate) {
-    await (cache.some((e) => e.id === event.id) ? updateEvent : addEvent)(event);
+    const exists = getSnapshot().some((e) => e.id === event.id);
+    await (exists ? updateEvent : addEvent)(event);
+    return;
+  }
+
+  if (scope === "one") {
+    await patch(event, false);
     return;
   }
 
   const head = master(seriesId);
-  const date = event.occurrenceDate;
-
-  if (scope === "one") {
-    const existing = cache.find(
-      (e) => e.seriesId === seriesId && e.occurrenceDate === date,
-    );
-    const patch = {
-      ...event,
-      id: existing?.id ?? crypto.randomUUID(),
-      seriesId,
-      occurrenceDate: date,
-      recurrence: undefined,
-      cancelled: false,
-    } as LifeEvent;
-    await (existing ? updateEvent : addEvent)(patch);
-    return;
-  }
+  if (!head) return;
 
   if (scope === "all") {
-    if (!head) return;
     const span = new Date(event.end).getTime() - new Date(event.start).getTime();
     const start = event.allDay
       ? head.start
@@ -264,12 +245,7 @@ export async function saveOccurrence(
     return;
   }
 
-  if (!head) return;
-  await updateEvent({
-    ...head,
-    recurrence: { ...head.recurrence!, until: shiftDay(date, -1) },
-  } as LifeEvent);
-  await dropPatches(seriesId, date);
+  await cut(head, seriesId, event.occurrenceDate);
   const nextId = crypto.randomUUID();
   await addEvent({
     ...event,
@@ -280,26 +256,11 @@ export async function saveOccurrence(
   } as LifeEvent);
 }
 
-async function dropPatches(seriesId: string, from: string): Promise<void> {
-  const gone = cache.filter(
-    (e) =>
-      e.seriesId === seriesId &&
-      e.occurrenceDate !== undefined &&
-      e.occurrenceDate >= from,
-  );
-  if (!gone.length) return;
-  const ids = gone.map((e) => e.id);
-  cache = cache.filter((e) => !ids.includes(e.id));
-  emit();
-  await supabase.from("events").delete().in("id", ids);
-}
-
 export async function duplicateOccurrence(
   event: LifeEvent,
   scope: EditScope,
 ): Promise<void> {
-  await ensureLoaded();
-  undoTo = cache;
+  await begin();
   const id = crypto.randomUUID();
   const seriesId = event.seriesId;
 
@@ -323,23 +284,12 @@ export async function duplicateOccurrence(
   const head = master(seriesId);
   if (!head) return;
 
-  if (scope === "all") {
-    await addEvent({
-      ...head,
-      id,
-      seriesId: id,
-      occurrenceDate: undefined,
-      cancelled: false,
-    } as LifeEvent);
-    return;
-  }
-
   await addEvent({
-    ...event,
+    ...(scope === "all" ? head : event),
     id,
     seriesId: id,
     occurrenceDate: undefined,
-    recurrence: event.recurrence ?? head.recurrence,
+    recurrence: scope === "all" ? head.recurrence : (event.recurrence ?? head.recurrence),
     cancelled: false,
   } as LifeEvent);
 }
@@ -348,55 +298,28 @@ export async function removeOccurrence(
   event: LifeEvent,
   scope: EditScope,
 ): Promise<void> {
-  await ensureLoaded();
-  undoTo = cache;
+  await begin();
   const seriesId = event.seriesId;
   if (!seriesId || !event.occurrenceDate) {
     await deleteEvent(event.id);
     return;
   }
 
-  const head = master(seriesId);
-  const date = event.occurrenceDate;
-
   if (scope === "one") {
-    const existing = cache.find(
-      (e) => e.seriesId === seriesId && e.occurrenceDate === date,
-    );
-    const mark = {
-      ...event,
-      id: existing?.id ?? crypto.randomUUID(),
-      seriesId,
-      occurrenceDate: date,
-      recurrence: undefined,
-      cancelled: true,
-    } as LifeEvent;
-    await (existing ? updateEvent : addEvent)(mark);
+    await patch(event, true);
     return;
   }
+
+  const head = master(seriesId);
 
   if (scope === "all") {
-    const ids = cache
-      .filter((e) => e.seriesId === seriesId || e.id === head?.id)
-      .map((e) => e.id);
-    cache = cache.filter((e) => !ids.includes(e.id));
-    emit();
-    await supabase.from("events").delete().in("id", ids);
+    await deleteMany(
+      getSnapshot()
+        .filter((e) => e.seriesId === seriesId || e.id === head?.id)
+        .map((e) => e.id),
+    );
     return;
   }
 
-  if (!head) return;
-  await dropPatches(seriesId, date);
-  if (dayKey(head.start) >= date) {
-    await deleteEvent(head.id);
-    return;
-  }
-  await updateEvent({
-    ...head,
-    recurrence: { ...head.recurrence!, until: shiftDay(date, -1) },
-  } as LifeEvent);
-}
-
-export function exportEvents(): string {
-  return JSON.stringify(cache, null, 2);
+  if (head) await cut(head, seriesId, event.occurrenceDate);
 }

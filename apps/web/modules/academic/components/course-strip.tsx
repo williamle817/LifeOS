@@ -4,6 +4,7 @@ import type { Course } from "@lifeos/contracts";
 import { show, type CourseGrade } from "@/modules/academic/lib/grade";
 import { LetterPill } from "@/modules/academic/components/letter-pill";
 import { DragHandle, useDragList } from "@/components/reorder";
+import { tint } from "@/components/styles";
 
 export function CourseStrip({
   courses,
@@ -22,7 +23,7 @@ export function CourseStrip({
 }) {
   const drag = useDragList((_list, from, to) => onMove(from, to));
   return (
-    <div className="flex flex-wrap items-stretch gap-3">
+    <div className="flex flex-wrap items-stretch gap-4">
       {courses.map((course, index) => {
         const grade = grades.get(course.id);
         const active = course.id === selected;
@@ -41,47 +42,44 @@ export function CourseStrip({
             index={index}
             drag={drag}
             label={course.code || course.title}
-            className="absolute top-2.5 right-2.5 z-10"
+            className="absolute top-3.5 right-3.5 z-10"
           />
           <button
             type="button"
             onClick={() => onSelect(course.id)}
             aria-pressed={active}
-            style={
-              active
-                ? {
-                    backgroundColor: `var(--event-${color})`,
-                    borderColor: `var(--event-${color}-line)`,
-                    color: `var(--event-${color}-ink)`,
-                  }
-                : undefined
-            }
-            className={`relative block min-w-52 overflow-hidden rounded-3xl border p-4 text-left transition-all hover:-translate-y-0.5 ${
-              active
-                ? "shadow-md"
-                : "border-line bg-surface shadow-sm hover:bg-surface-muted"
+            style={active ? tint(color) : undefined}
+            className={`relative flex w-64 flex-col gap-2.5 rounded-panel p-5 text-left transition hover:-translate-y-0.5 ${
+              active ? "border shadow-soft" : "bg-surface shadow-soft"
             }`}
           >
             <span
-              style={{ backgroundColor: `var(--event-${color})` }}
-              className="absolute inset-x-0 top-0 h-1.5"
-            />
-
-            <span
-              className={`block text-xs font-medium ${
+              className={`flex items-center gap-2 pr-8 text-xs font-semibold ${
                 active ? "" : "text-ink-muted"
               }`}
               style={
                 active ? { color: `var(--event-${color}-ink-muted)` } : undefined
               }
             >
-              {course.code || course.title}
+              {active ? null : (
+                <span
+                  aria-hidden="true"
+                  style={{ backgroundColor: `var(--event-${color}-line)` }}
+                  className="size-2.5 shrink-0 rounded-full"
+                />
+              )}
+              <span className="truncate">{course.code || course.title}</span>
             </span>
+            {course.code ? (
+              <span className="-mt-1.5 truncate text-sm font-medium">
+                {course.title}
+              </span>
+            ) : null}
 
-            <span className="mt-1.5 flex items-baseline gap-2 pr-6">
-              <span className="text-[1.75rem] leading-none font-semibold">
+            <span className="flex items-baseline gap-2.5">
+              <span className="font-display text-[2.75rem] leading-none font-medium tabular-nums">
                 {grade?.currentGrade == null ? "--" : show(grade.currentGrade)}
-                <span className="text-base font-medium">
+                <span className="text-[1.375rem]">
                   {grade?.currentGrade == null ? "" : "%"}
                 </span>
               </span>
@@ -89,10 +87,10 @@ export function CourseStrip({
             </span>
 
             <span
-              className="mt-3 block h-1.5 w-full overflow-hidden rounded-full"
+              className="block h-1.5 w-full overflow-hidden rounded-full"
               style={{
                 backgroundColor: active
-                  ? "var(--surface)"
+                  ? `color-mix(in srgb, var(--event-${color}-line) 35%, transparent)`
                   : "var(--surface-muted)",
               }}
             >
@@ -106,9 +104,7 @@ export function CourseStrip({
             </span>
 
             <span
-              className={`mt-1.5 block text-[11px] ${
-                active ? "" : "text-ink-faint"
-              }`}
+              className={`block text-xs ${active ? "" : "text-ink-faint"}`}
               style={
                 active ? { color: `var(--event-${color}-ink-muted)` } : undefined
               }
@@ -123,9 +119,21 @@ export function CourseStrip({
       <button
         type="button"
         onClick={onNew}
-        className="min-w-36 rounded-3xl border border-dashed border-line px-4 py-4 text-left text-[13px] text-ink-muted transition-colors hover:border-accent hover:bg-surface-muted hover:text-ink"
+        aria-label="New course"
+        title="New course"
+        className="grid size-12 shrink-0 place-items-center self-center rounded-full bg-accent text-surface shadow-float transition hover:brightness-110 active:scale-[0.97]"
       >
-        New course
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+          className="size-5"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
       </button>
     </div>
   );

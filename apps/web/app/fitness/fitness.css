@@ -1,4 +1,5 @@
-body:has([data-page="fitness"]) {
+body:has([data-page="fitness"]),
+:root:not([data-theme="night"]) [data-tone="fitness"] {
   --canvas: #fadbd1;
   --surface: #fee6de;
   --surface-muted: #f6d3c7;
@@ -9,6 +10,7 @@ body:has([data-page="fitness"]) {
   --ink-faint: #674b42;
   --accent: #a23504;
   --accent-soft: #ffc9b7;
+  --shade: var(--ink);
 }
 
 :root[data-theme="night"] body:has([data-page="fitness"]) {
@@ -20,6 +22,11 @@ body:has([data-page="fitness"]) {
   --ink: #fbf1ea;
   --ink-muted: #d2b6a6;
   --ink-faint: #b89a89;
+  --accent: #ff8f57;
+  --accent-soft: #40200f;
+}
+
+:root[data-theme="night"] [data-tone="fitness"] {
   --accent: #ff8f57;
   --accent-soft: #40200f;
 }

@@ -26,6 +26,7 @@ test("types a score in and watches the grade appear", async ({ app, page }) => {
   await app.open("/academic");
 
   await page.getByLabel("Midterm score").fill("84");
+  await page.getByLabel("Midterm score").press("Enter");
 
   await expect(page.getByText("84%").first()).toBeVisible();
   await expect(page.getByText("B").first()).toBeVisible();
@@ -136,6 +137,37 @@ test("lists what is coming up, soonest first", async ({ app, page }) => {
   expect(rows[0].startsWith("First")).toBe(true);
   expect(rows[1].startsWith("Second")).toBe(true);
   expect(rows[2].startsWith("Third")).toBe(true);
+});
+
+test("lists what is coming up in every course, not just the open one", async ({
+  app,
+  page,
+}) => {
+  app.db.semesters.push(semesterRow());
+  app.db.courses.push(
+    courseRow({ position: 0 }),
+    courseRow({ id: "c2", code: "MATH 221", title: "Linear Algebra", position: 1 }),
+  );
+  app.db.categories.push(
+    categoryRow({ id: "exams", name: "Exams" }),
+    categoryRow({ id: "q", course_id: "c2", name: "Quizzes" }),
+  );
+  app.db.grade_items.push(
+    gradeItemRow({ id: "a", title: "Midterm", due_on: "2099-11-01" }),
+    gradeItemRow({ id: "b", course_id: "c2", category_id: "q", title: "Quiz 3", due_on: "2099-10-01" }),
+  );
+  await app.open("/academic");
+
+  await expect(page.getByRole("heading", { name: "Data Structures" })).toBeVisible();
+  const rows = await page
+    .getByRole("list", { name: "Coming up" })
+    .getByRole("listitem")
+    .allTextContents();
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toContain("Quiz 3");
+  expect(rows[0]).toContain("MATH 221");
+  expect(rows[1]).toContain("Midterm");
+  expect(rows[1]).toContain("CS 201");
 });
 
 test("leaves marked work out of what is coming up", async ({ app, page }) => {

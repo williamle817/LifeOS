@@ -1,45 +1,9 @@
 "use client";
 
-import type { Category, GradeItem } from "@lifeos/contracts";
+import type { Category, Course, GradeItem } from "@lifeos/contracts";
+import { daysBetween, dueLabel, isoDay, shortDate } from "@/lib/dates";
 
-const DAY = 24 * 60 * 60 * 1000;
-
-function startOfDay(value: Date): number {
-  return new Date(
-    value.getFullYear(),
-    value.getMonth(),
-    value.getDate(),
-  ).getTime();
-}
-
-function dayOf(due: string): number {
-  const [y, m, d] = due.split("-").map(Number);
-  return new Date(y, m - 1, d).getTime();
-}
-
-function dateLabel(due: string): string {
-  const [y, m, d] = due.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-export function daysAway(due: string, today: Date): number {
-  return Math.round((dayOf(due) - startOfDay(today)) / DAY);
-}
-
-export function whenLabel(due: string, today: Date): string {
-  const days = daysAway(due, today);
-  if (days < 0) return days === -1 ? "1 day late" : `${-days} days late`;
-  if (days === 0) return "today";
-  if (days === 1) return "tomorrow";
-  if (days < 14) return `in ${days} days`;
-  if (days < 60) return `in ${Math.round(days / 7)} weeks`;
-  return `in ${Math.round(days / 30)} months`;
-}
-
-export function dueOrder(a: GradeItem, b: GradeItem): number {
+function dueOrder(a: GradeItem, b: GradeItem): number {
   const left = a.dueOn ?? "";
   const right = b.dueOn ?? "";
   if (left !== right) return left < right ? -1 : 1;
@@ -48,52 +12,69 @@ export function dueOrder(a: GradeItem, b: GradeItem): number {
 
 export function Upcoming({
   items,
+  courses,
   categories,
-  today = new Date(),
 }: {
   items: GradeItem[];
+  courses: Course[];
   categories: Category[];
-  today?: Date;
 }) {
+  const today = isoDay(new Date());
   const waiting = items
     .filter((item) => item.score === null && item.dueOn)
     .sort(dueOrder);
 
   const name = (id: string) =>
     categories.find((category) => category.id === id)?.name ?? "";
+  const courseOf = (id: string) => courses.find((course) => course.id === id);
 
   return (
     <div>
-      <h3 className="text-sm font-medium">Coming up</h3>
+      <h3 className="font-display text-2xl font-medium">Coming up</h3>
+      <p className="mt-1 text-xs text-ink-faint">Every course this semester</p>
 
       {waiting.length ? (
-        <ul aria-label="Coming up" className="mt-3 grid gap-1.5">
+        <ul aria-label="Coming up" className="mt-4 grid gap-2.5 md:grid-cols-2 lg:grid-cols-1">
           {waiting.map((item) => {
-            const soon = daysAway(item.dueOn!, today) <= 3;
+            const days = daysBetween(today, item.dueOn!);
+            const soon = days <= 3;
+            const [month, day] = shortDate(item.dueOn!).split(" ");
+            const course = courseOf(item.courseId);
             return (
               <li
                 key={item.id}
-                className="flex items-baseline gap-2 rounded-2xl bg-surface-muted px-3 py-2"
+                className="flex items-center gap-3.5 rounded-card bg-canvas p-2.5"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px]">
+                  <span className="block truncate text-sm font-semibold">
                     {item.title}
                   </span>
-                  <span className="text-[11px] text-ink-faint">
-                    {name(item.categoryId)} · out of {item.maxScore}
+                  <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-faint">
+                    <span
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor: `var(--event-${course?.color ?? "blue"}-line)`,
+                      }}
+                    />
+                    {[course?.code || course?.title, name(item.categoryId)]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    <span aria-hidden="true">·</span>
+                    <span
+                      style={soon ? { color: "var(--alert)" } : undefined}
+                      className={soon ? "font-bold" : "font-medium"}
+                    >
+                      {dueLabel(days)}
+                    </span>
                   </span>
                 </span>
-                <span className="shrink-0 text-right">
-                  <span className="block text-[13px] font-medium">
-                    {dateLabel(item.dueOn!)}
+                <span className="order-first flex h-14 w-[3.25rem] shrink-0 flex-col items-center justify-center rounded-2xl bg-surface">
+                  <span className="text-[11px] font-semibold text-ink-faint">
+                    {month}
                   </span>
-                  <span
-                    style={soon ? { color: "var(--alert)" } : undefined}
-                    className={`text-[11px] ${
-                      soon ? "font-medium" : "text-ink-faint"
-                    }`}
-                  >
-                    {whenLabel(item.dueOn!, today)}
+                  <span className="font-display text-[1.375rem] leading-none font-semibold">
+                    {day}
                   </span>
                 </span>
               </li>
@@ -101,7 +82,7 @@ export function Upcoming({
           })}
         </ul>
       ) : (
-        <p className="mt-3 text-[13px] text-ink-muted">
+        <p className="mt-4 text-sm leading-relaxed text-ink-muted">
           Nothing waiting on a score. Give your items a due date and they line
           up here, soonest first.
         </p>

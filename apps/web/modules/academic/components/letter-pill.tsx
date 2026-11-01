@@ -1,6 +1,7 @@
 "use client";
 
 import type { Letter } from "@lifeos/contracts";
+import { tint } from "@/components/styles";
 
 const TINT: Record<Letter, string> = {
   A: "green",
@@ -10,25 +11,11 @@ const TINT: Record<Letter, string> = {
   F: "red",
 };
 
-export function LetterPill({
-  letter,
-  size = "base",
-}: {
-  letter: Letter;
-  size?: "base" | "small";
-}) {
+export function LetterPill({ letter }: { letter: Letter }) {
   return (
     <span
-      style={{
-        backgroundColor: `var(--event-${TINT[letter]})`,
-        borderColor: `var(--event-${TINT[letter]}-line)`,
-        color: `var(--event-${TINT[letter]}-ink)`,
-      }}
-      className={`rounded-full border font-medium ${
-        size === "small"
-          ? "px-2 py-0.5 text-[11px]"
-          : "px-2.5 py-0.5 text-[13px]"
-      }`}
+      style={tint(TINT[letter])}
+      className="rounded-full border px-2.5 py-0.5 text-[13px] font-medium"
     >
       {letter}
     </span>

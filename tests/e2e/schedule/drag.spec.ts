@@ -10,11 +10,8 @@ import {
   laneBox,
   monday,
   test,
+  today,
 } from "../support/fixtures";
-
-function today(): string {
-  return dayOf(new Date());
-}
 
 function minutesOf(iso: string): number {
   return new Date(iso).getMinutes();
@@ -29,7 +26,7 @@ test("dragging an empty slot opens the form", async ({ calendar, page }) => {
   await dragSlots(page, today(), "10:00:00", "11:00:00");
 
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByText("New event")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("New event")).toBeVisible();
 });
 
 test("shows a placeholder block while the form is open", async ({
@@ -221,4 +218,49 @@ test("leaves room on the right of a week view block", async ({
 
   expect(block.width).toBeLessThan(column.width * 0.92);
   expect(block.width).toBeGreaterThan(column.width * 0.7);
+});
+
+test.describe("east of Greenwich", () => {
+  test.use({ timezoneId: "Asia/Ho_Chi_Minh" });
+
+  test("keeps an all day event on whole dates when it is dragged", async ({
+    calendar,
+    page,
+  }) => {
+    const start = monday();
+    const day = (offset: number) => {
+      const d = new Date(start);
+      d.setDate(d.getDate() + offset);
+      return dayOf(d);
+    };
+    calendar.db.events.push(
+      eventRow({
+        id: "d1",
+        title: "Birthday",
+        all_day: true,
+        start_at: day(0),
+        end_at: day(1),
+      }),
+    );
+    await calendar.open();
+
+    const from = (await page.getByText("Birthday").first().boundingBox())!;
+    const to = (await page
+      .locator(`.fc-timegrid .fc-daygrid-body .fc-daygrid-day[data-date="${day(2)}"]`)
+      .first()
+      .boundingBox())!;
+    await page.mouse.move(from.x + 5, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+      steps: 12,
+    });
+    await page.mouse.up();
+
+    await expect.poll(() => calendar.db.events[0].start_at).toBe(day(2));
+    expect(calendar.db.events[0].end_at).toBe(day(3));
+
+    await page.getByText("Birthday").first().click();
+    await page.getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByLabel("Start")).toHaveValue(day(2));
+  });
 });

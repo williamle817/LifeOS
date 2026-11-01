@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EmptyState } from "@/components/empty-state";
+import { FitnessView } from "@/modules/fitness/components/fitness-view";
 import "./fitness.css";
 
 export const metadata: Metadata = {
@@ -7,13 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function FitnessPage() {
-  return (
-    <div data-page="fitness">
-      <EmptyState
-        title="No sessions yet"
-        body="Workout type, duration and calories burned show up here, with weekly and monthly summaries."
-        hint="Coming after the backend is in place."
-      />
-    </div>
-  );
+  return <FitnessView />;
 }

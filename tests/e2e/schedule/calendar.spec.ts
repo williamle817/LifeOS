@@ -176,3 +176,24 @@ test("shows the sign in form when there is no session", async ({ page }) => {
   await page.goto("/schedule");
   await expect(page.getByText("Sign in to LifeOS")).toBeVisible();
 });
+
+test("shows the next person only their own events after a sign out", async ({
+  calendar,
+  page,
+}) => {
+  calendar.db.events.push(eventRow({ id: "a1", title: "Alpha private" }));
+  await calendar.open();
+  await expect(page.getByText("Alpha private")).toBeVisible();
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByText("Sign in to LifeOS")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(0);
+
+  calendar.db.events.splice(0, 1, eventRow({ id: "b1", title: "Beta own" }));
+  await page.getByLabel("Email").fill("b@lifeos.test");
+  await page.getByLabel("Password").fill("password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByText("Beta own")).toBeVisible();
+  await expect(page.getByText("Alpha private")).toHaveCount(0);
+});

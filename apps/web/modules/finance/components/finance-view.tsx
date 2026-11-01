@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
-import type { EditScope, Flow } from "@lifeos/contracts";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import type { EditScope, Flow, FlowKind } from "@lifeos/contracts";
 import {
   ensureEvents,
   eventFor,
   eventsServer,
   eventsSnapshot,
-  mealsIn,
+  incomeIn,
   removeFromSchedule,
   saveFromSchedule,
-  shiftsIn,
+  spendingIn,
   subscribeEvents,
 } from "@/lib/from-schedule";
 import {
@@ -26,7 +26,6 @@ import {
   subscribe,
 } from "@/modules/finance/lib/flow-store";
 import {
-  inMonth,
   newestFirst,
   pending,
   settled,
@@ -38,15 +37,18 @@ import { MonthBar } from "@/modules/finance/components/month-bar";
 import { SplitChart } from "@/modules/finance/components/split-chart";
 import { ComingUp } from "@/modules/finance/components/coming-up";
 import { FlowPanel } from "@/modules/finance/components/flow-panel";
+import { SideSwitch } from "@/modules/finance/components/side-switch";
+import { SaveError } from "@/components/save-error";
 
-export function FinanceView({ today = new Date() }: { today?: Date }) {
+export function FinanceView() {
   const flows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const events = useSyncExternalStore(
     subscribeEvents,
     eventsSnapshot,
     eventsServer,
   );
-  const [month, setMonth] = useState<Month>(() => thisMonth(today));
+  const [month, setMonth] = useState<Month>(() => thisMonth());
+  const [side, setSide] = useState<FlowKind>("expense");
 
   useEffect(() => {
     void ensureLoaded();
@@ -54,17 +56,16 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
   }, []);
 
   const userId = currentUserId() ?? "";
-  const shown = inMonth(flows, month);
-  const income = newestFirst([
-    ...shown.filter((one) => one.flow.kind === "income"),
-    ...shiftsIn(events, month),
-  ]);
-  const spending = [
-    ...shown.filter((one) => one.flow.kind === "expense"),
-    ...mealsIn(events, month),
-  ];
-  const gone = newestFirst(settled(spending, today));
-  const due = pending(spending, today);
+  const income = useMemo(
+    () => incomeIn(flows, events, month),
+    [flows, events, month],
+  );
+  const spending = useMemo(
+    () => spendingIn(flows, events, month),
+    [flows, events, month],
+  );
+  const gone = newestFirst(settled(spending));
+  const due = pending(spending);
 
   function onSave(
     flow: Flow,
@@ -98,39 +99,32 @@ export function FinanceView({ today = new Date() }: { today?: Date }) {
   }
 
   return (
-    <div data-page="finance" className="grid gap-5">
-      {lastWriteError() ? (
-        <p className="rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
-          Could not save: {lastWriteError()}
-        </p>
-      ) : null}
+    <div data-page="finance" className="mx-auto grid w-full max-w-6xl gap-7">
+      <SaveError message={lastWriteError()} />
 
-      <MonthBar month={month} onChange={setMonth} today={today} />
+      <MonthBar month={month} onChange={setMonth} />
 
       <SplitChart income={total(income)} expense={total(gone)} />
 
-      <ComingUp rows={due} today={today} />
+      <ComingUp rows={due} />
 
-      <div className="grid items-start gap-5 lg:grid-cols-2">
-        <FlowPanel
-          kind="income"
-          rows={income}
-          userId={userId}
-          month={month}
-          onAdd={(flow: Flow) => void saveFlow(flow)}
-          onSave={onSave}
-          onRemove={onRemove}
-        />
-        <FlowPanel
-          kind="expense"
-          rows={gone}
-          userId={userId}
-          month={month}
-          onAdd={(flow: Flow) => void saveFlow(flow)}
-          onSave={onSave}
-          onRemove={onRemove}
-        />
-      </div>
+      <FlowPanel
+        key={side}
+        kind={side}
+        rows={side === "income" ? income : gone}
+        userId={userId}
+        month={month}
+        onAdd={(flow: Flow) => void saveFlow(flow)}
+        onSave={onSave}
+        onRemove={onRemove}
+        switcher={
+          <SideSwitch
+            side={side}
+            counts={{ income: income.length, expense: gone.length }}
+            onChange={setSide}
+          />
+        }
+      />
     </div>
   );
 }

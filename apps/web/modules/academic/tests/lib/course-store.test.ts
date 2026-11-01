@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Category, Course, GradeItem, Semester } from "@lifeos/contracts";
+import type { Category, GradeItem, Semester } from "@lifeos/contracts";
 import { DEFAULT_SCALE } from "@lifeos/contracts";
 import {
   calls,
@@ -10,6 +10,7 @@ import {
   storedIn,
   type FakeRow,
 } from "@/tests/helpers/fake-supabase";
+import { course } from "@/modules/academic/tests/factories";
 
 vi.mock("@/lib/supabase", async () => {
   const { client } = await import("@/tests/helpers/fake-supabase");
@@ -95,18 +96,6 @@ function semester(over: Partial<Semester> = {}): Semester {
     userId: "u1",
     name: "Fall 2026",
     startsOn: "2026-08-20",
-    ...over,
-  };
-}
-
-function course(over: Partial<Course> = {}): Course {
-  return {
-    id: "c1",
-    userId: "u1",
-    semesterId: "sem-1",
-    title: "Data Structures",
-    code: "CS 201",
-    scale: DEFAULT_SCALE,
     ...over,
   };
 }

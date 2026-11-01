@@ -3,23 +3,14 @@
 import { useState } from "react";
 import type { Category, GradeItem } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
+import { Labeled } from "@/components/labeled";
+import { inputSmall as input, primary, quietOnMuted } from "@/components/styles";
 import type { CourseGrade } from "@/modules/academic/lib/grade";
 import { DragHandle, useDragList } from "@/components/reorder";
-
-const input =
-  "rounded-xl border border-line bg-surface px-2.5 py-1 text-[13px] outline-none transition-colors focus:border-accent";
+import { shortDate } from "@/lib/dates";
 
 function scoreText(item: GradeItem): string {
   return item.score === null ? "" : String(item.score);
-}
-
-function dayLabel(value?: string): string {
-  if (!value) return "";
-  const [y, m, d] = value.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export function GradeTable({
@@ -84,7 +75,7 @@ export function GradeTable({
     onSaveCategory({
       ...category,
       name: name.trim(),
-      weight: Number(weight) || 0,
+      weight: Math.max(0, Number(weight) || 0),
       dropLowest: Math.max(0, Number(drop) || 0),
     });
     setHeading(null);
@@ -105,7 +96,7 @@ export function GradeTable({
       categoryId,
       title: title.trim(),
       score: null,
-      maxScore: Number(maxScore) || 100,
+      maxScore: Number(maxScore) > 0 ? Number(maxScore) : 100,
       ...(dueOn ? { dueOn } : {}),
     });
     reset();
@@ -116,27 +107,17 @@ export function GradeTable({
     onSave({
       ...item,
       title: title.trim(),
-      maxScore: Number(maxScore) || 100,
+      maxScore: Number(maxScore) > 0 ? Number(maxScore) : 100,
       ...(dueOn ? { dueOn } : { dueOn: undefined }),
     });
     setEditing(null);
     reset();
   }
 
-  function field(caption: string, control: React.ReactNode) {
-    return (
-      <label className="flex flex-col gap-1">
-        <span className="text-[11px] text-ink-faint">{caption}</span>
-        {control}
-      </label>
-    );
-  }
-
   function fields() {
     return (
       <>
-        {field(
-          "Name",
+        <Labeled caption="Name">
           <input
             aria-label="Item name"
             autoFocus
@@ -144,10 +125,9 @@ export function GradeTable({
             placeholder="HW 3"
             onChange={(e) => setTitle(e.target.value)}
             className={`min-w-32 ${input}`}
-          />,
-        )}
-        {field(
-          "Out of",
+          />
+        </Labeled>
+        <Labeled caption="Out of">
           <input
             aria-label="Out of"
             type="number"
@@ -156,24 +136,23 @@ export function GradeTable({
             value={maxScore}
             onChange={(e) => setMaxScore(e.target.value)}
             className={`w-20 ${input}`}
-          />,
-        )}
-        {field(
-          "Due",
+          />
+        </Labeled>
+        <Labeled caption="Due">
           <input
             aria-label="Due date"
             type="date"
             value={dueOn}
             onChange={(e) => setDueOn(e.target.value)}
             className={input}
-          />,
-        )}
+          />
+        </Labeled>
       </>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-line-strong bg-surface p-4 shadow-md">
+    <div className="rounded-panel bg-surface p-1.5 shadow-soft sm:p-4">
       <div className="grid gap-3">
       {grade.categories.map((entry, slot) => {
         const category = entry.category;
@@ -188,22 +167,20 @@ export function GradeTable({
             data-drag="category"
             style={drag.style("category", slot)}
             aria-label={category.name}
-            className="overflow-hidden rounded-2xl border border-line"
+            className="rounded-[1.375rem] bg-surface-muted p-1.5"
           >
             {heading === category.id ? (
-              <header className="flex flex-wrap items-end gap-2 border-b border-line bg-accent-soft px-4 py-3">
-                {field(
-                  "Name",
+              <header className="flex flex-wrap items-end gap-2 px-3 py-3">
+                <Labeled caption="Name">
                   <input
                     aria-label="Category name"
                     autoFocus
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className={`min-w-32 ${input}`}
-                  />,
-                )}
-                {field(
-                  "Worth %",
+                  />
+                </Labeled>
+                <Labeled caption="Worth %">
                   <input
                     aria-label="Category weight"
                     type="number"
@@ -212,10 +189,9 @@ export function GradeTable({
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     className={`w-20 ${input}`}
-                  />,
-                )}
-                {field(
-                  "Drop lowest",
+                  />
+                </Labeled>
+                <Labeled caption="Drop lowest">
                   <input
                     aria-label="Category drop lowest"
                     type="number"
@@ -224,36 +200,36 @@ export function GradeTable({
                     value={drop}
                     onChange={(e) => setDrop(e.target.value)}
                     className={`w-20 ${input}`}
-                  />,
-                )}
+                  />
+                </Labeled>
                 <button
                   type="button"
                   onClick={() => submitHeading(category)}
-                  className="rounded-full bg-accent px-4 py-1 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                  className={primary}
                 >
                   Save
                 </button>
                 <button
                   type="button"
                   onClick={() => setHeading(null)}
-                  className="rounded-full px-3 py-1 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                  className={quietOnMuted}
                 >
                   Cancel
                 </button>
               </header>
             ) : (
-              <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1 border-b border-line bg-accent-soft px-4 py-2.5">
-                <h3 className="text-sm font-medium">{category.name}</h3>
-                <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] text-ink-muted">
+              <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 px-3 py-2.5">
+                <h3 className="text-[15px] font-bold">{category.name}</h3>
+                <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-ink-muted">
                   {category.weight}%
                 </span>
                 {category.extraCredit ? (
-                  <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] text-accent">
+                  <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent">
                     extra credit
                   </span>
                 ) : null}
                 {category.dropLowest ? (
-                  <span className="rounded-full bg-surface px-2 py-0.5 text-[11px] text-ink-faint">
+                  <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-medium text-ink-faint">
                     drops {category.dropLowest} lowest
                   </span>
                 ) : null}
@@ -261,7 +237,7 @@ export function GradeTable({
                   type="button"
                   aria-label={`Edit ${category.name}`}
                   onClick={() => startHeading(category)}
-                  className="rounded-lg p-1 text-ink-faint transition-colors hover:bg-surface hover:text-ink"
+                  className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface hover:text-ink"
                 >
                   <ActionIcon name="edit" />
                 </button>
@@ -269,7 +245,7 @@ export function GradeTable({
                   {entry.pct === null ? (
                     <span className="text-ink-muted">nothing marked yet</span>
                   ) : (
-                    <span className="font-medium">{entry.pct}%</span>
+                    <span className="font-display text-2xl font-medium tabular-nums">{entry.pct}%</span>
                   )}
                   <DragHandle
                     list="category"
@@ -281,10 +257,10 @@ export function GradeTable({
               </header>
             )}
 
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-surface-muted overflow-hidden rounded-2xl bg-surface">
               {rows.map((item, seat) =>
                 editing === item.id ? (
-                  <li key={item.id} className="bg-surface-muted px-4 py-3">
+                  <li key={item.id} className="bg-canvas px-4 py-3">
                     <p className="text-[11px] text-ink-faint">
                       Editing <span className="font-medium text-ink">{item.title}</span>
                     </p>
@@ -293,14 +269,14 @@ export function GradeTable({
                       <button
                         type="button"
                         onClick={() => submitEdit(item)}
-                        className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                        className={primary}
                       >
                         Save
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditing(null)}
-                        className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                        className={quietOnMuted}
                       >
                         Cancel
                       </button>
@@ -311,7 +287,7 @@ export function GradeTable({
                     key={item.id}
                     data-drag={`item-${category.id}`}
                     style={drag.style(`item-${category.id}`, seat)}
-                    className="flex items-center gap-2 bg-surface px-4 py-2.5 text-[13px] transition-colors hover:bg-surface-muted"
+                    className="group flex items-center gap-1 bg-surface py-2 pr-1 pl-3 text-sm transition-colors hover:bg-canvas sm:gap-2 sm:pr-2 sm:pl-4"
                   >
                     <span className="min-w-0 flex-1">
                       <span
@@ -322,59 +298,65 @@ export function GradeTable({
                         {item.title}
                       </span>
                       <span className="ml-2 text-[11px] text-ink-faint">
-                        {dayLabel(item.dueOn)}
+                        {item.dueOn ? shortDate(item.dueOn) : ""}
                         {dropped.has(item.id) ? " dropped" : ""}
-                        {item.eventId ? " from Schedule" : ""}
                       </span>
                     </span>
 
                     <input
+                      key={scoreText(item)}
                       aria-label={`${item.title} score`}
                       type="number"
                       step="0.01"
                       min="0"
                       placeholder="--"
-                      value={scoreText(item)}
-                      onChange={(e) =>
-                        onScore(
-                          item.id,
-                          e.target.value === "" ? null : Number(e.target.value),
-                        )
-                      }
-                      className={`w-16 text-right ${input}`}
+                      defaultValue={scoreText(item)}
+                      onBlur={(e) => {
+                        const typed =
+                          e.target.value === ""
+                            ? null
+                            : Math.max(0, Number(e.target.value));
+                        if (typed !== item.score) onScore(item.id, typed);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                      }}
+                      className={`w-16 text-right font-semibold sm:w-[4.5rem] ${input}`}
                     />
-                    <span className="w-10 text-[11px] text-ink-faint">
+                    <span className="w-11 text-xs text-ink-faint">
                       / {item.maxScore}
                     </span>
 
-                    <button
-                      type="button"
-                      aria-label={`Edit ${item.title}`}
-                      onClick={() => startEdit(item)}
-                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                    >
-                      <ActionIcon name="edit" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${item.title}`}
-                      onClick={() => onRemove(item.id)}
-                      className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-                    >
-                      <ActionIcon name="trash" />
-                    </button>
-                    <DragHandle
-                      list={`item-${category.id}`}
-                      index={seat}
-                      drag={drag}
-                      label={item.title}
-                    />
+                    <span className="flex items-center transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0">
+                      <button
+                        type="button"
+                        aria-label={`Edit ${item.title}`}
+                        onClick={() => startEdit(item)}
+                        className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                      >
+                        <ActionIcon name="edit" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${item.title}`}
+                        onClick={() => onRemove(item.id)}
+                        className="grid size-9 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+                      >
+                        <ActionIcon name="trash" />
+                      </button>
+                      <DragHandle
+                        list={`item-${category.id}`}
+                        index={seat}
+                        drag={drag}
+                        label={item.title}
+                      />
+                    </span>
                   </li>
                 ),
               )}
             </ul>
 
-            <div className="border-t border-line bg-surface-muted px-4 py-3">
+            <div className="px-1.5 pt-2.5 pb-1">
               {adding === category.id ? (
                 <div>
                   <p className="text-[11px] text-ink-faint">
@@ -386,14 +368,14 @@ export function GradeTable({
                     <button
                       type="button"
                       onClick={() => submitNew(category.id)}
-                      className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+                      className={primary}
                     >
                       Add
                     </button>
                     <button
                       type="button"
                       onClick={() => setAdding(null)}
-                      className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface"
+                      className={quietOnMuted}
                     >
                       Done
                     </button>
@@ -403,7 +385,7 @@ export function GradeTable({
                 <button
                   type="button"
                   onClick={() => startAdd(category.id)}
-                  className="flex items-center gap-1.5 rounded-full border border-dashed border-line bg-surface px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:border-accent hover:text-accent"
+                  className="flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-line-strong px-4 text-[13px] font-medium text-ink-muted transition-colors hover:border-accent hover:text-accent"
                 >
                   <span aria-hidden="true" className="text-base leading-none">
                     +

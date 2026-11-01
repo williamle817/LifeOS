@@ -42,7 +42,8 @@
   --money-out: #b02227;
 }
 
-:root[data-theme="night"] {
+:root[data-theme="night"],
+:root[data-theme="night"] body {
   color-scheme: dark;
 
   --canvas: #101216;
@@ -58,6 +59,7 @@
   --alert: #ff6b6b;
   --money-in: #4ade80;
   --money-out: #ff6b6b;
+  --shade: #000000;
 }
 
 @theme inline {
@@ -72,9 +74,28 @@
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --font-sans: var(--font-app);
+  --font-display: var(--font-fraunces);
+  --font-display--font-variation-settings: "SOFT" 100;
+  --radius-field: 0.875rem;
+  --radius-card: 1.25rem;
+  --radius-panel: 1.75rem;
+  --shadow-float:
+    0 1px 2px color-mix(in srgb, var(--shade) 6%, transparent),
+    0 14px 32px -18px color-mix(in srgb, var(--shade) 32%, transparent);
+  --shadow-soft:
+    0 1px 2px color-mix(in srgb, var(--shade) 5%, transparent),
+    0 22px 44px -26px color-mix(in srgb, var(--shade) 34%, transparent);
+  --shadow-pop:
+    0 2px 6px color-mix(in srgb, var(--shade) 8%, transparent),
+    0 30px 60px -24px color-mix(in srgb, var(--shade) 45%, transparent);
+}
+
+html {
+  scrollbar-gutter: stable both-edges;
 }
 
 body {
+  --shade: var(--ink);
   background: var(--canvas);
   color: var(--ink);
 }

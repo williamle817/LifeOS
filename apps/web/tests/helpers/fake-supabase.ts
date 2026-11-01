@@ -86,6 +86,7 @@ type Result = { data: unknown; error: { message: string } | null };
 type Query = {
   select(): Query;
   insert(value: FakeRow | FakeRow[]): Query;
+  upsert(value: FakeRow | FakeRow[]): Query;
   update(value: FakeRow): Query;
   delete(): Query;
   eq(column: string, value: unknown): Query;
@@ -121,6 +122,14 @@ function query(name: string): Query {
       for (const r of payload) all.push({ ...r });
       return { data: payload, error: null };
     }
+    if (op === "upsert") {
+      for (const r of payload) {
+        const found = all.find((one) => one.id === r.id);
+        if (found) Object.assign(found, r);
+        else all.push({ ...r });
+      }
+      return { data: payload, error: null };
+    }
     if (op === "update") {
       for (const r of hit) Object.assign(r, payload[0]);
       return { data: hit, error: null };
@@ -136,6 +145,11 @@ function query(name: string): Query {
     },
     insert(value: FakeRow | FakeRow[]): Query {
       op = "insert";
+      payload = Array.isArray(value) ? value : [value];
+      return api;
+    },
+    upsert(value: FakeRow | FakeRow[]): Query {
+      op = "upsert";
       payload = Array.isArray(value) ? value : [value];
       return api;
     },

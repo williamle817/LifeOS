@@ -2,48 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Category, Course, GradeItem } from "@lifeos/contracts";
-import { DEFAULT_SCALE } from "@lifeos/contracts";
 import { gradeCourse, type CourseGrade } from "@/modules/academic/lib/grade";
 import { CourseStrip } from "@/modules/academic/components/course-strip";
-
-function course(over: Partial<Course> = {}): Course {
-  return {
-    id: "c1",
-    userId: "u1",
-    semesterId: "sem-1",
-    title: "Data Structures",
-    code: "CS 201",
-    scale: DEFAULT_SCALE,
-    ...over,
-  };
-}
-
-function category(over: Partial<Category> = {}): Category {
-  return {
-    id: "exams",
-    userId: "u1",
-    courseId: "c1",
-    name: "Exams",
-    weight: 100,
-    dropLowest: 0,
-    extraCredit: false,
-    position: 0,
-    ...over,
-  };
-}
-
-function item(over: Partial<GradeItem> = {}): GradeItem {
-  return {
-    id: "i1",
-    userId: "u1",
-    courseId: "c1",
-    categoryId: "exams",
-    title: "Midterm",
-    score: null,
-    maxScore: 100,
-    ...over,
-  };
-}
+import { category, course, item } from "@/modules/academic/tests/factories";
 
 function gradesFor(
   courses: Course[],

@@ -6,26 +6,17 @@ import type {
   ScaleStep,
   Semester,
 } from "@lifeos/contracts";
+import { createStore, currentUserId, owner } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 
-export type Academic = {
+export { currentUserId };
+
+type Academic = {
   semesters: Semester[];
   courses: Course[];
   categories: Category[];
   items: GradeItem[];
 };
-
-const NONE: Academic = {
-  semesters: [],
-  courses: [],
-  categories: [],
-  items: [],
-};
-
-let cache: Academic = NONE;
-let userId: string | null = null;
-let lastError: string | null = null;
-const listeners = new Set<() => void>();
 
 type SemesterRow = {
   id: string;
@@ -68,14 +59,6 @@ type ItemRow = {
   event_id: string | null;
   position: number | null;
 };
-
-function emit(): void {
-  for (const listener of listeners) listener();
-}
-
-function owner(value?: string): string {
-  return value || (userId ?? "");
-}
 
 function toSemester(row: SemesterRow): Semester {
   return {
@@ -177,90 +160,55 @@ function itemRow(value: GradeItem): ItemRow {
   };
 }
 
-export function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
+const NONE: Academic = {
+  semesters: [],
+  courses: [],
+  categories: [],
+  items: [],
+};
 
-export function getSnapshot(): Academic {
-  return cache;
-}
-
-export function getServerSnapshot(): Academic {
-  return NONE;
-}
-
-export function currentUserId(): string | null {
-  return userId;
-}
-
-export function lastWriteError(): string | null {
-  return lastError;
-}
-
-let loading: Promise<void> | null = null;
-
-export async function ensureLoaded(): Promise<void> {
-  if (userId) return;
-  loading ??= loadAcademic().finally(() => {
-    loading = null;
-  });
-  await loading;
-}
-
-export async function loadAcademic(): Promise<void> {
-  const { data: me } = await supabase.from("users").select("id").single();
-  if (!me) return;
-  userId = me.id;
-
+const store = createStore(NONE, async () => {
   const [semesters, courses, categories, items] = await Promise.all([
     supabase.from("semesters").select("*"),
     supabase.from("courses").select("*"),
     supabase.from("categories").select("*"),
     supabase.from("grade_items").select("*"),
   ]);
-
-  cache = {
+  return {
     semesters: ((semesters.data ?? []) as SemesterRow[]).map(toSemester),
     courses: ((courses.data ?? []) as CourseRow[]).map(toCourse),
     categories: ((categories.data ?? []) as CategoryRow[]).map(toCategory),
     items: ((items.data ?? []) as ItemRow[]).map(toItem),
   };
-  emit();
-}
+});
 
-async function guard(
-  run: PromiseLike<{ error: { message: string } | null }>,
-): Promise<void> {
-  const { error } = await run;
-  if (!error) return;
-  lastError = error.message;
-  await loadAcademic();
-  emit();
+export const {
+  subscribe,
+  getSnapshot,
+  getServerSnapshot,
+  lastWriteError,
+  ensureLoaded,
+} = store;
+
+function change(patch: Partial<Academic>): void {
+  store.set({ ...getSnapshot(), ...patch });
 }
 
 export async function addSemester(semester: Semester): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
+  await store.begin();
   const saved = { ...semester, userId: owner(semester.userId) };
-  cache = { ...cache, semesters: [...cache.semesters, saved] };
-  emit();
-  await guard(supabase.from("semesters").insert(semesterRow(saved)));
+  change({ semesters: [...getSnapshot().semesters, saved] });
+  await store.write(supabase.from("semesters").insert(semesterRow(saved)));
 }
 
 export async function saveSemester(semester: Semester): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  cache = {
-    ...cache,
-    semesters: cache.semesters.map((s) =>
+  await store.begin();
+  change({
+    semesters: getSnapshot().semesters.map((s) =>
       s.id === semester.id ? semester : s,
     ),
-  };
-  emit();
-  await guard(
+  });
+  await store.write(
     supabase
       .from("semesters")
       .update(semesterRow(semester))
@@ -269,28 +217,27 @@ export async function saveSemester(semester: Semester): Promise<void> {
 }
 
 export async function deleteSemester(id: string): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  const courses = cache.courses.filter((c) => c.semesterId === id);
-  const ids = new Set(courses.map((c) => c.id));
-  cache = {
-    semesters: cache.semesters.filter((s) => s.id !== id),
-    courses: cache.courses.filter((c) => c.semesterId !== id),
-    categories: cache.categories.filter((c) => !ids.has(c.courseId)),
-    items: cache.items.filter((i) => !ids.has(i.courseId)),
-  };
-  emit();
-  await guard(supabase.from("semesters").delete().eq("id", id));
+  await store.begin();
+  const now = getSnapshot();
+  const ids = new Set(
+    now.courses.filter((c) => c.semesterId === id).map((c) => c.id),
+  );
+  store.set({
+    semesters: now.semesters.filter((s) => s.id !== id),
+    courses: now.courses.filter((c) => !ids.has(c.id)),
+    categories: now.categories.filter((c) => !ids.has(c.courseId)),
+    items: now.items.filter((i) => !ids.has(i.courseId)),
+  });
+  await store.write(supabase.from("semesters").delete().eq("id", id));
 }
 
 export async function saveCourse(
   course: Course,
   categories: Category[],
 ): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-
-  const exists = cache.courses.some((c) => c.id === course.id);
+  await store.begin();
+  const now = getSnapshot();
+  const exists = now.courses.some((c) => c.id === course.id);
   const saved = {
     ...course,
     userId: owner(course.userId),
@@ -298,8 +245,7 @@ export async function saveCourse(
       course.position ??
       (exists
         ? 0
-        : cache.courses.filter((c) => c.semesterId === course.semesterId)
-            .length),
+        : now.courses.filter((c) => c.semesterId === course.semesterId).length),
   };
   const mine = categories.map((category, index) => ({
     ...category,
@@ -308,90 +254,72 @@ export async function saveCourse(
     position: index,
   }));
 
-  const before = cache.categories.filter((c) => c.courseId === course.id);
+  const before = new Map(
+    now.categories
+      .filter((c) => c.courseId === course.id)
+      .map((c) => [c.id, c]),
+  );
   const keep = new Set(mine.map((c) => c.id));
-  const gone = before.filter((c) => !keep.has(c.id));
-  const had = new Set(before.map((c) => c.id));
-  const fresh = mine.filter((c) => !had.has(c.id));
-  const changed = mine.filter((c) => had.has(c.id));
-  const goneIds = new Set(gone.map((c) => c.id));
+  const gone = [...before.keys()].filter((id) => !keep.has(id));
+  const touched = mine.filter(
+    (c) => JSON.stringify(before.get(c.id)) !== JSON.stringify(c),
+  );
 
-  cache = {
-    ...cache,
+  store.set({
+    ...now,
     courses: exists
-      ? cache.courses.map((c) => (c.id === course.id ? saved : c))
-      : [...cache.courses, saved],
+      ? now.courses.map((c) => (c.id === course.id ? saved : c))
+      : [...now.courses, saved],
     categories: [
-      ...cache.categories.filter((c) => c.courseId !== course.id),
+      ...now.categories.filter((c) => c.courseId !== course.id),
       ...mine,
     ],
-    items: cache.items.filter((i) => !goneIds.has(i.categoryId)),
-  };
-  emit();
+    items: now.items.filter((i) => !gone.includes(i.categoryId)),
+  });
 
-  await guard(
+  await store.write(
     exists
       ? supabase.from("courses").update(courseRow(saved)).eq("id", course.id)
       : supabase.from("courses").insert(courseRow(saved)),
   );
-
   if (gone.length) {
-    await guard(
-      supabase
-        .from("categories")
-        .delete()
-        .in("id", gone.map((c) => c.id)),
-    );
+    await store.write(supabase.from("categories").delete().in("id", gone));
   }
-  if (fresh.length) {
-    await guard(
-      supabase.from("categories").insert(fresh.map(categoryRow)),
-    );
-  }
-  for (const category of changed) {
-    await guard(
-      supabase
-        .from("categories")
-        .update(categoryRow(category))
-        .eq("id", category.id),
+  if (touched.length) {
+    await store.write(
+      supabase.from("categories").upsert(touched.map(categoryRow)),
     );
   }
 }
 
 export async function saveCategory(category: Category): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
+  await store.begin();
   const saved = { ...category, userId: owner(category.userId) };
-  cache = {
-    ...cache,
-    categories: cache.categories.map((c) => (c.id === saved.id ? saved : c)),
-  };
-  emit();
-  await guard(
-    supabase
-      .from("categories")
-      .update(categoryRow(saved))
-      .eq("id", saved.id),
+  change({
+    categories: getSnapshot().categories.map((c) =>
+      c.id === saved.id ? saved : c,
+    ),
+  });
+  await store.write(
+    supabase.from("categories").update(categoryRow(saved)).eq("id", saved.id),
   );
 }
 
 export async function deleteCourse(id: string): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  cache = {
-    ...cache,
-    courses: cache.courses.filter((c) => c.id !== id),
-    categories: cache.categories.filter((c) => c.courseId !== id),
-    items: cache.items.filter((i) => i.courseId !== id),
-  };
-  emit();
-  await guard(supabase.from("courses").delete().eq("id", id));
+  await store.begin();
+  const now = getSnapshot();
+  change({
+    courses: now.courses.filter((c) => c.id !== id),
+    categories: now.categories.filter((c) => c.courseId !== id),
+    items: now.items.filter((i) => i.courseId !== id),
+  });
+  await store.write(supabase.from("courses").delete().eq("id", id));
 }
 
 export async function saveItem(gradeItem: GradeItem): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  const exists = cache.items.some((i) => i.id === gradeItem.id);
+  await store.begin();
+  const items = getSnapshot().items;
+  const exists = items.some((i) => i.id === gradeItem.id);
   const saved = {
     ...gradeItem,
     userId: owner(gradeItem.userId),
@@ -399,94 +327,88 @@ export async function saveItem(gradeItem: GradeItem): Promise<void> {
       gradeItem.position ??
       (exists
         ? 0
-        : cache.items.filter((i) => i.categoryId === gradeItem.categoryId)
-            .length),
+        : items.filter((i) => i.categoryId === gradeItem.categoryId).length),
   };
-  cache = {
-    ...cache,
+  change({
     items: exists
-      ? cache.items.map((i) => (i.id === saved.id ? saved : i))
-      : [...cache.items, saved],
-  };
-  emit();
-  await guard(
+      ? items.map((i) => (i.id === saved.id ? saved : i))
+      : [...items, saved],
+  });
+  await store.write(
     exists
       ? supabase.from("grade_items").update(itemRow(saved)).eq("id", saved.id)
       : supabase.from("grade_items").insert(itemRow(saved)),
   );
 }
 
-type Ordered = { id: string; position?: number };
-
-function renumber<T extends Ordered>(rows: T[], ids: string[]): T[] {
+function renumber<T extends { id: string; position?: number }>(
+  rows: T[],
+  ids: string[],
+): T[] {
   return rows.map((row) => {
     const at = ids.indexOf(row.id);
     return at < 0 || row.position === at ? row : { ...row, position: at };
   });
 }
 
-function moved<T extends Ordered>(before: T[], after: T[]): T[] {
-  return after.filter((row, i) => row !== before[i]);
+async function reorder<T extends { id: string; position?: number }>(
+  rows: T[],
+  ids: string[],
+  apply: (next: T[]) => void,
+  table: string,
+  toRow: (row: T) => object,
+): Promise<void> {
+  const next = renumber(rows, ids);
+  const moved = next.filter((row, i) => row !== rows[i]);
+  if (!moved.length) return;
+  apply(next);
+  await store.write(supabase.from(table).upsert(moved.map(toRow)));
 }
 
 export async function reorderCourses(ids: string[]): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  const next = renumber(cache.courses, ids);
-  const changed = moved(cache.courses, next);
-  cache = { ...cache, courses: next };
-  emit();
-  for (const course of changed) {
-    await guard(
-      supabase.from("courses").update(courseRow(course)).eq("id", course.id),
-    );
-  }
+  await store.begin();
+  await reorder(
+    getSnapshot().courses,
+    ids,
+    (courses) => change({ courses }),
+    "courses",
+    courseRow,
+  );
 }
 
 export async function reorderCategories(ids: string[]): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  const next = renumber(cache.categories, ids);
-  const changed = moved(cache.categories, next);
-  cache = { ...cache, categories: next };
-  emit();
-  for (const category of changed) {
-    await guard(
-      supabase
-        .from("categories")
-        .update(categoryRow(category))
-        .eq("id", category.id),
-    );
-  }
+  await store.begin();
+  await reorder(
+    getSnapshot().categories,
+    ids,
+    (categories) => change({ categories }),
+    "categories",
+    categoryRow,
+  );
 }
 
 export async function reorderItems(ids: string[]): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  const next = renumber(cache.items, ids);
-  const changed = moved(cache.items, next);
-  cache = { ...cache, items: next };
-  emit();
-  for (const item of changed) {
-    await guard(
-      supabase.from("grade_items").update(itemRow(item)).eq("id", item.id),
-    );
-  }
+  await store.begin();
+  await reorder(
+    getSnapshot().items,
+    ids,
+    (items) => change({ items }),
+    "grade_items",
+    itemRow,
+  );
 }
 
 export async function deleteItem(id: string): Promise<void> {
-  await ensureLoaded();
-  lastError = null;
-  cache = { ...cache, items: cache.items.filter((i) => i.id !== id) };
-  emit();
-  await guard(supabase.from("grade_items").delete().eq("id", id));
+  await store.begin();
+  change({ items: getSnapshot().items.filter((i) => i.id !== id) });
+  await store.write(supabase.from("grade_items").delete().eq("id", id));
 }
 
 export async function setScore(
   id: string,
   score: number | null,
 ): Promise<void> {
-  const found = cache.items.find((i) => i.id === id);
+  const found = getSnapshot().items.find((i) => i.id === id);
   if (!found) return;
   await saveItem({ ...found, score });
 }

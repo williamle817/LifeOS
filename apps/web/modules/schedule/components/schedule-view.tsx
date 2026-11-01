@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { EventColor, LifeEvent } from "@lifeos/contracts";
 import { expand } from "@/modules/schedule/lib/recurrence";
 import FullCalendar from "@fullcalendar/react";
@@ -24,11 +30,12 @@ import {
 } from "@/modules/schedule/lib/event-store";
 import { EventForm } from "@/modules/schedule/components/event-form";
 import { EventDetails } from "@/modules/schedule/components/event-details";
+import { SaveError } from "@/components/save-error";
 import { ScopeAsk } from "@/components/scope-ask";
 
-const FORM_W = 272;
+const FORM_W = 300;
 const DETAIL_W = 320;
-const MAX_HEIGHT = 340;
+const MAX_HEIGHT = 420;
 const GAP = 8;
 
 type Range = { start: string; end: string; allDay: boolean };
@@ -82,11 +89,22 @@ export function ScheduleView() {
   const rows = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [popover, setPopover] = useState<Popover | null>(null);
   const [range, setRange] = useState<{ from: Date; to: Date } | null>(null);
+  const calendar = useRef<FullCalendar>(null);
 
-  const events = range ? expand(rows, range.from, range.to) : [];
+  const events = useMemo(
+    () => (range ? expand(rows, range.from, range.to) : []),
+    [rows, range],
+  );
 
   useEffect(() => {
     void ensureLoaded();
+  }, []);
+
+  useEffect(() => {
+    if (!window.matchMedia("(width < 48rem)").matches) return;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    calendar.current?.getApi().changeView("timeGridThreeDay", yesterday);
   }, []);
 
   useEffect(() => {
@@ -107,15 +125,17 @@ export function ScheduleView() {
   }
 
   function applyDrag(info: EventDropArg | EventResizeDoneArg) {
+    const { allDay, start, end, startStr, endStr } = info.event;
     const found = events.find((event) => event.id === info.event.id);
-    if (!found || !info.event.start || !info.event.end) {
+    if (!found || !start || !end) {
       info.revert();
       return;
     }
     const moved = {
       ...found,
-      start: info.event.start.toISOString(),
-      end: info.event.end.toISOString(),
+      allDay,
+      start: allDay ? startStr : start.toISOString(),
+      end: allDay ? endStr : end.toISOString(),
     } as LifeEvent;
 
     if (found.seriesId && found.occurrenceDate) {
@@ -137,49 +157,77 @@ export function ScheduleView() {
   }
 
   const preview = popover?.mode === "scope" ? popover.editing : null;
+  const pending = popover?.range;
 
-  const blocks: EventInput[] = events.map((event) => {
-    const shown = preview && preview.id === event.id ? preview : event;
-    return {
-      id: shown.id,
-      title: shown.title,
-      start: shown.start,
-      end: shown.end,
-      allDay: shown.allDay ?? false,
-      ...paint(shown.color ?? "blue"),
-    };
-  });
-
-  if (popover?.range) {
-    blocks.push({
-      id: "pending",
-      title: "",
-      start: popover.range.start,
-      end: popover.range.end,
-      allDay: popover.range.allDay,
-      ...paint("blue"),
+  const blocks = useMemo(() => {
+    const out: EventInput[] = events.map((event) => {
+      const shown = preview && preview.id === event.id ? preview : event;
+      return {
+        id: shown.id,
+        title: shown.title,
+        start: shown.start,
+        end: shown.end,
+        allDay: shown.allDay ?? false,
+        ...paint(shown.color ?? "blue"),
+      };
     });
-  }
+    if (pending) {
+      out.push({
+        id: "pending",
+        title: "",
+        start: pending.start,
+        end: pending.end,
+        allDay: pending.allDay,
+        ...paint("blue"),
+      });
+    }
+    return out;
+  }, [events, preview, pending]);
 
   return (
     <>
-      {lastWriteError() ? (
-        <p className="mx-5 mt-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-[13px] text-ink-muted">
-          Could not save: {lastWriteError()}
-        </p>
-      ) : null}
+      <SaveError message={lastWriteError()} className="mx-5 mt-3" />
 
       <div
         data-page="schedule"
-        className="flex min-h-0 flex-1 flex-col bg-surface"
+        className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-panel bg-surface shadow-soft"
       >
         <FullCalendar
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          ref={calendar}
           initialView="timeGridWeek"
+          views={{
+            timeGridThreeDay: {
+              type: "timeGrid",
+              duration: { days: 3 },
+              buttonText: "3 Days",
+            },
+          }}
           headerToolbar={{
-            left: "prev,next today",
-            center: "title",
-            right: "timeGridDay,timeGridWeek,dayGridMonth",
+            left: "title prev next today",
+            right: "newEvent timeGridDay,timeGridThreeDay,timeGridWeek,dayGridMonth",
+          }}
+          titleFormat={{ month: "long", year: "numeric" }}
+          customButtons={{
+            newEvent: {
+              text: "New event",
+              click: (_click, element) => {
+                const rect = element.getBoundingClientRect();
+                const start = new Date();
+                start.setHours(start.getHours() + 1, 0, 0, 0);
+                const end = new Date(start.getTime() + 60 * 60 * 1000);
+                setPopover({
+                  ...place(new DOMRect(rect.right, rect.bottom + GAP, 0, 0), FORM_W),
+                  editing: null,
+                  mode: "edit",
+                  range: {
+                    start: start.toISOString(),
+                    end: end.toISOString(),
+                    allDay: false,
+                  },
+                });
+              },
+            },
           }}
           height="100%"
           scrollTime="08:00:00"
@@ -211,31 +259,33 @@ export function ScheduleView() {
             hour12: true,
           }}
           dayHeaderContent={(arg) => {
-            const weekday = arg.date
-              .toLocaleDateString("en-US", { weekday: "short" })
-              .toUpperCase();
+            const weekday = arg.date.toLocaleDateString("en-US", {
+              weekday: "short",
+            });
 
             if (arg.view.type === "dayGridMonth") {
               return (
-                <span className="text-[11px] tracking-wide text-ink-faint">
+                <span className="text-xs font-medium text-ink-faint">
                   {weekday}
                 </span>
               );
             }
 
             return (
-              <span className="flex flex-col items-center gap-0.5">
-                <span className="text-[11px] leading-none tracking-wide text-ink-faint">
+              <span className="flex flex-col items-center gap-1 py-1.5">
+                <span
+                  className={`text-xs leading-none ${
+                    arg.isToday ? "font-semibold text-accent" : "text-ink-faint"
+                  }`}
+                >
                   {weekday}
                 </span>
                 <span
-                  className={`rounded-full border px-2 py-0.5 text-[13px] leading-tight ${
-                    arg.isToday
-                      ? "border-accent bg-accent-soft font-medium text-accent"
-                      : "border-transparent text-ink-muted"
+                  className={`grid size-9 place-items-center rounded-full text-[15px] font-semibold ${
+                    arg.isToday ? "bg-accent text-surface" : "text-ink-muted"
                   }`}
                 >
-                  {arg.date.getMonth() + 1}/{arg.date.getDate()}
+                  {arg.date.getDate()}
                 </span>
               </span>
             );
@@ -252,7 +302,7 @@ export function ScheduleView() {
               return (
                 <div
                   style={ink}
-                  className="truncate px-1 text-[11px] font-medium"
+                  className="truncate px-1 text-[11px] font-semibold"
                 >
                   {title}
                 </div>
@@ -265,7 +315,7 @@ export function ScheduleView() {
                   {arg.timeText ? (
                     <span style={inkMuted}>{arg.timeText} </span>
                   ) : null}
-                  <span className="font-medium">{title}</span>
+                  <span className="font-semibold">{title}</span>
                 </div>
               );
             }
@@ -282,7 +332,7 @@ export function ScheduleView() {
                   <span className="truncate leading-none">
                     <span
                       style={ink}
-                      className={`font-medium ${
+                      className={`font-semibold ${
                         tiny ? "text-[10px]" : "text-[12px]"
                       }`}
                     >
@@ -307,7 +357,7 @@ export function ScheduleView() {
               <div className="overflow-hidden px-1 py-0.5 leading-tight">
                 <div
                   style={ink}
-                  className="truncate text-[13px] font-medium"
+                  className="truncate text-[13px] font-semibold"
                 >
                   {title}
                 </div>
@@ -361,7 +411,7 @@ export function ScheduleView() {
               maxHeight: MAX_HEIGHT,
               width: popover.mode === "details" ? DETAIL_W : FORM_W,
             }}
-            className="fixed z-30 overflow-y-auto rounded-3xl border border-line bg-surface shadow-lg"
+            className="fixed z-30 overflow-y-auto rounded-[1.5rem] border border-line/60 bg-surface shadow-pop"
           >
             {popover.mode === "scope" && popover.editing ? (
               <ScopeAsk

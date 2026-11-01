@@ -18,7 +18,7 @@ export function ThemeToggle() {
       type="button"
       aria-label={`Switch to ${next} mode`}
       onClick={() => setMode(next)}
-      className="shrink-0 rounded-lg p-2 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+      className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-muted text-ink transition-colors hover:brightness-95"
     >
       <ActionIcon name={mode === "dark" ? "moon" : "sun"} />
     </button>

@@ -3,13 +3,13 @@
 import { useState } from "react";
 import type { Semester } from "@lifeos/contracts";
 import { ActionIcon } from "@/components/icons";
+import { Labeled } from "@/components/labeled";
+import { input, primary, quiet, soft } from "@/components/styles";
+import { isoDay } from "@/lib/dates";
 import { Confirm } from "@/modules/academic/components/confirm";
 
-const input =
-  "rounded-xl border border-line bg-surface px-3 py-1.5 text-[13px] outline-none transition-colors focus:border-accent";
-
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return isoDay(new Date());
 }
 
 export function SemesterBar({
@@ -70,8 +70,7 @@ export function SemesterBar({
         }}
         className="flex flex-wrap items-end gap-2"
       >
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-ink-faint">Name</span>
+        <Labeled caption="Name">
           <input
             aria-label="Semester name"
             autoFocus
@@ -81,10 +80,9 @@ export function SemesterBar({
             onChange={(e) => setName(e.target.value)}
             className={input}
           />
-        </label>
+        </Labeled>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-ink-faint">Starts on</span>
+        <Labeled caption="Starts on">
           <input
             aria-label="Starts on"
             type="date"
@@ -93,34 +91,59 @@ export function SemesterBar({
             onChange={(e) => setStartsOn(e.target.value)}
             className={input}
           />
-        </label>
+        </Labeled>
 
         <button
           type="submit"
-          className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-medium text-surface shadow-sm transition-colors hover:brightness-110"
+          className={primary}
         >
           {mode === "edit" ? "Save semester" : "Add semester"}
         </button>
         <button
           type="button"
           onClick={() => setMode(null)}
-          className="rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+          className={quiet}
         >
           Cancel
         </button>
+
+        {mode === "edit" && open ? (
+          <button
+            type="button"
+            onClick={() => setAsking(true)}
+            style={{ color: "var(--alert)", borderColor: "var(--alert)" }}
+            className="min-h-10 rounded-full border px-5 text-sm font-semibold transition-colors hover:bg-surface"
+          >
+            Delete semester
+          </button>
+        ) : null}
+
+        {asking && open ? (
+          <Confirm
+            title={`Delete ${open.name}?`}
+            body="Its courses, their grading and every score in them go with it. This cannot be undone."
+            action="Delete semester"
+            onConfirm={() => {
+              setAsking(false);
+              setMode(null);
+              onDelete(open.id);
+            }}
+            onCancel={() => setAsking(false)}
+          />
+        ) : null}
       </form>
     );
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2.5">
       {semesters.length ? (
         <label className="flex items-center gap-2">
-          <span className="text-xs text-ink-muted">Semester</span>
+          <span className="text-[13px] font-medium text-ink-muted">Semester</span>
           <select
             value={selected ?? ""}
             onChange={(e) => onSelect(e.target.value)}
-            className={input}
+            className="min-h-11 rounded-full bg-surface px-4 text-[15px] font-semibold shadow-float outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             {ordered.map((semester) => (
               <option key={semester.id} value={semester.id}>
@@ -136,7 +159,7 @@ export function SemesterBar({
           type="button"
           aria-label={`Edit ${open.name}`}
           onClick={startEdit}
-          className="rounded-lg p-1.5 text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
+          className="grid size-11 place-items-center rounded-full text-ink-faint transition-colors hover:bg-surface hover:text-ink"
         >
           <ActionIcon name="edit" />
         </button>
@@ -145,33 +168,10 @@ export function SemesterBar({
       <button
         type="button"
         onClick={startAdd}
-        className="rounded-full border border-line px-3.5 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+        className={soft}
       >
         New semester
       </button>
-
-      {selected ? (
-        <button
-          type="button"
-          onClick={() => setAsking(true)}
-          className="rounded-full px-3 py-1.5 text-[13px] text-ink-faint transition-colors hover:bg-surface-muted hover:text-ink"
-        >
-          Delete semester
-        </button>
-      ) : null}
-
-      {asking && open ? (
-        <Confirm
-          title={`Delete ${open.name}?`}
-          body="Its courses, their grading and every score in them go with it. This cannot be undone."
-          action="Delete semester"
-          onConfirm={() => {
-            setAsking(false);
-            onDelete(open.id);
-          }}
-          onCancel={() => setAsking(false)}
-        />
-      ) : null}
     </div>
   );
 }

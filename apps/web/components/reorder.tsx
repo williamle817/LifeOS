@@ -13,10 +13,9 @@ type Held = {
   step: number;
 };
 
-export type Dragging = {
+type Dragging = {
   start: (list: string, index: number, event: React.PointerEvent) => void;
   style: (list: string, index: number) => React.CSSProperties;
-  held: Held | null;
 };
 
 export function move(ids: string[], from: number, to: number): string[] {
@@ -47,9 +46,7 @@ export function useDragList(
     const across = Math.abs(last.left - first.left) > Math.abs(last.top - first.top);
     const size = across ? first.width : first.height;
     const gap =
-      rects.length > 1
-        ? (across ? rects[1].left - first.left : rects[1].top - first.top) - size
-        : 0;
+      (across ? rects[1].left - first.left : rects[1].top - first.top) - size;
     const step = size + Math.max(0, gap);
 
     const originX = event.clientX;
@@ -111,7 +108,7 @@ export function useDragList(
     };
   }
 
-  return { start, style, held };
+  return { start, style };
 }
 
 export function DragHandle({

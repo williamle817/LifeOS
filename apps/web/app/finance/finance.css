@@ -1,4 +1,5 @@
-body:has([data-page="finance"]) {
+body:has([data-page="finance"]),
+:root:not([data-theme="night"]) [data-tone="finance"] {
   --canvas: #f2e0c8;
   --surface: #f8e9d8;
   --surface-muted: #edd8bd;
@@ -9,6 +10,7 @@ body:has([data-page="finance"]) {
   --ink-faint: #614f39;
   --accent: #7f5300;
   --accent-soft: #f3d1a6;
+  --shade: var(--ink);
 }
 
 :root[data-theme="night"] body:has([data-page="finance"]) {
@@ -20,6 +22,11 @@ body:has([data-page="finance"]) {
   --ink: #faf5e8;
   --ink-muted: #cdbf9c;
   --ink-faint: #b3a37d;
+  --accent: #f6c453;
+  --accent-soft: #3a2e10;
+}
+
+:root[data-theme="night"] [data-tone="finance"] {
   --accent: #f6c453;
   --accent-soft: #3a2e10;
 }

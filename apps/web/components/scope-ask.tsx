@@ -1,6 +1,7 @@
 "use client";
 
 import { EDIT_SCOPES, type EditScope } from "@lifeos/contracts";
+import { quiet } from "@/components/styles";
 
 const SCOPE_LABELS: Record<EditScope, (one: string, many: string) => string> = {
   one: (noun) => `This ${noun}`,
@@ -20,15 +21,15 @@ export function ScopeAsk({
   onCancel: () => void;
 }) {
   return (
-    <div className="p-3">
-      <h2 className="text-sm font-medium">Apply to</h2>
-      <div className="mt-3 grid gap-2">
+    <div className="p-5">
+      <h2 className="font-display text-xl font-medium">Apply to</h2>
+      <div className="mt-4 grid gap-2">
         {EDIT_SCOPES.map((scope) => (
           <button
             key={scope}
             type="button"
             onClick={() => onPick(scope)}
-            className="rounded-2xl border border-line px-3.5 py-2.5 text-left text-[13px] transition-colors hover:border-accent hover:bg-surface-muted"
+            className="min-h-11 rounded-card bg-surface-muted px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent-soft hover:text-accent"
           >
             {SCOPE_LABELS[scope](noun, plural)}
           </button>
@@ -37,7 +38,7 @@ export function ScopeAsk({
       <button
         type="button"
         onClick={onCancel}
-        className="mt-3 rounded-full px-3 py-1.5 text-[13px] text-ink-muted transition-colors hover:bg-surface-muted"
+        className={`mt-3 ${quiet}`}
       >
         Cancel
       </button>

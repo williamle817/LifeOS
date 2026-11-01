@@ -1,15 +1,17 @@
-import { eventRow, expect, flowRow, test } from "../support/fixtures";
+import type { Page } from "@playwright/test";
+import { dayOf, eventRow, expect, flowRow, test } from "../support/fixtures";
 
 function thisMonth(offset = 0): { label: string; day: (n: number) => string } {
   const now = new Date();
   const at = new Date(now.getFullYear(), now.getMonth() + offset, 1);
   return {
     label: at.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-    day: (n: number) =>
-      `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(
-        n,
-      ).padStart(2, "0")}`,
+    day: (n: number) => dayOf(new Date(at.getFullYear(), at.getMonth(), n)),
   };
+}
+
+async function showIncome(page: Page) {
+  await page.getByRole("tab", { name: /Income/ }).click();
 }
 
 test("opens on this month and shows what falls in it", async ({
@@ -35,14 +37,15 @@ test("opens on this month and shows what falls in it", async ({
 
   await expect(page.getByRole("heading", { name: now.label })).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "Income" }).getByText("Working shift"),
-  ).toBeVisible();
-  await expect(
     page.getByRole("region", { name: "Expenses" }).getByText("Groceries"),
   ).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Expenses" }).getByText("Next month"),
   ).toHaveCount(0);
+  await showIncome(page);
+  await expect(
+    page.getByRole("region", { name: "Income" }).getByText("Working shift"),
+  ).toBeVisible();
 
   await expect(
     page.getByRole("img", { name: /Income \$120\.00, expenses \$40\.00/ }),
@@ -287,6 +290,7 @@ test("counts a work shift from the calendar as income", async ({
   ];
 
   await app.open("/finance");
+  await showIncome(page);
 
   const incomes = page.getByRole("region", { name: "Income" });
   await expect(incomes.getByText("Working shift")).toBeVisible();
@@ -315,6 +319,7 @@ test("editing a shift here writes to the calendar event", async ({
   ];
 
   await app.open("/finance");
+  await showIncome(page);
   await page.getByRole("button", { name: "Edit Working shift" }).click();
 
   await expect(page.getByLabel("Income amount")).toHaveCount(0);
@@ -349,6 +354,7 @@ test("removing a one off shift takes the event with it", async ({
   ];
 
   await app.open("/finance");
+  await showIncome(page);
   await page.getByRole("button", { name: "Remove Working shift" }).click();
   await expect(page.getByText("Nothing in income this month")).toBeVisible();
   expect(app.db.events).toHaveLength(0);
@@ -372,6 +378,7 @@ test("asks which shifts before removing a repeating one", async ({
   ];
 
   await app.open("/finance");
+  await showIncome(page);
   const incomes = page.getByRole("region", { name: "Income" });
   await expect(incomes.getByText("Working shift").first()).toBeVisible();
   const before = await incomes.getByText("Working shift").count();
@@ -407,6 +414,7 @@ test("takes the whole series away when all is chosen", async ({
   ];
 
   await app.open("/finance");
+  await showIncome(page);
   await expect(
     page.getByRole("region", { name: "Income" }).getByText("Working shift").first(),
   ).toBeVisible();
@@ -442,6 +450,7 @@ test("adds a repeating shift up over the whole month", async ({
   ];
 
   await app.open("/finance");
+  await showIncome(page);
 
   const incomes = page.getByRole("region", { name: "Income" });
   await expect(incomes.getByText("Working shift").first()).toBeVisible();
@@ -491,6 +500,10 @@ test("counts a meal from the calendar as spending", async ({ app, page }) => {
   await expect(expenses.getByText(/Dining out/)).toBeVisible();
   await expect(expenses.getByText(/The noodle shop/)).toBeVisible();
 
+  await showIncome(page);
+  await expect(
+    page.getByRole("region", { name: "Income" })
+  ).toBeVisible();
   await expect(
     page.getByRole("region", { name: "Income" }).getByText("Dinner"),
   ).toHaveCount(0);
@@ -558,6 +571,7 @@ test("a shift with no tips still pays its wage", async ({ app, page }) => {
   ];
 
   await app.open("/finance");
+  await showIncome(page);
   await expect(
     page.getByRole("region", { name: "Income" }).getByText("+$100.00"),
   ).toBeVisible();

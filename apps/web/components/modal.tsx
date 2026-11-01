@@ -22,7 +22,7 @@ export function Modal({
   return (
     <>
       <div
-        className="fixed inset-0 z-40 bg-ink/20"
+        className="fixed inset-0 z-40 bg-ink/25"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -30,7 +30,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        className="fixed top-1/2 left-1/2 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-line bg-surface shadow-lg"
+        className="fixed top-1/2 left-1/2 z-50 w-[min(26rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-panel border border-line/60 bg-surface shadow-pop"
       >
         {children}
       </div>

@@ -1,51 +1,45 @@
 import type { LifeEvent, Recurrence } from "@lifeos/contracts";
+import { daysBetween, isoDay, parseDay, shiftDay } from "@/lib/dates";
 
 const DAY = 24 * 60 * 60 * 1000;
 
 export function dayKey(value: string): string {
-  return value.length <= 10 ? value : toLocalDay(new Date(value));
+  return value.length <= 10 ? value : isoDay(new Date(value));
 }
 
-function toLocalDay(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function nth(first: Date, rule: Recurrence, n: number): Date {
+  const out = new Date(first);
+  if (rule.freq === "daily" || rule.freq === "weekly") {
+    const span = rule.freq === "weekly" ? 7 * rule.interval : rule.interval;
+    out.setDate(out.getDate() + span * n);
+    return out;
+  }
+  const months = (rule.freq === "yearly" ? 12 : 1) * rule.interval * n;
+  out.setDate(1);
+  out.setMonth(out.getMonth() + months);
+  const last = new Date(out.getFullYear(), out.getMonth() + 1, 0).getDate();
+  out.setDate(Math.min(first.getDate(), last));
+  return out;
 }
 
-export function shiftDay(date: string, days: number): string {
-  const d = new Date(`${date}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return toLocalDay(d);
-}
-
-function step(d: Date, rule: Recurrence, times = 1): Date {
-  const next = new Date(d);
-  if (rule.freq === "daily") next.setDate(next.getDate() + rule.interval * times);
-  else if (rule.freq === "weekly")
-    next.setDate(next.getDate() + 7 * rule.interval * times);
-  else if (rule.freq === "yearly")
-    next.setFullYear(next.getFullYear() + rule.interval * times);
-  else next.setMonth(next.getMonth() + rule.interval * times);
-  return next;
-}
-
-function seek(first: Date, rule: Recurrence, from: Date): Date {
-  if (from <= first) return first;
+function seek(first: Date, rule: Recurrence, from: Date): number {
+  if (from <= first) return 0;
   if (rule.freq === "monthly" || rule.freq === "yearly") {
     const months =
       (from.getFullYear() - first.getFullYear()) * 12 +
       (from.getMonth() - first.getMonth());
     const per = rule.freq === "yearly" ? 12 * rule.interval : rule.interval;
-    return step(first, rule, Math.floor(months / per));
+    return Math.floor(months / per);
   }
   const span = rule.freq === "weekly" ? 7 * rule.interval : rule.interval;
-  const days = Math.floor((from.getTime() - first.getTime()) / DAY);
-  return step(first, rule, Math.floor(days / span));
+  return Math.floor(daysBetween(isoDay(first), isoDay(from)) / span);
 }
 
-function moveTo(value: string, from: string, to: string): string {
-  if (value.length <= 10) return to;
-  const offset = new Date(value).getTime() - new Date(`${from}T00:00:00`).getTime();
-  return new Date(new Date(`${to}T00:00:00`).getTime() + offset).toISOString();
+function moveTo(value: string, days: number): string {
+  if (value.length <= 10) return shiftDay(value, days);
+  const moved = new Date(value);
+  moved.setDate(moved.getDate() + days);
+  return moved.toISOString();
 }
 
 export function occurrenceId(seriesId: string, date: string): string {
@@ -94,7 +88,7 @@ export function expand(
 
   for (const row of rows) {
     if (!row.seriesId || !row.occurrenceDate) continue;
-    patches.set(`${row.seriesId}::${row.occurrenceDate}`, row);
+    patches.set(occurrenceId(row.seriesId, row.occurrenceDate), row);
   }
 
   const out = [...singles];
@@ -104,7 +98,7 @@ export function expand(
     if (!rule) continue;
     const seriesId = master.seriesId ?? master.id;
     const firstDay = dayKey(master.start);
-    const first = new Date(`${firstDay}T00:00:00`);
+    const first = parseDay(firstDay);
     const limit = new Date(to.getTime() + DAY);
     const lower = new Date(from.getTime() - DAY);
     const picked =
@@ -112,34 +106,36 @@ export function expand(
         ? weekDates(rule, first, lower, limit)
         : null;
 
-    let cursor = picked ? picked[0] : seek(first, rule, lower);
-    let index = 0;
+    let n = picked ? 0 : seek(first, rule, lower);
+    let cursor = picked ? picked[0] : nth(first, rule, n);
     let guard = 0;
 
     while (cursor && cursor <= limit && guard < 800) {
       guard += 1;
-      const date = toLocalDay(cursor);
+      const date = isoDay(cursor);
       if (rule.until && date > rule.until) break;
 
       if (cursor >= lower) {
-        const patch = patches.get(`${seriesId}::${date}`);
+        const id = occurrenceId(seriesId, date);
+        const patch = patches.get(id);
+        const days = daysBetween(firstDay, date);
         if (!patch) {
           out.push({
             ...master,
-            id: occurrenceId(seriesId, date),
+            id,
             seriesId,
             occurrenceDate: date,
             recurrence: rule,
-            start: moveTo(master.start, firstDay, date),
-            end: moveTo(master.end, firstDay, date),
+            start: moveTo(master.start, days),
+            end: moveTo(master.end, days),
           } as LifeEvent);
         } else if (!patch.cancelled) {
           out.push({ ...patch, recurrence: rule } as LifeEvent);
         }
       }
 
-      index += 1;
-      cursor = picked ? picked[index] : step(cursor, rule);
+      n += 1;
+      cursor = picked ? picked[n] : nth(first, rule, n);
     }
   }
 

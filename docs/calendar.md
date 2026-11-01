@@ -4,7 +4,7 @@ Schedule is the heart of LifeOS. Money, Academic and Fitness will all derive
 their numbers from `events`, so the shape of that one table decides the rest of
 the project. Read this before changing anything under `apps/web/modules/schedule`.
 
-Written 2026-09-25, end of the Supabase work.
+Written 2026-09-25, end of the Supabase work. Last updated 2026-10-10.
 
 ---
 
@@ -14,10 +14,11 @@ Each layer talks only to the one below it, so replacing one does not drag the
 other three along.
 
 ```
+  PAGE          app/schedule/page.tsx imports the view and schedule.css
+                      |
   UI            schedule-view.tsx     FullCalendar, drag, popover
                 event-form.tsx        the smart form
                 event-details.tsx     the read only card
-                scope-ask.tsx         this event, following, or all
                       |
   RECURRENCE    recurrence.ts         one rule  ->  many occurrences
                       |
@@ -30,8 +31,13 @@ other three along.
 
 Everything above the contract lives in `apps/web/modules/schedule`, components
 in `components/`, the other two in `lib/`, and the tests that cover them in
-`tests/`. Nothing outside that folder imports from inside it except the route at
-`app/schedule/page.tsx`.
+`tests/`. The **Apply to** panel, `scope-ask.tsx`, is shared with Finance and so
+lives in `apps/web/components`. Nothing outside the module imports from inside
+it except the route at `app/schedule/page.tsx` and two bridges in
+`apps/web/lib`: `from-schedule.ts`, through which Finance reads shifts and
+meals, and `for-dashboard.ts`, through which the Dashboard reads today's
+events.
+`structure.md` shows how the whole app fits around it.
 
 Two things this buys:
 
@@ -86,7 +92,7 @@ an account can never exist without a profile.
 | --- | --- | --- |
 | `id` | uuid | primary key |
 | `user_id` | uuid | owner, references `public.users.id` |
-| `type` | text | general, work, gym, dining, class, exam |
+| `type` | text | general, work, gym, dining, class |
 | `title` | text | what the block shows |
 | `start_at` | text | see the note below, not a timestamp |
 | `end_at` | text | same |
@@ -106,15 +112,17 @@ event stores a full ISO string, `2026-09-24T14:00:00.000Z`. An all day event
 stores a date only string, `2026-09-24`. Date only matters: converting local
 midnight to UTC can land on the previous day at a positive offset, which moves
 the event a day. Read the range from FullCalendar's `startStr` and `endStr`,
-never from `start.toISOString()`.
+never from `start.toISOString()`. Dragging an all day event used to break this
+rule and save it as a timestamp; at the time zone of Vietnam the form then
+showed it a day early. Both creating and dragging read the strings now.
 
 Also note FullCalendar treats an all day `end` as **exclusive**. A one day event
 on 24 September stores `end_at` as `2026-09-25`. The form subtracts a day when
 it loads and adds it back on save, so the user sees the day it happens.
 
 **`data` is jsonb, not a column per field.** Each type carries its own fields:
-work has `tips`, gym has `workout` and `calories`, dining has `place` and
-`amount`, class has `course`, exam has `course`, `score` and `maxScore`. One
+work has `place`, `wage` and `tips`, gym has `workout` and `calories`, dining
+has `place` and `amount`, class has `course`. One
 jsonb column means adding a field to one type needs no migration, and Postgres
 still queries it with `data->>'amount'`. Phase 6 can normalise if Money wants
 real columns.
@@ -187,6 +195,20 @@ off around 2064 and scrolling far ahead showed **nothing at all**. `seek()` now
 jumps straight to the first occurrence at or after the window, using arithmetic
 rather than iteration, and the loop only ever runs inside the visible range.
 
+**Every occurrence is worked out from the series start, never from the one
+before it.** Stepping from the previous one drifted: a monthly event on 31
+January landed on 3 March, then on the 3rd for good. Now the nth occurrence is
+the start plus n months, and a day the month does not have is pulled back to
+the month's last day, so the 31st shows on 28 February and on 31 March again.
+A 29 February yearly event shows on the 28th in other years. Finance pulls a
+late day back the same way.
+
+**An occurrence keeps the clock time, not the number of hours since
+midnight.** The old way added the event's offset from midnight, so on the
+night the clocks change a 9 AM event showed at 10. Moving the date with the
+calendar keeps it at 9. An all day occurrence also keeps its length now;
+before, every repeat of a two day event ended the day it started.
+
 Each emitted occurrence carries the rule. That looks redundant but the form
 needs it: without it, opening a repeating event showed "Does not repeat" and
 lost every chosen weekday. Series head and occurrence are told apart by
@@ -221,6 +243,142 @@ Two bugs lived here and are worth not repeating:
 occurrence's `start` onto the head, which dragged the series start forward and
 made every earlier occurrence vanish. It now keeps the head's date and takes
 only the time of day, preserving the duration.
+
+---
+
+## What a block gives you
+
+Clicking a block opens a read only card: the title, the day, the time, and
+whatever that kind of event carries. A shift shows where it was worked, a gym
+session shows the workout and the calories, a meal shows the place, a class shows
+the course. Pay is deliberately left out; it is there for Money, not for reading
+back at a glance.
+
+Three buttons sit in the corner, in this order: edit, duplicate, delete.
+
+**Duplicating a repeating event asks the same question as editing one.** Copy
+just this occurrence and you get a single standalone event. Copy this and
+following and you get a fresh series starting that day. Copy all events and you
+get the whole series again from its original start. The original is never
+touched, and Ctrl+Z undoes the copy.
+
+**One panel asks that question for everything.** Editing, deleting, duplicating
+and dragging all raise the same three choices under the heading **Apply to**.
+Anything added later that touches a series should reuse it rather than invent its
+own wording.
+
+---
+
+## The page
+
+The calendar fills the whole window under the top bar, as one sheet with
+rounded top corners, and **the page itself never scrolls**: only the grid of
+hours does, inside the calendar.
+
+```
+  top bar
+  October 2026  <  >  Today               New event  [Day Week Month]
+  -----------------------------------------------------------------
+        Mon 5      Tue 6      ...                  stays put
+  -----------------------------------------------------------------
+  All day                                          stays put
+  -----------------------------------------------------------------
+  8 AM                                             scrolls
+  9 AM
+```
+
+How that is built, all in `app/schedule/schedule.css` and `schedule-view.tsx`:
+
+* The calendar is given `height="100%"`. FullCalendar then builds its own
+  scrolling area, which is what keeps the day names and the all day row in
+  place without any sticky positioning.
+* The window frame is fixed to the screen height on this page only, and the
+  page padding is removed, through `body:has([data-page="schedule"])`.
+* It opens at **8 AM** through FullCalendar's own `scrollTime`. An older
+  version scrolled there by hand and needed two numbers tied to the height of
+  the top bar; both are gone.
+* The toolbar runs edge to edge with a line under it: the month in Fraunces,
+  round arrows and Today on the left, **New event** and a segmented Day, Week,
+  Month switch on the right. On a phone it stacks, centred: the month, then
+  the arrows and Today, then New event and the switch.
+* **New event** opens the same form a click on an empty slot does, for the next
+  full hour, one hour long. It is a FullCalendar custom button, so it sits in
+  the toolbar FullCalendar draws.
+* Each day name has its date under it in a circle, filled with the accent on
+  today, and **today's whole column carries a pale wash**,
+  `--fc-today-bg-color` at 45 percent of `accent-soft`.
+* **Today hides while today is on screen.** FullCalendar disables it then, and
+  a disabled grey button read as broken; it is `visibility: hidden`, so the
+  arrows never move when it comes back.
+* **A phone opens on 3 Days**, yesterday to tomorrow, because seven columns at
+  390px cut every title to a few letters. It is a FullCalendar view,
+  `timeGridThreeDay`, also offered on the switch everywhere; the switch to it
+  happens in an effect on mount, through the calendar's ref, when
+  `matchMedia("(width < 48rem)")` matches.
+
+The columns are wider than they were inside a card, so a Vietnamese title like
+"Ca sáng quán cà phê" now fits in a week view block instead of being cut short.
+
+### The all day row is framed the same way top and bottom
+
+```
+  day names
+  1px  line
+  3px  pale band
+  All day
+  3px  pale band
+  1px  line
+  hours
+```
+
+Every one of those lines belongs to a cell that spans the full width. A line
+drawn by one of the inner tables would stop short of the right edge on a
+computer with visible scrollbars, because the inner tables leave room for the
+scrollbar. That is how a cut off line under the day names went unnoticed until
+it was seen on Windows.
+
+---
+
+## Colour
+
+The calendar page is **graphite**, a cool dark grey, so the only colour on the
+grid is the colour of your events. Its palette is the first two blocks of
+`app/schedule/schedule.css`. At night only the accent pair is its own; the rest
+is the app's base night palette from `globals.css`:
+
+```
+light  canvas #e0e3e7   surface #f3f4f6   surface-muted #d9dbe1
+       line #c9ccd3     line-strong #afb4be   accent-soft #d3d7e0
+       ink #1b1c1e      ink-muted #47494d     ink-faint #515357
+       accent #2f3440
+night  canvas #101216   surface #1b1e25   surface-muted #262a33
+       line #333844     line-strong #4a5160   accent-soft #2b2f38
+       ink #f3f5f9      ink-muted #aeb6c4     ink-faint #949cab
+       accent #c9ced8
+```
+
+The tab icon is `app/schedule/icon.svg`, a white L on `#2f3440`.
+
+**The grid is one step lighter than the other pages' surfaces**, `#f3f4f6`.
+The event fills are light pastels, and a grid as deep as the rest of the app
+made the green and yellow blocks melt into it, leaving only their outlines.
+
+**The six event colours are not the page's to change.** Blue, red, yellow,
+green, pink and slate are stored on your events, so they look the same on
+every page and in both modes: a pastel fill, a darker line, and text in a deep
+shade of the same colour. Retinting one of them to suit a page would repaint
+every event you have saved. It was tried once, to get blue out of Academic, and
+every block on the calendar turned purple.
+
+**Blue is also the colour of an event with no colour chosen**, and the form
+uses it as a marker: an event saved with the default colour stores no colour at
+all. Changing the default would quietly repaint every event that relies on it.
+
+The calendar's buttons take the page surface as their text colour, so they read
+as white on graphite in light mode and as dark on light grey at night.
+
+The red line marking the current time is `--alert`, the same red that marks
+anything due soon on every other page.
 
 ---
 
@@ -292,42 +450,47 @@ keeping the snapshot costs one reference and no copying.
 
 ## Where the other modules attach
 
-Nothing below exists yet. It is written down so the calendar is not changed in a
-way that blocks it.
-
 ```
   events
     |
-    +--  type = work     ->  Money      hours from start/end, tips from data
-    +--  type = dining   ->  Money      amount from data
-    +--  type = exam     ->  Academic   score and maxScore from data
-    +--  type = class    ->  Academic   course link
-    +--  type = gym      ->  Fitness    workout, calories from data
+    +--  type = work     ->  Finance    built: hours x wage + tips, as income
+    +--  type = dining   ->  Finance    built: the amount, as spending
+    +--  type = class    ->  Academic   not wired, entered by hand
+    +--  type = gym      ->  Fitness    not built yet: workout and calories
 ```
 
-Two open questions, both recorded in `CLAUDE.md` section 9 and both due at
-Phase 6:
+**Finance reads work shifts and meals straight from the calendar** and stores
+nothing of its own for them. Editing or deleting one from the Finance page
+writes to the event, through the calendar's own `saveOccurrence` and
+`removeOccurrence`, so a repeating shift asks the same Apply to question there
+as here. `finance.md` has the details; `apps/web/lib/from-schedule.ts` is the
+code.
 
-**Does Money store transaction rows or derive at read time?** The frozen MVP in
-`mvp/` derived everything from the event list and its README reports no sync
-bugs, because there was nothing to keep in sync. The roadmap leans the other
-way. Settle it deliberately.
+**Academic and the calendar do not talk to each other**, at the user's request
+since 2026-09-26. An exam is written down in both places. `ClassEvent` still
+carries an optional `courseId`, unused, so relinking later needs no change to
+the contract. The `exam` event type was removed the same week; an old exam row
+still in the database simply shows as a general event.
 
-**Does `course` stay free text?** Class and Exam carry a plain string today
-because Academic does not exist until Phase 7. That phase swaps it for a
-`courseId`, one field on one table.
+**Fitness is not built.** Gym events already carry `workout` and `calories`,
+which is what it will start from. See `fitness.md`.
+
+The open question in `CLAUDE.md` section 9, whether Money should store rows or
+derive them, was answered for shifts and meals by deriving. It stays open for
+anything else.
 
 ---
 
 ## Tests
 
 ```
-pnpm test        158 unit tests
-pnpm e2e         30 end to end tests in a real browser
+pnpm test        606 unit tests for the whole app, 176 of them here
+pnpm e2e         78 end to end tests for the whole app, 32 of them here
 ```
 
 Unit tests are in `apps/web/modules/schedule/tests`, mirroring `lib/` and
-`components/`. End to end specs are in `tests/e2e/schedule`. Neither touches the
+`components/`. End to end specs are in `tests/e2e/schedule`: the calendar view,
+creating and editing in the form, and dragging. Neither touches the
 real Supabase project: the unit suite swaps in an in memory client, and the end
 to end suite seeds a session into `localStorage` and intercepts every REST call.
 `CLAUDE.md` section 8e has the details, including why the test server builds into
@@ -345,10 +508,21 @@ suite should go red; if it does not, the test is decorative and should be fixed.
 built against, so the React adapter saw none of them. The plugins have no v7
 release, so the whole set stays on `^6.1.21`.
 
-**Two heights in `globals.css` are tied to the top bar.** `--bar-h` and
-`--toolbar-h` position the sticky day header and the scroll offset that lands on
-8 AM. FullCalendar writes its own `top` inline, which is why the override needs
-`!important`.
+**The calendar's stylesheet stays loaded after you leave the page.** Next does
+not remove a page's CSS on navigation, which is why every rule in
+`schedule.css` that touches the page layout or the colours is written against
+`data-page="schedule"`. A rule without it would reach the next page you open.
+
+**A line inside the grid stops short of the right edge on Windows.** The inner
+tables leave room for a scrollbar, and on a computer that shows scrollbars that
+room is about 15 pixels. Draw a full width line on an outer cell, never on an
+inner one. The test browser has invisible scrollbars, so this never shows up in
+a screenshot.
+
+**FullCalendar adds its own CSS when the page loads**, so searching the code
+for a colour will not find its defaults. The pale cyan it shows while you drag
+out a new event is one of them. Check what is actually on screen in the
+browser, not only what is in the files.
 
 **A native `select` fires no change event when you pick the value it already
 shows.** The Custom entry therefore needs its own separate option, otherwise
